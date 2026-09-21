@@ -78,6 +78,69 @@ public class MatchupSchedulerTests : ApiTestBase<MatchupScheduler>
             It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Exactly(2));
     }
 
+    /// <summary>
+    /// The registration resolves this id at STARTUP, so an unresolvable id
+    /// takes the service down rather than degrading. IANA ids work on Linux
+    /// natively and on Windows via ICU from .NET 6, but a host running with
+    /// globalization-invariant mode would throw — this fails in CI instead.
+    /// </summary>
+    [Fact]
+    public void EasternTimeZoneId_ResolvesOnThisPlatform()
+    {
+        var eastern = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
+        Assert.NotNull(eastern);
+        // Sanity that it is the zone we think: EDT in September, EST in January.
+        Assert.True(eastern.IsDaylightSavingTime(new DateTime(2026, 9, 20, 18, 0, 0, DateTimeKind.Utc)));
+        Assert.False(eastern.IsDaylightSavingTime(new DateTime(2026, 1, 20, 18, 0, 0, DateTimeKind.Utc)));
+    }
+
+    /// <summary>
+    /// Registered once per sport now, because the right moment differs by
+    /// sport: NCAA runs just after the AP poll lands on Sunday, NFL only after
+    /// Monday Night Football has finished. A run for one sport must not touch
+    /// the other, or the NFL slate gets cut on Sunday from the NCAA trigger.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithASport_TouchesOnlyThatSport()
+    {
+        await SeedLeagueAsync(Guid.NewGuid(), Sport.FootballNcaa, League.NCAAF);
+        await SeedLeagueAsync(Guid.NewGuid(), Sport.BaseballMlb, League.MLB);
+
+        SetupCurrentWeek(_footballSeasonClientMock, Guid.NewGuid(), 2026, 1, false, "regular");
+        SetupCurrentWeek(_baseballSeasonClientMock, Guid.NewGuid(), 2026, 5, false, "regular");
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        await Mocker.CreateInstance<MatchupScheduler>().ExecuteAsync(Sport.FootballNcaa);
+
+        _footballSeasonClientMock.Verify(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Once);
+        _baseballSeasonClientMock.Verify(
+            x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Never,
+            "a sport-scoped run must not resolve another sport's week");
+
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Once);
+    }
+
+    /// <summary>
+    /// A sport with no in-window league is a no-op, not an error — NFL has no
+    /// leagues in the offseason and its Tuesday cron still fires.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithASportThatHasNoLeagues_DoesNothing()
+    {
+        await SeedLeagueAsync(Guid.NewGuid(), Sport.BaseballMlb, League.MLB);
+        SetupCurrentWeek(_baseballSeasonClientMock, Guid.NewGuid(), 2026, 5, false, "regular");
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        await Mocker.CreateInstance<MatchupScheduler>().ExecuteAsync(Sport.FootballNfl);
+
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Never);
+    }
+
     [Fact]
     public async Task ExecuteAsync_Skips_Sport_When_Current_Week_Unresolvable()
     {

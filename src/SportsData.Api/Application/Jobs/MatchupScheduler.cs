@@ -26,8 +26,20 @@ namespace SportsData.Api.Application.Jobs
     ///
     /// This is the only scoring/scheduling job NOT in the event-driven primary
     /// path — matchups must be generated BEFORE games happen, so this stays a
-    /// cron-driven primary. Daily cadence is sufficient since week boundaries
-    /// move at most once per week per sport.
+    /// cron-driven primary.
+    ///
+    /// Registered ONCE PER SPORT rather than daily-for-everything, because the
+    /// right moment differs by sport and is anchored to a broadcast clock:
+    /// NCAA wants to run just after the AP poll lands on Sunday afternoon, NFL
+    /// only after Monday Night Football has finished and enriched. A daily
+    /// sport-agnostic run could not express either, and running NCAA before the
+    /// poll builds the slate from LAST week's rankings — which is sticky,
+    /// because the refresh path adds newly-eligible matchups but never removes
+    /// ones that fell out (picks against them must survive).
+    ///
+    /// Mid-week league creation does not depend on this job: PickemGroupCreated
+    /// enqueues BootstrapLeagueMatchups, which fans out a schedule command per
+    /// week the league overlaps.
     /// </summary>
     public class MatchupScheduler : IAmARecurringJob
     {
@@ -51,9 +63,19 @@ namespace SportsData.Api.Application.Jobs
             _dateTimeProvider = dateTimeProvider;
         }
 
-        public async Task ExecuteAsync()
+        /// <summary>
+        /// Every sport with an in-window league. Retained for the manual
+        /// dashboard trigger and for any caller that wants a full sweep.
+        /// </summary>
+        public Task ExecuteAsync() => ExecuteAsync(sportFilter: null);
+
+        /// <summary>
+        /// One sport, or every sport when <paramref name="sportFilter"/> is null.
+        /// </summary>
+        public async Task ExecuteAsync(Sport? sportFilter)
         {
-            _logger.LogInformation("{JobName} Began", nameof(MatchupScheduler));
+            _logger.LogInformation(
+                "{JobName} Began. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
 
             var now = _dateTimeProvider.UtcNow();
             var inWindow = InWindowPredicate(now);
@@ -65,7 +87,9 @@ namespace SportsData.Api.Application.Jobs
             // the league not having started yet (the daily-orphan half
             // of the motivating bug — see docs/league-creation-hardening.md).
             var activeSports = await _dataContext.PickemGroups
+                .AsNoTracking()
                 .Where(inWindow)
+                .Where(g => sportFilter == null || g.Sport == sportFilter.Value)
                 .Select(g => g.Sport)
                 .Distinct()
                 .ToListAsync();
@@ -79,7 +103,8 @@ namespace SportsData.Api.Application.Jobs
                 await ScheduleForSportAsync(sport, inWindow);
             }
 
-            _logger.LogInformation("{JobName} Ended", nameof(MatchupScheduler));
+            _logger.LogInformation(
+                "{JobName} Ended. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
         }
 
         private async Task ScheduleForSportAsync(Sport sport, Expression<Func<PickemGroup, bool>> inWindow)

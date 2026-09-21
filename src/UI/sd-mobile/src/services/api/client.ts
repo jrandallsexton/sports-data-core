@@ -1,11 +1,10 @@
 import axios, { type AxiosInstance } from 'axios';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.sportdeets.com';
+import { API_BASE_URL } from '@/src/lib/releaseConfig';
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 });

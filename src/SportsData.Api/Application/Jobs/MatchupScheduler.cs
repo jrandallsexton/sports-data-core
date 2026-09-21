@@ -70,7 +70,7 @@ namespace SportsData.Api.Application.Jobs
         public Task ExecuteAsync() => ExecuteAsync(sportFilter: null);
 
         /// <summary>
-        /// One sport, or every sport when <paramref name="sport"/> is null.
+        /// One sport, or every sport when <paramref name="sportFilter"/> is null.
         /// </summary>
         public async Task ExecuteAsync(Sport? sportFilter)
         {
@@ -87,6 +87,7 @@ namespace SportsData.Api.Application.Jobs
             // the league not having started yet (the daily-orphan half
             // of the motivating bug — see docs/league-creation-hardening.md).
             var activeSports = await _dataContext.PickemGroups
+                .AsNoTracking()
                 .Where(inWindow)
                 .Where(g => sportFilter == null || g.Sport == sportFilter.Value)
                 .Select(g => g.Sport)

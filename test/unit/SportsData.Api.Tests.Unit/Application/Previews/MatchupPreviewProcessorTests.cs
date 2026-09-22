@@ -348,6 +348,14 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal("test-model", capture.Model);
             Assert.NotNull(capture.RawResponse);
 
+            // The capture carries the parsed picks — the Lab matrix scores
+            // captures, not previews, so a Generate capture without them
+            // read as "no pick" for the production model.
+            Assert.Equal(_homeFranchiseSeasonId, capture.PredictedStraightUpWinnerId);
+            Assert.Null(capture.PredictedSpreadWinnerId);
+            Assert.Equal(preview.PredictedStraightUpWinner, capture.PredictedStraightUpWinnerId);
+            Assert.Equal(preview.PredictedSpreadWinner, capture.PredictedSpreadWinnerId);
+
             // The model received exactly what was captured
             Mocker.GetMock<IProvideAiCommunication>()
                 .Verify(x => x.GetResponseAsync(
@@ -407,6 +415,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
             Assert.Equal(preview.Id, capture.MatchupPreviewId);
             Assert.Contains("inconsistent", capture.ResponseValidationErrors);
+            // The capture carries the CORRECTED picks, the ones the preview holds.
+            Assert.Equal(_awayFranchiseSeasonId, capture.PredictedSpreadWinnerId);
+            Assert.Equal(_homeFranchiseSeasonId, capture.PredictedStraightUpWinnerId);
 
             // The second call carried the violation feedback and the original
             // (bad) response back to the model.
@@ -451,6 +462,10 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Null(capture.MatchupPreviewId);
             Assert.NotNull(capture.RawResponse);
             Assert.Contains("Retry:", capture.ResponseValidationErrors);
+            // Parsed but invalid: the picks persist with the problems, as the
+            // Experiment path already does, so the Lab can still score them.
+            Assert.Equal(_homeFranchiseSeasonId, capture.PredictedStraightUpWinnerId);
+            Assert.Equal(_homeFranchiseSeasonId, capture.PredictedSpreadWinnerId);
 
             Mocker.GetMock<IProvideAiCommunication>()
                 .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));

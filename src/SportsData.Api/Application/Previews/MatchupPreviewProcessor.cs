@@ -47,7 +47,8 @@ namespace SportsData.Api.Application.Previews
             _aiCommunication = aiCommunication;
             _promptProvider = promptProvider;
             _eventBus = eventBus;
-            _dateTimeProvider = dateTimeProvider;            _modelClientResolver = modelClientResolver;
+            _dateTimeProvider = dateTimeProvider;
+            _modelClientResolver = modelClientResolver;
 
         }
 
@@ -398,6 +399,11 @@ namespace SportsData.Api.Application.Previews
                         attempt1Errors, string.Join("; ", validation.Errors));
                     capture.Model = _aiCommunication.GetModelName();
                     capture.RawResponse = rawResponse;
+                    // Same rule as the Experiment path: the parsed picks
+                    // persist alongside the problems, so the Lab scores the
+                    // pick and the errors column carries the caveat.
+                    capture.PredictedStraightUpWinnerId = parsed.PredictedStraightUpWinner;
+                    capture.PredictedSpreadWinnerId = parsed.PredictedSpreadWinner;
                     await _dataContext.SaveChangesAsync();
                     _logger.LogError(
                         "Preview validation failed after retry for {ContestId}; no preview written. Errors: {Errors}",
@@ -467,6 +473,14 @@ namespace SportsData.Api.Application.Previews
             capture.Model = preview.Model;
             capture.ModelId = productionModelId;
             capture.RawResponse = rawResponse;
+            // The capture is the Lab's audit record and what the matrix
+            // scores, keyed by ModelId. Until 2026-09-22 only the Experiment
+            // path wrote these, so every production capture carried NULLs
+            // while the same values sat on the MatchupPreview row. Latent
+            // today (the resolver keeps direct-gateway models out of the
+            // matrix), live the day the production model earns a column.
+            capture.PredictedStraightUpWinnerId = parsed.PredictedStraightUpWinner;
+            capture.PredictedSpreadWinnerId = parsed.PredictedSpreadWinner;
 
             await _eventBus.Publish(new PreviewGenerated(
                 assembled.Matchup.ContestId,

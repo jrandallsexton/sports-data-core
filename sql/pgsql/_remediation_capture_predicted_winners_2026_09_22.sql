@@ -14,9 +14,10 @@
 -- the MatchupPreview row instead. So all 631 Generate captures (since the
 -- first on 2026-08-07) carry NULLs while the raw response and the preview
 -- both hold the ids. StatBot was never affected: it reads the preview. The
--- Model Lab matrix WAS: it scores captures keyed by ModelId, and every
--- production capture carries the production model's id, so that column read
--- "no pick" on every contest.
+-- Model Lab matrix was not affected EITHER, yet: it scores captures keyed by
+-- ModelId, but the resolver keeps direct-gateway models (the production
+-- model) out of its columns. The gap goes live the day the production model
+-- earns a matrix column; this fills the audit record so it does not.
 --
 -- Scope: Generate captures with a linked preview and a NULL straight-up id.
 -- Copies BOTH columns from the preview as they are. A NULL spread winner on

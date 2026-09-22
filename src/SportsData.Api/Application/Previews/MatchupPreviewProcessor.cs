@@ -473,10 +473,12 @@ namespace SportsData.Api.Application.Previews
             capture.Model = preview.Model;
             capture.ModelId = productionModelId;
             capture.RawResponse = rawResponse;
-            // The capture is what the Model Lab matrix scores, keyed by
-            // ModelId. Until 2026-09-22 only the Experiment path wrote these,
-            // so every production capture read as "no pick" in the matrix
-            // while the same values sat on the MatchupPreview row.
+            // The capture is the Lab's audit record and what the matrix
+            // scores, keyed by ModelId. Until 2026-09-22 only the Experiment
+            // path wrote these, so every production capture carried NULLs
+            // while the same values sat on the MatchupPreview row. Latent
+            // today (the resolver keeps direct-gateway models out of the
+            // matrix), live the day the production model earns a column.
             capture.PredictedStraightUpWinnerId = parsed.PredictedStraightUpWinner;
             capture.PredictedSpreadWinnerId = parsed.PredictedSpreadWinner;
 

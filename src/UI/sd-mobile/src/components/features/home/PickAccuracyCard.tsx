@@ -132,6 +132,11 @@ export function PickAccuracyCard({ leagues }: Props) {
               <View
                 key={w.week}
                 style={styles.column}
+                // accessible groups the column into one element so a screen
+                // reader announces the week and the counts, not the bare
+                // "80%" label inside (CodeRabbit, #782).
+                accessible
+                accessibilityRole="text"
                 accessibilityLabel={`Week ${w.week}, ${w.correctPicks} of ${w.totalPicks} correct, ${formatPercent(w.accuracyPercent)}`}
               >
                 <View style={styles.barSlot}>

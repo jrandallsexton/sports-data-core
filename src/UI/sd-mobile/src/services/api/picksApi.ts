@@ -1,5 +1,10 @@
 import { apiClient } from './client';
-import type { UserPicksResult, PickType, PickWidgetResponse } from '@/src/types/models';
+import type {
+  UserPicksResult,
+  PickType,
+  PickWidgetResponse,
+  PickAccuracyByWeek,
+} from '@/src/types/models';
 
 export interface SubmitPickPayload {
   pickemGroupId: string;      // leagueId
@@ -63,6 +68,11 @@ export const picksApi = {
   // GET /ui/picks/{year}/widget  — season-to-date pick record for the current user
   getWidget: (year = 2025) =>
     apiClient.get<PickWidgetResponse>(`/ui/picks/${year}/widget`),
+
+  // GET /ui/picks/chart — accuracy by week, one element per league the user
+  // has EVER belonged to (no season filter; see PickAccuracyByWeek).
+  getAccuracyChart: () =>
+    apiClient.get<PickAccuracyByWeek[]>('/ui/picks/chart'),
 
   // GET /ui/leagues/{targetId}/picks/import/sources
   getImportSources: (leagueId: string) =>

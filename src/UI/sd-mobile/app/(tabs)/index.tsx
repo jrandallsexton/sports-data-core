@@ -13,6 +13,9 @@ import { PendingInvitesCard } from '@/src/components/features/home/PendingInvite
 import { YourLeaguesCard } from '@/src/components/features/home/YourLeaguesCard';
 import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeaguesCard';
 import { RankingsCard } from '@/src/components/features/home/RankingsCard';
+import { PickAccuracyCard } from '@/src/components/features/home/PickAccuracyCard';
+import { pickAccuracyKeys, usePickAccuracy } from '@/src/hooks/usePickAccuracy';
+import { activeAccuracyLeagues } from '@/src/lib/pickAccuracy';
 
 /**
  * Post-login landing — mirrors web's HomePage (PR #272 / docs/post-login-landing-design.md).
@@ -31,6 +34,14 @@ import { RankingsCard } from '@/src/components/features/home/RankingsCard';
  *
  * Pick record + standings widgets were deliberately removed: during off-season
  * they're empty/stale, and the Tier 2 league list is a more useful anchor.
+ *
+ * In-season, Tier 1 becomes PickAccuracyCard (the mobile port of the web
+ * PickAccuracyWidget) as soon as the user has an ACTIVE league with at least
+ * one graded week. Until then, the countdown stays: a user with no league,
+ * or with leagues but no scored picks yet, sees exactly what they saw before
+ * (owner call, 2026-09-21). The swap is decided here, not inside the card,
+ * so the two never render together and there is no loading flicker: the
+ * screen's spinner gates on both /user/me and /ui/picks/chart.
  */
 export default function HomeScreen() {
   const scheme = useColorScheme();
@@ -42,6 +53,14 @@ export default function HomeScreen() {
     refetch: refetchMe,
   } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
+
+  // Runs in parallel with /user/me (both are user-scoped; neither needs the
+  // other's result). The intersection with ACTIVE leagues happens here.
+  const { data: accuracyChart, isLoading: accuracyLoading } = usePickAccuracy();
+  const accuracyLeagues = useMemo(
+    () => activeAccuracyLeagues(accuracyChart, leagues),
+    [accuracyChart, leagues],
+  );
 
   // Pull-to-refresh must refresh EVERYTHING this screen renders, not just
   // /user/me — the JoinableLeaguesCard runs its own leaguesKeys.public query,
@@ -58,6 +77,7 @@ export default function HomeScreen() {
         refetchMe(),
         queryClient.invalidateQueries({ queryKey: leaguesKeys.public }),
         queryClient.invalidateQueries({ queryKey: leaguesKeys.invitations }),
+        queryClient.invalidateQueries({ queryKey: pickAccuracyKeys.chart }),
       ]);
     } finally {
       setRefreshing(false);
@@ -70,11 +90,17 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const twoColumn = width >= 680;
 
-  if (meLoading) {
+  if (meLoading || accuracyLoading) {
     return <LoadingSpinner message="Loading…" fullScreen />;
   }
 
   const hasLeagues = leagues.length > 0;
+  const showAccuracy = accuracyLeagues.length > 0;
+  const primarySlot = showAccuracy ? (
+    <PickAccuracyCard leagues={accuracyLeagues} />
+  ) : (
+    <PrimarySlotOffSeasonCountdown />
+  );
 
   return (
     <ScrollView
@@ -92,8 +118,8 @@ export default function HomeScreen() {
       {hasLeagues && twoColumn ? (
         <View style={styles.twoCol}>
           <View style={styles.col}>
-            <PrimarySlotOffSeasonCountdown />
-            {/* Directly below the countdown — web parity: HomePage places
+            {primarySlot}
+            {/* Directly below the primary slot — web parity: HomePage places
                 the teaser between the countdown and Pending Invitations. */}
             <PlayerPickemTeaserCard />
           </View>
@@ -108,7 +134,7 @@ export default function HomeScreen() {
         </View>
       ) : (
         <>
-          <PrimarySlotOffSeasonCountdown />
+          {primarySlot}
           <PlayerPickemTeaserCard />
           <PendingInvitesCard />
           {hasLeagues && <YourLeaguesCard leagues={leagues} />}

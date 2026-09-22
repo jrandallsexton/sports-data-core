@@ -38,8 +38,13 @@ function TeamStatistics({ team, seasonYear, stats }) {
             </thead>
             <tbody>
               {statistics[selectedCategory].map((entry, idx) => (
-                <tr key={idx}>
-                  <td>{entry.statistic}</td>
+                <tr key={entry.statisticKey ?? idx}>
+                  {/* The wire's human-readable name is statisticValue
+                      (StatFormattingService writes the friendly label there;
+                      statisticKey is the raw ESPN key). Same read as mobile's
+                      StatsComparisonModal. `statistic` never existed on this
+                      DTO after the 2025-10 rename, so this column was blank. */}
+                  <td>{entry.statisticValue ?? entry.statisticKey ?? "-"}</td>
                   <td>{entry.displayValue ?? "-"}</td>
                   <td>{entry.perGameDisplayValue ?? entry.perGameValue ?? "-"}</td>
                   <td>{entry.rank ?? "-"}</td>

@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
@@ -21,6 +22,19 @@ namespace SportsData.Producer.Application.FranchiseSeasons;
 [ApiController]
 public class FranchiseSeasonController : ControllerBase
 {
+    /// <summary>
+    /// Prefers the caller's X-Correlation-Id (ClientBase stamps it on every
+    /// outbound POST) so API and Producer log under one id; falls back to
+    /// the current activity for direct calls. Same rule as ContestController.
+    /// </summary>
+    private Guid GetCorrelationIdFromRequest()
+    {
+        return Request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
+            && Guid.TryParse(headerValue, out var inbound)
+                ? inbound
+                : ActivityExtensions.GetCorrelationId();
+    }
+
     [HttpGet("id/{franchiseSeasonId}/metrics")]
     public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(
         [FromRoute] Guid franchiseSeasonId,
@@ -132,6 +146,26 @@ public class FranchiseSeasonController : ControllerBase
     {
         var query = new GetFranchiseSeasonCompetitionResultsQuery(franchiseSeasonId);
         var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Make ONE franchise season current: record enrichment, a scoped ESPN
+    /// season-statistics refresh, and metrics (football only) — the same
+    /// three legs as the weekly FranchiseSeasonEnrichmentJob, for one team.
+    /// Called by the API's admin-gated franchises route. 202 with the
+    /// correlation id shared by all legs; 404 for an unknown id.
+    /// </summary>
+    [HttpPost("id/{franchiseSeasonId}/enrich")]
+    public async Task<ActionResult<Guid>> EnrichFranchiseSeason(
+        [FromRoute] Guid franchiseSeasonId,
+        [FromServices] IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new EnqueueSingleFranchiseSeasonEnrichmentCommand(franchiseSeasonId, GetCorrelationIdFromRequest()),
+            cancellationToken);
 
         return result.ToActionResult();
     }

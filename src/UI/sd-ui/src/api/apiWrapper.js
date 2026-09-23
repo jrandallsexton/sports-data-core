@@ -16,6 +16,7 @@ import Maps from "./mapsApi";
 import Articles from "./articlesApi";
 import Season from "./seasonApi";
 import LogoAdmin from "./logoAdminApi";
+import FranchiseAdmin from "./franchiseAdminApi";
 import Imports from "./importsApi";
 
 const apiWrapper = {
@@ -37,6 +38,7 @@ const apiWrapper = {
   Articles,
   Season,
   LogoAdmin,
+  FranchiseAdmin,
   Imports
 };
 

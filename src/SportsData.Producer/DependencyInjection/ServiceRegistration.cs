@@ -300,6 +300,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IRequestFranchiseSeasonSourcingCommandHandler, RequestFranchiseSeasonSourcingCommandHandler>();
             services.AddScoped<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>, RequestFranchiseSeasonSourcingCommandValidator>();
             services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
+            services.AddScoped<
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler,
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommandHandler>();
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
                 // CalculateFranchiseSeasonMetricsCommandHandler depends on FootballDataContext.
@@ -308,6 +311,9 @@ namespace SportsData.Producer.DependencyInjection
 
             // FranchiseSeason Command Validators
             services.AddScoped<FluentValidation.IValidator<EnqueueFranchiseSeasonEnrichmentCommand>, EnqueueFranchiseSeasonEnrichmentCommandValidator>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommand>,
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommandValidator>();
 
             // Franchise Queries
             services.AddScoped<IGetAllFranchisesQueryHandler, GetAllFranchisesQueryHandler>();

@@ -40,6 +40,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
     /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types. Returns the batch correlation id (the Seq handle).</summary>
     Task<Result<Guid>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
+    /// <summary>Make ONE franchise season current on the Producer (record enrichment, statistics refresh, metrics). Returns the correlation id shared by all legs. NotFound when the Producer has no such franchise season.</summary>
+    Task<Result<Guid>> EnrichFranchiseSeason(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -114,33 +116,65 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             cancellationToken);
     }
 
-    public async Task<Result<Guid>> RequestFranchiseSeasonSourcing(
+    public Task<Result<Guid>> RequestFranchiseSeasonSourcing(
         int seasonYear,
         FranchiseSeasonSourcingRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Producer answers 202 with the batch correlation id — the
-        // operator's Seq handle for the whole fan-out. It must survive the
-        // round-trip, so this parses the body rather than using the
-        // body-discarding PostWithResultAsync helper.
+        var content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json");
+        return PostForCorrelationIdAsync(
+            $"franchise-seasons/seasonYear/{seasonYear}/source",
+            content,
+            nameof(RequestFranchiseSeasonSourcing),
+            cancellationToken);
+    }
+
+    public Task<Result<Guid>> EnrichFranchiseSeason(Guid franchiseSeasonId, CancellationToken cancellationToken = default) =>
+        PostForCorrelationIdAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/enrich",
+            content: null,
+            nameof(EnrichFranchiseSeason),
+            cancellationToken);
+
+    /// <summary>
+    /// POST to a Producer endpoint that answers 202 with a bare correlation
+    /// id — the operator's Seq handle for a background fan-out. The id must
+    /// survive the round-trip, so this parses the body rather than using the
+    /// body-discarding PostWithResultAsync helper. A Producer 404 maps to
+    /// NotFound so callers can distinguish "no such row" from a failure.
+    /// </summary>
+    private async Task<Result<Guid>> PostForCorrelationIdAsync(
+        string path,
+        HttpContent? content,
+        string operation,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            var content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json");
-            using var response = await HttpClient.PostAsync(
-                $"franchise-seasons/seasonYear/{seasonYear}/source", content, cancellationToken);
+            // Same header ClientBase.PostWithResultAsync stamps: the Producer
+            // reads it and logs every leg under this id, so API and Producer
+            // share one Seq handle (and echo it back in the 202 body).
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = content };
+            request.Headers.TryAddWithoutValidation(
+                "X-Correlation-Id",
+                ActivityExtensions.GetCorrelationId().ToString());
+            using var response = await HttpClient.SendAsync(request, cancellationToken);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
+                var status = response.StatusCode == System.Net.HttpStatusCode.NotFound
+                    ? ResultStatus.NotFound
+                    : ResultStatus.Error;
                 return new Failure<Guid>(
                     default,
-                    ResultStatus.Error,
-                    [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
+                    status,
+                    [new ValidationFailure(operation,
                         $"Producer returned {(int)response.StatusCode}: {body}")]);
             }
 
-            // Body is the bare guid as JSON ("\"<guid>\"").
+            // Body is the bare guid as JSON (a quoted guid string).
             if (!Guid.TryParse(body.Trim().Trim('"'), out var correlationId))
             {
                 // A 2xx without a parseable id means the contract broke —
@@ -148,7 +182,7 @@ public class FranchiseClient : ClientBase, IProvideFranchises
                 return new Failure<Guid>(
                     default,
                     ResultStatus.Error,
-                    [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
+                    [new ValidationFailure(operation,
                         $"Producer accepted the request but returned an unparseable correlation id: '{body}'")]);
             }
 
@@ -166,8 +200,7 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             return new Failure<Guid>(
                 default,
                 ResultStatus.Error,
-                [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
-                    $"RequestFranchiseSeasonSourcing failed: {ex.Message}")]);
+                [new ValidationFailure(operation, $"{operation} failed: {ex.Message}")]);
         }
     }
 

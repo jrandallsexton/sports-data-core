@@ -112,16 +112,15 @@ public class Program
                 services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
 
                 // Abstract type registrations needed for services that inject them directly
-                // (document processors get the concrete type from their factories). These
-                // MUST be aliases to the SAME scoped instance: AddScoped<TAbstract, TConcrete>
-                // made a second context per scope, and any handler that published through
-                // the EF outbox and then saved the alias instance silently lost the message
-                // (2026-09-23, FranchiseSeasonEnrichmentCompleted had never left the Producer).
-                services.AddTeamSportDataContextAliases<FootballDataContext>();
+                // Note: These are NOT used by document processors (factories inject FootballDataContext)
+                // but other services (ContestEnrichmentJob, FranchiseSeasonEnrichmentProcessor, etc.) still need them
+                services.AddScoped<TeamSportDataContext, FootballDataContext>();
+                services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
             case Sport.BaseballMlb:
                 services.AddDataPersistence<BaseballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
-                services.AddTeamSportDataContextAliases<BaseballDataContext>();
+                services.AddScoped<TeamSportDataContext, BaseballDataContext>();
+                services.AddScoped<BaseDataContext, BaseballDataContext>();
                 break;
             case Sport.All:
             case Sport.BasketballNba:

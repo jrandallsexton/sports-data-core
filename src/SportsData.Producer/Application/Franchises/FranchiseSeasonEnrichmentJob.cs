@@ -103,8 +103,13 @@ namespace SportsData.Producer.Application.Franchises
                     effectiveSeasonYear,
                     Guid.NewGuid());
 
+                // By interface: Hangfire then resolves the sport's registered closed
+                // type. Enqueuing EnrichFranchiseSeasonHandler<TeamSportDataContext>
+                // by type made Hangfire construct THAT closed type over the abstract
+                // context (a second DbContext instance), and its outbox publish of
+                // FranchiseSeasonEnrichmentCompleted was lost on every run.
                 _backgroundJobProvider
-                    .Enqueue<EnrichFranchiseSeasonHandler<TeamSportDataContext>>(p => p.Process(cmd));
+                    .Enqueue<IEnrichFranchiseSeasons>(p => p.Process(cmd));
             }
 
             _logger.LogInformation("All franchise season enrichment requests sent.");

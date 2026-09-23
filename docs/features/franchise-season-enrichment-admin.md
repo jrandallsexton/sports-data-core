@@ -44,11 +44,12 @@ ids with league matchup rows, and the Producer is asked for entering records
 only when something matched.
 
 Until 2026-09-23 this event had never actually left the Producer: the
-handler is built with the abstract `TeamSportDataContext`, which was
-registered as a second DbContext instance per scope, so the outbox rows the
-publish captured were never saved. `DataContextAliasRegistration` now
-forwards the abstract types to the same scoped instance; see the memory note
-and `DataContextAliasRegistrationTests`.
+handler was registered and enqueued closed over the abstract
+`TeamSportDataContext`, which resolves to a second DbContext instance per
+scope, so the outbox rows the publish captured were never saved. The
+handler is now registered closed over the sport's concrete context and the
+weekly job enqueues it by interface. Deliberately narrow: the abstract
+registrations themselves are unchanged for every other consumer of them.
 
 Delivery needs a shovel per Producer broker in sports-data-config
 (`app/base/rabbitmq/shovels/shovel-franchise-season-enrichment-completed-*-to-api.yaml`);

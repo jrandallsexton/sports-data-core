@@ -199,7 +199,16 @@ function TeamCard() {
           <TeamLogos slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
         {isAdmin && selectedTab === "admin" && (
-          <TeamAdmin slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
+          // Keyed by team + season: the season selector navigates without
+          // unmounting TeamCard, and a stale result (or an in-flight one)
+          // must not be shown under a different season's heading.
+          <TeamAdmin
+            key={`${sport}-${league}-${slug}-${resolvedSeason}`}
+            slug={slug}
+            seasonYear={resolvedSeason}
+            sport={sport}
+            league={league}
+          />
         )}
       </div>
       {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}

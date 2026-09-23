@@ -21,8 +21,16 @@ export default function TeamAdmin({ slug, seasonYear, sport, league }) {
       setState({ status: "done", result: response.data, error: null });
     } catch (err) {
       const status = err?.response?.status;
-      const detail = err?.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat().join("; ")
+      // ToActionResult returns { errors: [ValidationFailure, ...] } (objects
+      // with errorMessage); ASP.NET model binding returns { errors: { field:
+      // [string, ...] } }. Handle both, never render "[object Object]".
+      const errors = err?.response?.data?.errors;
+      const messages = errors
+        ? (Array.isArray(errors) ? errors : Object.values(errors).flat())
+            .map((e) => (typeof e === "string" ? e : e?.errorMessage ?? JSON.stringify(e)))
+        : [];
+      const detail = messages.length
+        ? messages.join("; ")
         : err?.response?.data?.title || err?.message || "Request failed";
       setState({
         status: "error",

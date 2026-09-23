@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -38,10 +39,13 @@ public interface IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler
 ///     handler never saves);</item>
 ///   <item>metrics generation — football only, a Hangfire job.</item>
 /// </list>
-/// Returns the correlation id shared by all three, the operator's Seq handle.
-/// Legs run in order; a failure on a later leg is reported as a failure even
-/// though the earlier legs were already enqueued, because every leg is
-/// idempotent and cheap to re-request from the same button.
+/// Every leg logs under the command's correlation id, which the controller
+/// resolves from the caller's X-Correlation-Id header so API and Producer
+/// share one Seq handle. Legs run in order; a failure on a later leg is
+/// reported as a failure even though the earlier legs were already enqueued,
+/// because every leg is idempotent and cheap to re-request from the same
+/// button. The failure text carries the correlation id so the operator can
+/// still find the legs that did run.
 /// </summary>
 public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler
 {
@@ -51,6 +55,7 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
     private readonly IAppMode _appMode;
     private readonly IEventBus _eventBus;
     private readonly IMessageDeliveryScope _deliveryScope;
+    private readonly IValidator<EnqueueSingleFranchiseSeasonEnrichmentCommand> _validator;
 
     public EnqueueSingleFranchiseSeasonEnrichmentCommandHandler(
         ILogger<EnqueueSingleFranchiseSeasonEnrichmentCommandHandler> logger,
@@ -58,7 +63,8 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
         IProvideBackgroundJobs backgroundJobProvider,
         IAppMode appMode,
         IEventBus eventBus,
-        IMessageDeliveryScope deliveryScope)
+        IMessageDeliveryScope deliveryScope,
+        IValidator<EnqueueSingleFranchiseSeasonEnrichmentCommand> validator)
     {
         _logger = logger;
         _dataContext = dataContext;
@@ -66,18 +72,17 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
         _appMode = appMode;
         _eventBus = eventBus;
         _deliveryScope = deliveryScope;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
         EnqueueSingleFranchiseSeasonEnrichmentCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.FranchiseSeasonId == Guid.Empty)
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
         {
-            return new Failure<Guid>(
-                default,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(command.FranchiseSeasonId), "FranchiseSeasonId is required.")]);
+            return new Failure<Guid>(default, ResultStatus.Validation, validation.Errors);
         }
 
         var franchiseSeason = await _dataContext.FranchiseSeasons
@@ -103,7 +108,7 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                     $"FranchiseSeason {command.FranchiseSeasonId} not found.")]);
         }
 
-        var correlationId = Guid.NewGuid();
+        var correlationId = command.CorrelationId;
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
@@ -125,6 +130,7 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                 // Leg 2: season statistics refresh. Scoped to spawn ONLY the
                 // statistics child of the TeamSeason document — same
                 // vocabulary and same Direct delivery as the weekly job.
+                var statisticsRequested = false;
                 if (franchiseSeason.EspnRef is not null
                     && Uri.TryCreate(franchiseSeason.EspnRef.SourceUrl, UriKind.Absolute, out var teamSeasonUri))
                 {
@@ -148,17 +154,20 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                     {
                         await _eventBus.PublishBatch([request]);
                     }
+
+                    statisticsRequested = true;
                 }
                 else
                 {
                     _logger.LogWarning(
-                        "FranchiseSeason {FranchiseSeasonId} has no ESPN TeamSeason ref; statistics refresh skipped.",
+                        "FranchiseSeason {FranchiseSeasonId} has no usable ESPN TeamSeason ref; statistics refresh skipped.",
                         franchiseSeason.Id);
                 }
 
                 // Leg 3: metrics, football only — the Calculate handler is
                 // registered inside ServiceRegistration's football guard, so
                 // an enqueue on a baseball pod would fail at activation.
+                var metricsEnqueued = false;
                 if (_appMode.CurrentSport is Sport.FootballNcaa or Sport.FootballNfl)
                 {
                     var calculate = new CalculateFranchiseSeasonMetricsCommand(
@@ -166,22 +175,26 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                         franchiseSeason.SeasonYear);
                     _backgroundJobProvider.Enqueue<ICalculateFranchiseSeasonMetricsCommandHandler>(
                         h => h.ExecuteAsync(calculate, CancellationToken.None));
+                    metricsEnqueued = true;
                 }
 
                 _logger.LogInformation(
                     "Single franchise season enrichment requested: record enrich enqueued, statistics {Statistics}, metrics {Metrics}.",
-                    franchiseSeason.EspnRef is null ? "skipped (no ESPN ref)" : "requested",
-                    _appMode.CurrentSport is Sport.FootballNcaa or Sport.FootballNfl ? "enqueued" : "n/a for sport");
+                    statisticsRequested ? "requested" : "skipped (no usable ESPN ref)",
+                    metricsEnqueued ? "enqueued" : "n/a for sport");
 
                 return new Success<Guid>(correlationId, ResultStatus.Accepted);
             }
             catch (Exception ex)
             {
+                // The full exception is in the log; the caller gets a fixed
+                // message plus the id the already-enqueued legs run under.
                 _logger.LogError(ex, "Single franchise season enrichment failed for {FranchiseSeasonId}", franchiseSeason.Id);
                 return new Failure<Guid>(
                     default,
                     ResultStatus.Error,
-                    [new ValidationFailure("Exception", ex.Message)]);
+                    [new ValidationFailure("Enrichment",
+                        $"Enrichment was partially enqueued and then failed. CorrelationId={correlationId}. See Seq for details.")]);
             }
         }
     }

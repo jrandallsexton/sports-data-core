@@ -21,7 +21,10 @@ as the weekly `FranchiseSeasonEnrichmentJob`, scoped to one team:
    is registered inside the football guard); a Hangfire job.
 
 All three share one correlation id, returned to the UI and shown as the Seq
-handle. The request is accepted (202) as soon as the legs are enqueued;
+handle. It originates on the API side: the franchise client stamps
+`X-Correlation-Id` on the POST (the ClientBase convention), the Producer
+controller reads it (the ContestController rule), and the Producer echoes it
+back, so API and Producer log under the same id. The request is accepted (202) as soon as the legs are enqueued;
 nothing waits for them to finish.
 
 ## Route and gating

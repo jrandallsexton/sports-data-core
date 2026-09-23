@@ -151,7 +151,14 @@ public class FranchiseClient : ClientBase, IProvideFranchises
     {
         try
         {
-            using var response = await HttpClient.PostAsync(path, content, cancellationToken);
+            // Same header ClientBase.PostWithResultAsync stamps: the Producer
+            // reads it and logs every leg under this id, so API and Producer
+            // share one Seq handle (and echo it back in the 202 body).
+            using var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = content };
+            request.Headers.TryAddWithoutValidation(
+                "X-Correlation-Id",
+                ActivityExtensions.GetCorrelationId().ToString());
+            using var response = await HttpClient.SendAsync(request, cancellationToken);
 
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
 

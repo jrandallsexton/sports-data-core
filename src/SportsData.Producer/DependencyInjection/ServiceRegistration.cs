@@ -311,6 +311,9 @@ namespace SportsData.Producer.DependencyInjection
 
             // FranchiseSeason Command Validators
             services.AddScoped<FluentValidation.IValidator<EnqueueFranchiseSeasonEnrichmentCommand>, EnqueueFranchiseSeasonEnrichmentCommandValidator>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommand>,
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommandValidator>();
 
             // Franchise Queries
             services.AddScoped<IGetAllFranchisesQueryHandler, GetAllFranchisesQueryHandler>();

@@ -22,6 +22,19 @@ namespace SportsData.Producer.Application.FranchiseSeasons;
 [ApiController]
 public class FranchiseSeasonController : ControllerBase
 {
+    /// <summary>
+    /// Prefers the caller's X-Correlation-Id (ClientBase stamps it on every
+    /// outbound POST) so API and Producer log under one id; falls back to
+    /// the current activity for direct calls. Same rule as ContestController.
+    /// </summary>
+    private Guid GetCorrelationIdFromRequest()
+    {
+        return Request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
+            && Guid.TryParse(headerValue, out var inbound)
+                ? inbound
+                : ActivityExtensions.GetCorrelationId();
+    }
+
     [HttpGet("id/{franchiseSeasonId}/metrics")]
     public async Task<ActionResult<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetricsByFranchiseSeasonId(
         [FromRoute] Guid franchiseSeasonId,
@@ -151,7 +164,7 @@ public class FranchiseSeasonController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await handler.ExecuteAsync(
-            new EnqueueSingleFranchiseSeasonEnrichmentCommand(franchiseSeasonId),
+            new EnqueueSingleFranchiseSeasonEnrichmentCommand(franchiseSeasonId, GetCorrelationIdFromRequest()),
             cancellationToken);
 
         return result.ToActionResult();

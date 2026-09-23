@@ -57,6 +57,22 @@ describe("TeamAdmin", () => {
     expect(screen.getByRole("alert").textContent).toContain("404: Season 2026 not found");
   });
 
+  it("renders errorMessage from ValidationFailure objects (the Result<T> failure shape)", async () => {
+    enrichSpy.mockRejectedValue({
+      response: {
+        status: 500,
+        data: { errors: [{ propertyName: "Enrichment", errorMessage: "Enrichment was partially enqueued and then failed. CorrelationId=abc." }] },
+      },
+    });
+
+    render(<TeamAdmin {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Enrich 2026 season" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("500: Enrichment was partially enqueued and then failed. CorrelationId=abc.");
+    expect(alert.textContent).not.toContain("[object Object]");
+  });
+
   it("falls back to the error message when the failure has no response body", async () => {
     enrichSpy.mockRejectedValue(new Error("Network Error"));
 

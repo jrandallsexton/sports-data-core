@@ -75,13 +75,24 @@ namespace SportsData.Producer.Application.Franchises.Commands
             franchiseSeason.ModifiedUtc = DateTime.UtcNow;
             franchiseSeason.ModifiedBy = CausationId.Producer.FranchiseSeasonEnrichmentProcessor;
 
+            // EVERY contest for the team, not just the finalized ones counted
+            // above: the API's league cards show this team's record on games
+            // not yet played, and those are the rows the event must reach.
+            var allContestIds = await _dataContext.Contests
+                .AsNoTracking()
+                .Where(c => c.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId ||
+                            c.HomeTeamFranchiseSeasonId == command.FranchiseSeasonId)
+                .Select(c => c.Id)
+                .ToListAsync();
+
             await _eventBus.Publish(new FranchiseSeasonEnrichmentCompleted(
                 command.FranchiseSeasonId,
                 null,
                 _appMode.CurrentSport,
                 command.SeasonYear,
                 command.CorrelationId,
-                Guid.NewGuid()));
+                Guid.NewGuid(),
+                allContestIds));
 
             await _dataContext.SaveChangesAsync();
         }

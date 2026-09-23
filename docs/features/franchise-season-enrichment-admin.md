@@ -27,6 +27,26 @@ controller reads it (the ContestController rule), and the Producer echoes it
 back, so API and Producer log under the same id. The request is accepted (202) as soon as the legs are enqueued;
 nothing waits for them to finish.
 
+## After enrichment: the league cards
+
+The Producer publishes `FranchiseSeasonEnrichmentCompleted` when leg 1
+finishes, now carrying every contest the team plays this season (any
+status). The API's `FranchiseSeasonEnrichmentCompletedHandler` runs the
+matchup record audit scoped to those contests
+(`MatchupRecordAuditByContestsCommand`): it corrects the
+`PickemGroupMatchup` record snapshots that differ and evicts every
+league-week it examined. Eviction alone would not do, because the card reads
+the snapshot and never derives (#769).
+
+Cost is bounded for the weekly job, which fires the event once per team: the
+consumer's first step is one indexed query intersecting the event's contest
+ids with league matchup rows, and the Producer is asked for entering records
+only when something matched.
+
+Delivery needs a shovel per Producer broker in sports-data-config
+(`app/base/rabbitmq/shovels/shovel-franchise-season-enrichment-completed-*-to-api.yaml`);
+without them the event is published into the void on the source broker.
+
 ## Route and gating
 
 ```

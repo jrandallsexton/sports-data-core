@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
@@ -9,7 +10,15 @@ namespace SportsData.Api.Application.Processors
 {
     public interface IAuditMatchupRecords
     {
+        /// <summary>Season-wide (or one week) audit: the operator's repair lever.</summary>
         Task<MatchupRecordAuditResult> Process(MatchupRecordAuditCommand command);
+
+        /// <summary>
+        /// Audit only the league matchups for the given contests. The
+        /// event-driven entry: a team's re-enrichment names the contests it
+        /// plays, and only those rows can hold that team's record.
+        /// </summary>
+        Task<MatchupRecordAuditResult> Process(MatchupRecordAuditByContestsCommand command);
     }
 
     /// <summary>
@@ -74,25 +83,53 @@ namespace SportsData.Api.Application.Processors
             if (command.SeasonWeek.HasValue)
                 scope = scope.Where(m => m.SeasonWeek == command.SeasonWeek.Value);
 
-            // Sport lives on the group, not the matchup, and each sport is a
-            // separate Producer instance — so a batch must not mix them.
-            var rows = await scope
-                .Join(_dataContext.PickemGroups.Where(g => g.Sport == command.Sport),
+            var rows = await LoadRowsForSportAsync(scope, command.Sport);
+
+            return await AuditAsync(
+                rows,
+                command.Sport,
+                $"Sport={command.Sport}, SeasonYear={command.SeasonYear}, SeasonWeek={command.SeasonWeek}");
+        }
+
+        public async Task<MatchupRecordAuditResult> Process(MatchupRecordAuditByContestsCommand command)
+        {
+            if (command.ContestIds.Count == 0)
+                return new MatchupRecordAuditResult(0, 0, 0);
+
+            var ids = command.ContestIds.Distinct().ToList();
+            var scope = _dataContext.PickemGroupMatchups
+                .Where(m => ids.Contains(m.ContestId));
+
+            var rows = await LoadRowsForSportAsync(scope, command.Sport);
+
+            return await AuditAsync(
+                rows,
+                command.Sport,
+                $"Sport={command.Sport}, ContestIds={ids.Count}");
+        }
+
+        /// <summary>
+        /// Sport lives on the group, not the matchup, and each sport is a
+        /// separate Producer instance — so a batch must not mix them.
+        /// </summary>
+        private Task<List<PickemGroupMatchup>> LoadRowsForSportAsync(IQueryable<PickemGroupMatchup> scope, Sport sport) =>
+            scope
+                .Join(_dataContext.PickemGroups.Where(g => g.Sport == sport),
                     m => m.GroupId,
                     g => g.Id,
                     (m, g) => m)
                 .OrderBy(m => m.SeasonWeek)
                 .ToListAsync();
 
+        private async Task<MatchupRecordAuditResult> AuditAsync(List<PickemGroupMatchup> rows, Sport sport, string scopeDescription)
+        {
             if (rows.Count == 0)
             {
-                _logger.LogInformation(
-                    "Matchup record audit: nothing in scope. Sport={Sport}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
-                    command.Sport, command.SeasonYear, command.SeasonWeek);
+                _logger.LogInformation("Matchup record audit: nothing in scope. {Scope}", scopeDescription);
                 return new MatchupRecordAuditResult(0, 0, 0);
             }
 
-            var client = _contestClientFactory.Resolve(command.Sport);
+            var client = _contestClientFactory.Resolve(sport);
             var contestIds = rows.Select(m => m.ContestId).Distinct().ToList();
 
             var corrected = 0;
@@ -103,8 +140,8 @@ namespace SportsData.Api.Application.Processors
             // write that triggered it), so evicting only what changed made a
             // dropped eviction unrecoverable: the rerun finds the rows already
             // correct, evicts nothing, and the stale payload serves out its TTL.
-            // This audit is manual and narrow, so re-evicting a clean week costs
-            // one rebuild and removes that failure mode entirely.
+            // Re-evicting a clean week costs one rebuild and removes that
+            // failure mode entirely.
             var leagueWeeksInScope = rows
                 .Select(m => (m.GroupId, m.SeasonWeek))
                 .Distinct()
@@ -125,9 +162,8 @@ namespace SportsData.Api.Application.Processors
                     // non-success response instead of a 200 claiming work that
                     // was never persisted.
                     _logger.LogError(
-                        "Matchup record audit aborted — Producer call failed for a page of {Count} contest(s). " +
-                        "Sport={Sport}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}, PendingUnsaved={Pending}",
-                        page.Length, command.Sport, command.SeasonYear, command.SeasonWeek, corrected);
+                        "Matchup record audit aborted — Producer call failed for a page of {Count} contest(s). {Scope}, PendingUnsaved={Pending}",
+                        page.Length, scopeDescription, corrected);
 
                     throw new InvalidOperationException(
                         $"Matchup record audit aborted: Producer failed for a page of {page.Length} contest(s). " +
@@ -184,10 +220,8 @@ namespace SportsData.Api.Application.Processors
                 await _matchupsCache.RemoveAsync(groupId, seasonWeek);
 
             _logger.LogInformation(
-                "Matchup record audit complete. Sport={Sport}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}, " +
-                "Examined={Examined}, Corrected={Corrected}, Unresolved={Unresolved}, LeagueWeeksEvicted={Evicted}",
-                command.Sport, command.SeasonYear, command.SeasonWeek,
-                rows.Count, corrected, unresolved, leagueWeeksInScope.Count);
+                "Matchup record audit complete. {Scope}, Examined={Examined}, Corrected={Corrected}, Unresolved={Unresolved}, LeagueWeeksEvicted={Evicted}",
+                scopeDescription, rows.Count, corrected, unresolved, leagueWeeksInScope.Count);
 
             return new MatchupRecordAuditResult(rows.Count, corrected, unresolved);
         }
@@ -198,6 +232,15 @@ namespace SportsData.Api.Application.Processors
         Sport Sport,
         int SeasonYear,
         int? SeasonWeek = null);
+
+    /// <summary>
+    /// Audit only the league matchups for these contests, in this sport.
+    /// Contests not in any league are simply absent from the rows and cost
+    /// nothing; an empty list is a no-op.
+    /// </summary>
+    public record MatchupRecordAuditByContestsCommand(
+        Sport Sport,
+        IReadOnlyList<Guid> ContestIds);
 
     /// <param name="Unresolved">
     /// Contests Producer could not derive a record for. Non-zero means the two

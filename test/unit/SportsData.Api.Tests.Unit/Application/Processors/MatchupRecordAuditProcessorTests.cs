@@ -176,6 +176,75 @@ public class MatchupRecordAuditProcessorTests : ApiTestBase<MatchupRecordAuditPr
         result.Corrected.Should().Be(0);
     }
 
+    [Fact]
+    public async Task ProcessByContests_ScopesToTheNamedContests_AndSport_CorrectsAndEvicts()
+    {
+        // The event-driven entry: a team's re-enrichment names its contests.
+        // Only league rows for those contests, in that sport, are examined;
+        // everything else keeps its snapshot and its cache.
+        var ncaa = await SeedGroupAsync(Sport.FootballNcaa);
+        var nfl = await SeedGroupAsync(Sport.FootballNfl);
+
+        var named = Guid.NewGuid();
+        var namedButOtherSport = Guid.NewGuid();
+        var notNamed = Guid.NewGuid();
+        await SeedMatchupAsync(ncaa, named, week: 4, awayWins: 0, awayLosses: 0, homeWins: 0, homeLosses: 0);
+        await SeedMatchupAsync(nfl, namedButOtherSport, week: 4, awayWins: 0, awayLosses: 0, homeWins: 0, homeLosses: 0);
+        await SeedMatchupAsync(ncaa, notNamed, week: 4, awayWins: 0, awayLosses: 0, homeWins: 0, homeLosses: 0);
+
+        List<Guid>? requested = null;
+        _contestClientMock
+            .Setup(x => x.GetEnteringRecordsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Callback<List<Guid>, CancellationToken>((ids, _) => requested = ids)
+            .ReturnsAsync(new Success<List<EnteringRecordDto>>(
+            [
+                new EnteringRecordDto { ContestId = named, AwayWins = 3, AwayLosses = 0, HomeWins = 2, HomeLosses = 1 }
+            ]));
+
+        // A contest not in any league rides along in the event and must cost nothing.
+        var notInAnyLeague = Guid.NewGuid();
+        var result = await Mocker.CreateInstance<MatchupRecordAuditProcessor>()
+            .Process(new MatchupRecordAuditByContestsCommand(Sport.FootballNcaa, [named, namedButOtherSport, notInAnyLeague]));
+
+        result.Examined.Should().Be(1);
+        result.Corrected.Should().Be(1);
+        requested.Should().BeEquivalentTo([named]);
+
+        (await DataContext.PickemGroupMatchups.FirstAsync(m => m.ContestId == named)).AwayWins.Should().Be(3);
+        (await DataContext.PickemGroupMatchups.FirstAsync(m => m.ContestId == namedButOtherSport)).AwayWins.Should().Be(0);
+        (await DataContext.PickemGroupMatchups.FirstAsync(m => m.ContestId == notNamed)).AwayWins.Should().Be(0);
+
+        Mocker.GetMock<ILeagueWeekMatchupsCache>().Verify(c => c.RemoveAsync(ncaa, 4), Times.Once);
+        Mocker.GetMock<ILeagueWeekMatchupsCache>().Verify(c => c.RemoveAsync(nfl, It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessByContests_WhenNoLeagueRowsMatch_CallsNothingAndEvictsNothing()
+    {
+        // ~800 of these a week from the enrichment job, most for teams in no
+        // league at all: the consume must be one indexed query and no more.
+        await SeedGroupAsync();
+
+        var result = await Mocker.CreateInstance<MatchupRecordAuditProcessor>()
+            .Process(new MatchupRecordAuditByContestsCommand(Sport.FootballNcaa, [Guid.NewGuid(), Guid.NewGuid()]));
+
+        result.Should().Be(new MatchupRecordAuditResult(0, 0, 0));
+        _contestClientMock.Verify(
+            x => x.GetEnteringRecordsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()), Times.Never);
+        Mocker.GetMock<ILeagueWeekMatchupsCache>().Verify(c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessByContests_EmptyList_IsANoOp()
+    {
+        var result = await Mocker.CreateInstance<MatchupRecordAuditProcessor>()
+            .Process(new MatchupRecordAuditByContestsCommand(Sport.FootballNcaa, []));
+
+        result.Should().Be(new MatchupRecordAuditResult(0, 0, 0));
+        _contestClientMock.Verify(
+            x => x.GetEnteringRecordsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private void SetupDerived(params EnteringRecordDto[] derived) =>
         _contestClientMock
             .Setup(x => x.GetEnteringRecordsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))

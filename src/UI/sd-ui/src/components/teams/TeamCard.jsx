@@ -10,6 +10,7 @@ import TeamNews from "./TeamNews";
 import TeamStatistics from "./TeamStatistics";
 import TeamRoster from "./TeamRoster";
 import TeamLogos from "./TeamLogos";
+import TeamAdmin from "./TeamAdmin";
 import TeamLogo from "../common/TeamLogo";
 
 function TeamCard() {
@@ -168,6 +169,14 @@ function TeamCard() {
             Logos
           </button>
         )}
+        {isAdmin && (
+          <button
+            className={selectedTab === "admin" ? "active" : ""}
+            onClick={() => setSelectedTab("admin")}
+          >
+            Admin
+          </button>
+        )}
       </div>
 
       <div className="team-card-content">
@@ -188,6 +197,9 @@ function TeamCard() {
         )}
         {isAdmin && selectedTab === "logos" && (
           <TeamLogos slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
+        )}
+        {isAdmin && selectedTab === "admin" && (
+          <TeamAdmin slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
       </div>
       {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}

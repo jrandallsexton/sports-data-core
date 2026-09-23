@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Franchises.Queries.GetFranchises;
+using SportsData.Api.Application.Franchises.Seasons.Commands.EnrichFranchiseSeason;
 using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
@@ -76,6 +78,29 @@ public class FranchisesController : ApiControllerBase
     {
         var query = new GetFranchiseSeasonByIdQuery(sport, league, franchiseIdOrSlug, seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Admin: make this franchise season current on the Producer — record
+    /// enrichment, season-statistics refresh, metrics (football only). The
+    /// single-team twin of the weekly enrichment job, reachable from the
+    /// team page. 202 with the Producer correlation id (the Seq handle).
+    /// </summary>
+    [HttpPost("{franchiseIdOrSlug}/seasons/{seasonYear}/enrich")]
+    [AdminApiToken]
+    [ProducesResponseType(typeof(EnrichFranchiseSeasonResponseDto), StatusCodes.Status202Accepted)]
+    public async Task<ActionResult<EnrichFranchiseSeasonResponseDto>> EnrichFranchiseSeason(
+        [FromServices] IEnrichFranchiseSeasonCommandHandler handler,
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromRoute] string franchiseIdOrSlug,
+        [FromRoute] int seasonYear,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new EnrichFranchiseSeasonCommand(sport, league, franchiseIdOrSlug, seasonYear);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }

@@ -1,0 +1,19 @@
+info:
+  name: franchise-season-enrich
+  type: http
+  seq: 50
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/api/football/ncaa/franchises/sam-houston-bearkats/seasons/2026/enrich"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

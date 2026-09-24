@@ -33,6 +33,8 @@ public class ContestUpdateJobTests : ProducerTestBase<ContestUpdateJob<FootballD
 {
     // Monday 00:00 UTC, 2026-09-21: the first run after week 3 rolled into week 4.
     private static readonly DateTime Now = new(2026, 9, 21, 0, 0, 0, DateTimeKind.Utc);
+    private const int StrandedWindowDays = ContestUpdateJob<FootballDataContext>.StrandedWindowDays;
+    private const int StrandedMinAgeHours = ContestUpdateJob<FootballDataContext>.StrandedMinAgeHours;
 
     private readonly List<Guid> _enqueued = [];
     private readonly Guid _seasonId = Guid.NewGuid();
@@ -56,7 +58,7 @@ public class ContestUpdateJobTests : ProducerTestBase<ContestUpdateJob<FootballD
             });
     }
 
-    private async Task SeedWeeksAsync()
+    private async Task SeedWeeksAsync(bool includeCurrentWeek = true)
     {
         await FootballDataContext.Seasons.AddAsync(new Season
         {
@@ -67,21 +69,23 @@ public class ContestUpdateJobTests : ProducerTestBase<ContestUpdateJob<FootballD
         _week3Id = Guid.NewGuid();
         _week4Id = Guid.NewGuid();
         // Real 2026 NCAAFB boundaries: weeks roll at 07:00 UTC Sunday.
-        await FootballDataContext.SeasonWeeks.AddRangeAsync(
-            new SeasonWeek
-            {
-                Id = _week3Id, SeasonId = _seasonId, SeasonPhaseId = _phaseId, Number = 3,
-                StartDate = new DateTime(2026, 9, 13, 7, 0, 0, DateTimeKind.Utc),
-                EndDate = new DateTime(2026, 9, 20, 6, 59, 0, DateTimeKind.Utc),
-                CreatedUtc = Now, CreatedBy = Guid.Empty
-            },
-            new SeasonWeek
+        await FootballDataContext.SeasonWeeks.AddAsync(new SeasonWeek
+        {
+            Id = _week3Id, SeasonId = _seasonId, SeasonPhaseId = _phaseId, Number = 3,
+            StartDate = new DateTime(2026, 9, 13, 7, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2026, 9, 20, 6, 59, 0, DateTimeKind.Utc),
+            CreatedUtc = Now, CreatedBy = Guid.Empty
+        });
+        if (includeCurrentWeek)
+        {
+            await FootballDataContext.SeasonWeeks.AddAsync(new SeasonWeek
             {
                 Id = _week4Id, SeasonId = _seasonId, SeasonPhaseId = _phaseId, Number = 4,
                 StartDate = new DateTime(2026, 9, 20, 7, 0, 0, DateTimeKind.Utc),
                 EndDate = new DateTime(2026, 9, 27, 6, 59, 0, DateTimeKind.Utc),
                 CreatedUtc = Now, CreatedBy = Guid.Empty
             });
+        }
         await FootballDataContext.SaveChangesAsync();
     }
 
@@ -141,14 +145,17 @@ public class ContestUpdateJobTests : ProducerTestBase<ContestUpdateJob<FootballD
         // Kicked off 2h ago in last week's bucket (odd, but possible around the
         // rollover): still legitimately live, not stranded.
         await SeedContestAsync(_week3Id, Now.AddHours(-2));
+        // Exactly at the age bound: exclusive, still treated as live.
+        await SeedContestAsync(_week3Id, Now.AddHours(-StrandedMinAgeHours));
         // Older than the window: left to the manual season refresh.
         await SeedContestAsync(_week3Id, Now.AddDays(-15));
-        // Inside both bounds.
+        // Inside both bounds, and exactly at the window bound (inclusive).
         var stranded = await SeedContestAsync(_week3Id, Now.AddDays(-13));
+        var atWindowEdge = await SeedContestAsync(_week3Id, Now.AddDays(-StrandedWindowDays));
 
         await Mocker.CreateInstance<ContestUpdateJob<FootballDataContext>>().ExecuteAsync();
 
-        _enqueued.Should().Equal(stranded);
+        _enqueued.Should().BeEquivalentTo([stranded, atWindowEdge]);
     }
 
     [Fact]
@@ -165,9 +172,24 @@ public class ContestUpdateJobTests : ProducerTestBase<ContestUpdateJob<FootballD
     }
 
     [Fact]
-    public async Task Execute_WithoutACurrentWeek_DoesNothing()
+    public async Task Execute_WithoutACurrentWeek_StillReSourcesStrandedGames()
     {
-        // Off-season: no week contains "now". Existing behaviour preserved.
+        // Season boundary: the final week ended and no week contains "now".
+        // The stranded scope must not depend on the current-week lookup, or
+        // the final week's evening games are lost the same way.
+        await SeedWeeksAsync(includeCurrentWeek: false);
+        var stranded = await SeedContestAsync(_week3Id, new DateTime(2026, 9, 19, 23, 0, 0, DateTimeKind.Utc));
+        await SeedContestAsync(_week3Id, new DateTime(2026, 9, 19, 16, 0, 0, DateTimeKind.Utc), finalized: true);
+
+        await Mocker.CreateInstance<ContestUpdateJob<FootballDataContext>>().ExecuteAsync();
+
+        _enqueued.Should().Equal(stranded);
+    }
+
+    [Fact]
+    public async Task Execute_OffSeason_DoesNothing()
+    {
+        // No weeks, no games in the window.
         await FootballDataContext.SaveChangesAsync();
 
         await Mocker.CreateInstance<ContestUpdateJob<FootballDataContext>>().ExecuteAsync();

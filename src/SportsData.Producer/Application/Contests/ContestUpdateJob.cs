@@ -176,23 +176,22 @@ namespace SportsData.Producer.Application.Contests
             // (a game still legitimately live belongs to the week scope
             // above) and within the last fourteen days. Independent of the
             // week lookup, so the season boundary is covered too.
+            // The current week's own games kicked off hours ago are already
+            // in scope above; excluded here so they are not fetched twice
+            // and the stranded count means what it says. With no current
+            // week the exclusion is a no-op.
             var strandedLowerBound = now.AddDays(-StrandedWindowDays);
             var strandedUpperBound = now.AddHours(-StrandedMinAgeHours);
-            var strandedCandidates = await _dataContext.Contests
+            var currentWeekId = currentSeasonWeek?.Id;
+            var strandedContests = await _dataContext.Contests
                 .AsNoTracking()
-                .Where(c => c.FinalizedUtc == null
+                .Where(c => (currentWeekId == null || c.SeasonWeekId != currentWeekId)
+                            && c.FinalizedUtc == null
                             && c.CancelledUtc == null
                             && c.StartDateUtc >= strandedLowerBound
                             && c.StartDateUtc < strandedUpperBound)
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
-
-            // The current week's own games kicked off hours ago are already
-            // in scope above; keep them out of the stranded count so the
-            // warning means what it says.
-            var strandedContests = strandedCandidates
-                .Where(c => currentSeasonWeek is null || c.SeasonWeekId != currentSeasonWeek.Id)
-                .ToList();
 
             if (strandedContests.Count > 0)
             {

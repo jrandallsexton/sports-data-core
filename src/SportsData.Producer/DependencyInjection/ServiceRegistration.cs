@@ -227,7 +227,18 @@ namespace SportsData.Producer.DependencyInjection
                     break;
             }
 
-            services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
+            // Closed over the CONCRETE context, never TeamSportDataContext. The
+            // abstract registration is a second DbContext instance per scope
+            // (AddScoped<TAbstract, TConcrete> is not a forward); the EF outbox
+            // captures publishes into the AddDbContext instance, so a handler that
+            // saves the abstract one silently loses every message. This handler
+            // publishes FranchiseSeasonEnrichmentCompleted through the outbox and
+            // had never delivered it (2026-09-23). Narrow by design: the abstract
+            // registrations stay as they are for everything else.
+            if (mode is Sport.BaseballMlb)
+                services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<BaseballDataContext>>();
+            else
+                services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<FootballDataContext>>();
             services.AddScoped<FranchiseSeasonEnrichmentJob>();
 
             // ContestUpdate is team-sport-only (uses SeasonWeeks/Contests on TeamSportDataContext).

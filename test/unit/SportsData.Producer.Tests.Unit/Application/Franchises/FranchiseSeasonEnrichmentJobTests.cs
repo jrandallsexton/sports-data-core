@@ -154,7 +154,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         await sut.ExecuteAsync();
 
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
-            x => x.Enqueue(It.IsAny<Expression<Func<EnrichFranchiseSeasonHandler<TeamSportDataContext>, Task>>>()),
+            x => x.Enqueue(It.IsAny<Expression<Func<IEnrichFranchiseSeasons, Task>>>()),
             Times.Once); // the single 2027 row, not the 2026 one
     }
 
@@ -196,7 +196,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
             It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
             It.IsAny<CancellationToken>()), Times.Never);
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
-            x => x.Enqueue(It.IsAny<Expression<Func<EnrichFranchiseSeasonHandler<TeamSportDataContext>, Task>>>()),
+            x => x.Enqueue(It.IsAny<Expression<Func<IEnrichFranchiseSeasons, Task>>>()),
             Times.Never);
     }
 
@@ -224,7 +224,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
 
         await act.Should().NotThrowAsync();
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
-            x => x.Enqueue(It.IsAny<Expression<Func<EnrichFranchiseSeasonHandler<TeamSportDataContext>, Task>>>()),
+            x => x.Enqueue(It.IsAny<Expression<Func<IEnrichFranchiseSeasons, Task>>>()),
             Times.Once); // the fan-out ran exactly once — no retry storm
     }
 

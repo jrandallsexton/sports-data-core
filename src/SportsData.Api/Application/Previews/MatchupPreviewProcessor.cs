@@ -496,6 +496,21 @@ namespace SportsData.Api.Application.Previews
             _logger.LogInformation("Preview generated for {contestId}", preview.ContestId);
         }
 
+        /// <summary>
+        /// A metrics row carries signal only if the drive-derived rates were
+        /// actually computed. The calculator averages CompetitionMetric rows;
+        /// when those exist but hold no play data, the season row is all zeros
+        /// with a real GamesPlayed, which is worse than absent because it
+        /// reads as a team that does nothing.
+        /// </summary>
+        public static bool MetricsArePopulated(FranchiseSeasonMetricsDto? m) =>
+            m is not null
+            && m.GamesPlayed > 0
+            && (m.Ypp != 0 || m.SuccessRate != 0 || m.PointsPerDrive != 0);
+
+        private static string DescribeMetrics(FranchiseSeasonMetricsDto? m) =>
+            m is null ? "absent" : $"GamesPlayed={m.GamesPlayed}, Ypp={m.Ypp}, SuccessRate={m.SuccessRate}";
+
         private async Task<AssembledPrompt> AssemblePromptAsync(
             MatchupForPreviewDto matchup,
             Sport sport,
@@ -564,9 +579,22 @@ namespace SportsData.Api.Application.Previews
             matchup.HomeMetrics = await franchiseClient
                 .GetFranchiseSeasonMetricsByFranchiseSeasonId(matchup.HomeFranchiseSeasonId);
 
-            if (matchup.AwayMetrics is null || matchup.HomeMetrics is null)
+            // Both or nothing. "Missing" includes a row that exists but was
+            // computed from no play data: GamesPlayed > 0 with every core rate
+            // at zero. Prod 2026-09-24: 297 of 580 NCAA rows this season are
+            // that shape, and Northwestern @ Indiana went to the model with
+            // Indiana's real analytics beside Northwestern's zeros - exactly
+            // the asymmetry this rule exists to prevent.
+            if (!MetricsArePopulated(matchup.AwayMetrics) || !MetricsArePopulated(matchup.HomeMetrics))
             {
-                // Both or nothing
+                if (matchup.AwayMetrics is not null || matchup.HomeMetrics is not null)
+                {
+                    _logger.LogInformation(
+                        "Metrics dropped for {ContestId}: away {Away}, home {Home}.",
+                        matchup.ContestId,
+                        DescribeMetrics(matchup.AwayMetrics),
+                        DescribeMetrics(matchup.HomeMetrics));
+                }
                 matchup.AwayMetrics = null;
                 matchup.HomeMetrics = null;
             }

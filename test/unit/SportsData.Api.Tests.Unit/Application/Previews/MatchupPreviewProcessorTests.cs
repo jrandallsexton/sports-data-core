@@ -164,7 +164,10 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             }
         };
 
-        private void SetupPipeline(MatchupForPreviewDto matchup, Result<ContestPreviewHistoryDto>? history = null)
+        private void SetupPipeline(
+            MatchupForPreviewDto matchup,
+            Result<ContestPreviewHistoryDto>? history = null,
+            Func<Guid, FranchiseSeasonMetricsDto?>? metrics = null)
         {
             var contestClient = new Mock<IProvideContests>();
             contestClient
@@ -184,7 +187,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 .ReturnsAsync(new FranchiseSeasonModelStatsDto { RushingYardsPerGame = 150.0 });
             franchiseClient
                 .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((FranchiseSeasonMetricsDto?)null!);
+                .ReturnsAsync((Guid id, CancellationToken _) => metrics is null ? null! : metrics(id)!);
             franchiseClient
                 .Setup(x => x.GetFranchiseSeasonCompetitionResults(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
@@ -207,6 +210,78 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Mocker.GetMock<IDateTimeProvider>()
                 .Setup(x => x.UtcNow())
                 .Returns(Now);
+        }
+
+        private static FranchiseSeasonMetricsDto PopulatedMetrics(int games) => new()
+        {
+            FranchiseName = "T", FranchiseSlug = "t", SeasonYear = 2026,
+            GamesPlayed = games, Ypp = 6.1m, SuccessRate = 0.47m, PointsPerDrive = 2.3m
+        };
+
+        private static FranchiseSeasonMetricsDto ZeroMetrics(int games) => new()
+        {
+            FranchiseName = "T", FranchiseSlug = "t", SeasonYear = 2026,
+            GamesPlayed = games, Ypp = 0m, SuccessRate = 0m, PointsPerDrive = 0m
+        };
+
+        [Fact]
+        public async Task Capture_DropsBothMetrics_WhenOneTeamsRowIsAllZeros()
+        {
+            // Both-or-nothing must treat an all-zero row as missing. Prod
+            // 2026-09-24: Northwestern's 2026 row had GamesPlayed 2 and every
+            // rate 0.0000 beside Indiana's real numbers, and the payload
+            // shipped both - the asymmetry the rule exists to prevent.
+            var matchup = BuildMatchup("STATUS_SCHEDULED");
+            SetupPipeline(matchup, metrics: id =>
+                id == _awayFranchiseSeasonId ? ZeroMetrics(2) : PopulatedMetrics(3));
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId, Sport = Sport.FootballNcaa, Mode = PreviewGenerationMode.Capture
+            });
+
+            // The prior-season block carries its own metrics object, so assert
+            // on the current-season properties themselves, not on key names.
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            using var payload = System.Text.Json.JsonDocument.Parse(capture.PayloadJson);
+            // Null properties are omitted from the wire payload, so "dropped" is "absent".
+            Assert.False(payload.RootElement.TryGetProperty("AwayMetrics", out _), "AwayMetrics should be dropped");
+            Assert.False(payload.RootElement.TryGetProperty("HomeMetrics", out _), "HomeMetrics should be dropped");
+        }
+
+        [Fact]
+        public async Task Capture_KeepsBothMetrics_WhenBothRowsArePopulated()
+        {
+            var matchup = BuildMatchup("STATUS_SCHEDULED");
+            SetupPipeline(matchup, metrics: _ => PopulatedMetrics(3));
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId, Sport = Sport.FootballNcaa, Mode = PreviewGenerationMode.Capture
+            });
+
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            using var payload = System.Text.Json.JsonDocument.Parse(capture.PayloadJson);
+            Assert.Equal(System.Text.Json.JsonValueKind.Object, payload.RootElement.GetProperty("AwayMetrics").ValueKind);
+            Assert.Equal(System.Text.Json.JsonValueKind.Object, payload.RootElement.GetProperty("HomeMetrics").ValueKind);
+        }
+
+        [Theory]
+        [InlineData(0, 6.1, 0.47, 2.3, false)] // no games: nothing computed
+        [InlineData(2, 0, 0, 0, false)]        // games but no play data
+        [InlineData(2, 5.0, 0, 0, true)]       // any core rate non-zero counts
+        [InlineData(3, 0, 0.4, 0, true)]
+        public void MetricsArePopulated_RequiresGamesAndAtLeastOneCoreRate(int games, double ypp, double sr, double ppd, bool expected)
+        {
+            var m = new FranchiseSeasonMetricsDto
+            {
+                FranchiseName = "T", FranchiseSlug = "t", SeasonYear = 2026,
+                GamesPlayed = games, Ypp = (decimal)ypp, SuccessRate = (decimal)sr, PointsPerDrive = (decimal)ppd
+            };
+            Assert.Equal(expected, MatchupPreviewProcessor.MetricsArePopulated(m));
+            Assert.False(MatchupPreviewProcessor.MetricsArePopulated(null));
         }
 
         [Fact]

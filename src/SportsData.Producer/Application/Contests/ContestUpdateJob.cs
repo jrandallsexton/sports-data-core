@@ -44,6 +44,12 @@ namespace SportsData.Producer.Application.Contests
         // season week, which is bounded and predictable.
         private static readonly bool BackfillCurrentSeason = false;
 
+        /// <summary>How far back an unfinalized, already-played game from an earlier week is still re-sourced.</summary>
+        internal const int StrandedWindowDays = 14;
+
+        /// <summary>A game from an earlier week must have kicked off at least this long ago to count as stranded.</summary>
+        internal const int StrandedMinAgeHours = 3;
+
         private readonly ILogger<ContestUpdateJob<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -107,16 +113,18 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            var now = _dateTimeProvider.UtcNow();
+
             _logger.LogInformation(
                 "📅 QUERY_SEASON_WEEK: Querying for current season week. CurrentUtc={CurrentUtc}",
-                DateTime.UtcNow);
+                now);
 
             // get the current season week
             var currentSeasonWeek = await _dataContext.SeasonWeeks
                 .Include(w => w.Season)
                 .AsNoTracking()
-                .Where(sw => sw.StartDate < DateTime.UtcNow &&
-                             sw.EndDate > DateTime.UtcNow)
+                .Where(sw => sw.StartDate < now &&
+                             sw.EndDate > now)
                 .FirstOrDefaultAsync();
 
             if (currentSeasonWeek is null)
@@ -141,11 +149,49 @@ namespace SportsData.Producer.Application.Contests
                 currentSeasonWeek.Id);
 
             // get all contests in this season week
-            var contests = await _dataContext.Contests
+            var currentWeekContests = await _dataContext.Contests
                 .AsNoTracking()
                 .Where(c => c.SeasonWeekId == currentSeasonWeek.Id && c.FinalizedUtc == null)
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
+
+            // Games that kicked off in an EARLIER week and never finalized.
+            // This job is the only path that re-sources a game nobody is
+            // streaming (non-league games have no CompetitionStream row, so
+            // FinalizationReconcileJob cannot see them). Cron.Daily fires at
+            // 00:00 UTC, 20:00 Eastern: the last run inside an NCAAFB week
+            // lands mid-way through Saturday's evening slate, the week rolls
+            // over at 07:00 UTC Sunday, and the next run's current-week
+            // scope no longer contains those games. 2026-09-24: 68 games from
+            // weeks 1-3 sat at STATUS_IN_PROGRESS with half-time scores for
+            // up to twelve days. Bounded: kickoff at least three hours ago
+            // (a game still legitimately live belongs to the week scope
+            // above) and within the last fourteen days.
+            var strandedLowerBound = now.AddDays(-StrandedWindowDays);
+            var strandedUpperBound = now.AddHours(-StrandedMinAgeHours);
+            var strandedContests = await _dataContext.Contests
+                .AsNoTracking()
+                .Where(c => c.SeasonWeekId != currentSeasonWeek.Id
+                            && c.FinalizedUtc == null
+                            && c.CancelledUtc == null
+                            && c.StartDateUtc >= strandedLowerBound
+                            && c.StartDateUtc < strandedUpperBound)
+                .OrderBy(c => c.StartDateUtc)
+                .ToListAsync();
+
+            if (strandedContests.Count > 0)
+            {
+                _logger.LogWarning(
+                    "⚠️ STRANDED_CONTESTS: {Count} unfinalized contest(s) from earlier weeks kicked off {MinAgeHours}h-{WindowDays}d ago; re-sourcing them alongside the current week. CorrelationId={CorrelationId}",
+                    strandedContests.Count, StrandedMinAgeHours, StrandedWindowDays, correlationId);
+            }
+
+            var contests = currentWeekContests
+                .Concat(strandedContests)
+                .GroupBy(c => c.Id)
+                .Select(g => g.First())
+                .OrderBy(c => c.StartDateUtc)
+                .ToList();
 
             _logger.LogInformation(
                 "✅ CONTESTS_FOUND: Found contests to update. Count={Count}, SeasonWeekId={SeasonWeekId}",

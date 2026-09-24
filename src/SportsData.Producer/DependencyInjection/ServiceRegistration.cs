@@ -500,10 +500,14 @@ namespace SportsData.Producer.DependencyInjection
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
+                // Daily (was Sunday only): the audit now also recomputes games
+                // whose rows were written before their plays arrived, and those
+                // plays land Sunday afternoon for Saturday games - a weekly run
+                // left them at zero for the whole week, past preview generation.
                 recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
                     nameof(FootballCompetitionMetricsAuditJob),
                     job => job.ExecuteAsync(),
-                    "0 7 * * 0"); // Sunday at 07:00 UTC
+                    "0 7 * * *"); // daily at 07:00 UTC
 
                 // Hourly (was weekly): with the league-contest filter the
                 // sweep is cheap and idempotent, and hourly runs mean a

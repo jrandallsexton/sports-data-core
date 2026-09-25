@@ -212,6 +212,31 @@ public class PickAdvisorPlannerTests
     }
 
     [Fact]
+    public void NoPrediction_KeepsTheUsersExistingPick_AndReservesItsValue()
+    {
+        // The client never applies a blank row, so the user's existing pick
+        // on it — and its confidence value — stays put. The planner must not
+        // hand that value to an advised game (CodeRabbit, PR #791).
+        var blank = Guid.NewGuid();
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var myBlankSide = Away(blank);
+
+        var sheet = _planner.BuildSheet(Input(AdvisorLevel.Prevent,
+            Game(blank, 0, noModel: true, existing: new PickAdvisorExistingPick(myBlankSide, 3)),
+            Game(a, 0.80),
+            Game(b, 0.65)));
+
+        Pick(sheet, blank).Should().BeEquivalentTo(new
+        {
+            Kind = AdvisedPickKind.NoPrediction, FranchiseSeasonId = myBlankSide, ConfidencePoints = 3, DiffersFromExisting = false
+        });
+        Pick(sheet, a).ConfidencePoints.Should().Be(2);
+        Pick(sheet, b).ConfidencePoints.Should().Be(1);
+        sheet.Picks.Select(p => p.ConfidencePoints).Should().OnlyHaveUniqueItems();
+    }
+
+    [Fact]
     public void ModelNamingNeitherTeam_IsNoPrediction()
     {
         var contestId = Guid.NewGuid();

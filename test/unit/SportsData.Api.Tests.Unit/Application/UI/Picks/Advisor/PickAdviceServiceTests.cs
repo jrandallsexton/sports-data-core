@@ -13,6 +13,7 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Picks.Advisor;
 using SportsData.Api.Application.UI.Picks.Advisor.Planner;
+using Dtos = SportsData.Api.Application.UI.Picks.Advisor.Dtos;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -265,6 +266,43 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
         var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, null);
 
         result.Status.Should().Be(ResultStatus.Validation);
+    }
+
+    [Fact]
+    public async Task OverUnderLeague_IsRejected_NotHandedAnEmptySheet()
+    {
+        // The deetsMeter has no O/U number; a sheet of "no model number" rows
+        // would blame the wrong thing. Say it plainly instead.
+        var groupId = SeedLeague(pickType: PickType.OverUnder);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, null);
+
+        result.Status.Should().Be(ResultStatus.Validation);
+        ((Failure<Dtos.PickAdviceDto>)result).Errors.Should().ContainSingle(e => e.ErrorMessage.Contains("straight-up and against-the-spread"));
+    }
+
+    [Fact]
+    public async Task MemberCount_CountsMembers_NotJustScoredOnes()
+    {
+        var groupId = SeedLeague();
+        SeedStandings(groupId);
+        // A fifth member who has never had a pick scored: absent from the
+        // leaderboard, present in "#4 of N".
+        var newcomer = Guid.NewGuid();
+        DataContext.Users.Add(new UserEntity
+        {
+            Id = newcomer, FirebaseUid = "fb-new", Email = "new@example.com", SignInProvider = "test",
+            DisplayName = "Newcomer", Username = "newcomer", LastLoginUtc = NowUtc
+        });
+        DataContext.PickemGroupMembers.Add(new PickemGroupMember { Id = Guid.NewGuid(), PickemGroupId = groupId, UserId = newcomer, Role = LeagueRole.Member });
+        await DataContext.SaveChangesAsync();
+        MockSlate(PickType.StraightUp, true, ThreeGames());
+
+        var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, null);
+
+        result.Value.Analysis.MemberCount.Should().Be(5);
+        result.Value.Analysis.Rank.Should().Be(4);
     }
 
     [Fact]

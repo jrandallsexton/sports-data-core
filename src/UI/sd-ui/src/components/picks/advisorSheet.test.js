@@ -67,6 +67,15 @@ describe("applicablePicks", () => {
     expect(applicablePicks(picks).map((p) => p.contestId)).toEqual(["a", "e"]);
     expect(applicablePicks(undefined)).toEqual([]);
   });
+
+  it("never submits a valueless row in a confidence league", () => {
+    const picks = [
+      { contestId: "a", kind: "Lock", franchiseSeasonId: "t1", confidencePoints: 3, differsFromExisting: true },
+      { contestId: "b", kind: "Lock", franchiseSeasonId: "t2", confidencePoints: null, differsFromExisting: true },
+    ];
+    expect(applicablePicks(picks, true).map((p) => p.contestId)).toEqual(["a"]);
+    expect(applicablePicks(picks, false).map((p) => p.contestId)).toEqual(["a", "b"]);
+  });
 });
 
 describe("applyLabel", () => {

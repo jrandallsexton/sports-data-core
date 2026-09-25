@@ -185,11 +185,14 @@ public class PickAdvisorPlanner : IPickAdvisorPlanner
             var signal = Normalize(m);
             if (signal is null)
             {
+                // Carries the user's existing pick (if any) so the sheet shows
+                // it rather than a blank the user might think was cleared.
                 blank.Add(new AdvisedPick(
                     m.ContestId, m.Headline, AdvisedPickKind.NoPrediction,
-                    FranchiseSeasonId: null, ConfidencePoints: null,
+                    m.Existing?.FranchiseSeasonId,
+                    input.UseConfidencePoints ? m.Existing?.ConfidencePoints : null,
                     ModelProbability: null, PreviewAgrees: null, IsCoinFlip: false,
-                    DiffersFromExisting: true));
+                    DiffersFromExisting: m.Existing?.FranchiseSeasonId is null));
                 continue;
             }
 
@@ -242,11 +245,18 @@ public class PickAdvisorPlanner : IPickAdvisorPlanner
         var pointOrder = OrderForPoints(input.Level, baseOrder, flips);
 
         // Points run 1..N over the WHOLE week (pick sheet contract). Values
-        // held by locked picks are reserved; the rest go top-down so any
-        // blanks the user must fill by hand are left the lowest values.
+        // the sheet will not rewrite are reserved: those held by locked
+        // picks, and any existing pick on a game the advisor leaves blank —
+        // the client never applies a blank row, so its value stays put and
+        // must not be handed out twice (CodeRabbit, PR #791). The rest go
+        // top-down so blanks the user fills by hand get the lowest values.
+        var blankIds = blank.Select(b => b.ContestId).ToHashSet();
         var reserved = locked
             .Where(p => p.ConfidencePoints.HasValue)
             .Select(p => p.ConfidencePoints!.Value)
+            .Concat(input.Matchups
+                .Where(m => blankIds.Contains(m.ContestId) && m.Existing?.ConfidencePoints is not null)
+                .Select(m => m.Existing!.ConfidencePoints!.Value))
             .ToHashSet();
         var available = Enumerable.Range(1, input.Matchups.Count)
             .Where(v => !reserved.Contains(v))

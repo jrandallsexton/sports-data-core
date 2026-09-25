@@ -953,7 +953,11 @@ function PicksPage() {
                 🔒 Ended
               </span>
             )}
-            {!isReadOnly && anyUnlocked && (
+            {/* The deetsMeter only has SU and ATS numbers; an O/U league would
+                get a dead-end sheet, and the server refuses it anyway. */}
+            {!isReadOnly &&
+              anyUnlocked &&
+              (pickType === "StraightUp" || pickType === "AgainstTheSpread") && (
               <button
                 type="button"
                 className="advisor-open-button"

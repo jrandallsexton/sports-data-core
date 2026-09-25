@@ -127,7 +127,9 @@ function StatBotAdvisorDialog({
   const analysis = anyAdvice?.analysis ?? null;
 
   const chooseLevel = (key) => {
-    if (applying || key === selectedLevel) return;
+    // A selected level with no advice is a failed fetch: clicking its card
+    // again is the retry the error message asks for, so let it through.
+    if (applying || (key === selectedLevel && adviceByLevel[key])) return;
     // The click decides the selection immediately; an uncached level shows
     // "thinking…" (no advice for it yet, Apply disabled) until ITS response
     // lands. A stale response for another level only fills the cache.
@@ -153,7 +155,7 @@ function StatBotAdvisorDialog({
     return m ? `${m.away} @ ${m.home}` : pick.headline ?? "";
   };
 
-  const toApply = applicablePicks(advice?.picks);
+  const toApply = applicablePicks(advice?.picks, useConfidencePoints);
   const applyCount = toApply.length;
 
   return (

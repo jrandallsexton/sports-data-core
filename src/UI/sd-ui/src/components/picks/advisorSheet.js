@@ -89,15 +89,18 @@ export function describePick(pick) {
 /**
  * The picks the Apply button will write: a side to submit, not locked, and
  * different from what the user already has. Locked and blank rows never
- * apply; unchanged rows are skipped so a re-apply is a no-op.
+ * apply; unchanged rows are skipped so a re-apply is a no-op. In a
+ * confidence league a row without a value is never submitted either — the
+ * server rejects it, which would abort the loop mid-sheet.
  */
-export function applicablePicks(picks) {
+export function applicablePicks(picks, useConfidencePoints = false) {
   return (picks ?? []).filter(
     (p) =>
       p.franchiseSeasonId &&
       p.kind !== "Locked" &&
       p.kind !== "NoPrediction" &&
-      p.differsFromExisting
+      p.differsFromExisting &&
+      (!useConfidencePoints || p.confidencePoints != null)
   );
 }
 

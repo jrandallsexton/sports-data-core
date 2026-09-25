@@ -165,10 +165,20 @@ namespace SportsData.Api
                 SyntheticUserPickStylesConfig.BindFrom(config, "SportsData.Api:SyntheticUserPickStyles"));
             services.Configure<SyntheticUsersConfig>(config.GetSection("CommonConfig:SyntheticUsers"));
 
-            // StatBot advisor tunables: an absent section keeps the code defaults.
-            services.AddSingleton(
-                config.GetSection("SportsData.Api:PickAdvisor").Get<Application.UI.Picks.Advisor.PickAdvisorOptions>()
-                ?? new Application.UI.Picks.Advisor.PickAdvisorOptions());
+            // StatBot advisor tunables: an absent section keeps the code
+            // defaults; a present one is validated at startup so a bad value
+            // fails the pod rather than skewing every recommendation. The
+            // planner takes the plain options object, so the validated value
+            // is forwarded as the singleton.
+            services.AddOptions<Application.UI.Picks.Advisor.PickAdvisorOptions>()
+                .Bind(config.GetSection("SportsData.Api:PickAdvisor"))
+                .Validate(o => o.CoinFlipThreshold is > 0.5 and <= 1.0, "PickAdvisor:CoinFlipThreshold must be in (0.5, 1].")
+                .Validate(o => o.QbDrawFlipCount >= 0, "PickAdvisor:QbDrawFlipCount must be non-negative.")
+                .Validate(o => o.GoalLineMaxUnits > 0 && o.QbDrawMaxUnits >= o.GoalLineMaxUnits, "PickAdvisor unit thresholds must be positive and ordered.")
+                .Validate(o => o.MinUnit > 0 && o.FallbackUnitFraction > 0, "PickAdvisor:MinUnit and FallbackUnitFraction must be positive.")
+                .ValidateOnStart();
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Application.UI.Picks.Advisor.PickAdvisorOptions>>().Value);
 
             if (!isTestingEnv)
             {

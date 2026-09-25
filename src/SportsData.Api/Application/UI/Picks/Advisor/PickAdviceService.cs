@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
@@ -92,6 +93,19 @@ public class PickAdviceService : IPickAdviceService
 
         if (group.DeactivatedUtc is not null)
             return Fail(ResultStatus.Validation, nameof(leagueId), "This league has ended.");
+
+        // The deetsMeter only produces StraightUp and AgainstTheSpread
+        // numbers. An Over/Under (or None) league would get a full sheet of
+        // "no model number" rows blaming a model that does have a number —
+        // just not for this pick type. Say so instead (Vortex, PR #791).
+        if (group.PickType is not (PickType.StraightUp or PickType.AgainstTheSpread))
+            return Fail(ResultStatus.Validation, nameof(leagueId), "StatBot can only advise straight-up and against-the-spread leagues for now.");
+
+        // Members, not leaderboard rows: a member with no scored pick yet is
+        // absent from the leaderboard but still part of "#4 of N".
+        var memberCount = await _dataContext.PickemGroupMembers
+            .AsNoTracking()
+            .CountAsync(m => m.PickemGroupId == leagueId, cancellationToken);
 
         var slate = await _matchups.ExecuteAsync(
             new GetLeagueWeekMatchupsQuery { UserId = userId, LeagueId = leagueId, Week = week },
@@ -235,7 +249,7 @@ public class PickAdviceService : IPickAdviceService
             {
                 Rank = me?.Rank,
                 LastWeekRank = me?.LastWeekRank,
-                MemberCount = board.Count,
+                MemberCount = Math.Max(memberCount, board.Count),
                 TotalPoints = myTotal,
                 WeeklyAverage = me?.WeeklyAverage ?? 0,
                 PointsPerGame = me?.PointsPerGame ?? 0,

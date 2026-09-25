@@ -133,9 +133,16 @@ Aesop. 21 games this week, up to 231 on the table. 9 weeks left in the
 regular season. A perfect week moves you to 3rd at best. Dave in 4th is
 40 points ahead."
 
-`neededPerGame / unit` gives the recommendation: below 1 unit Goal-line,
+`neededPerWeek / unit` gives the recommendation: below 1 unit Goal-line,
 below 2 QB Draw, above that Hail Mary; a non-positive deficit is always
-Prevent. Thresholds live in `PickAdvisorOptions`, tuned later.
+Prevent; an unknown horizon (calendar unreachable) stays neutral and never
+goes past QB Draw. Thresholds live in `PickAdvisorOptions`, validated at
+startup, tuned later.
+
+Pick types: the deetsMeter only carries StraightUp and AgainstTheSpread
+numbers, so the endpoint refuses Over/Under (and None) leagues with a
+validation message and the web button is hidden for them, rather than
+handing back a sheet of "no model number" rows.
 
 Open nuance, not yet decided: in a confidence league the points available
 per game also scale with slate size (a correct pick in a 15-game week is

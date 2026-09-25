@@ -375,6 +375,15 @@ export default function PicksScreen() {
   );
   const advisorEligible =
     !isReadOnly && anyUnlocked && (pickType === 'StraightUp' || pickType === 'AgainstTheSpread');
+  // The sheet's `visible` is gated on eligibility, but the open flag must
+  // follow it too: eligibility is time-derived (the 15s tick can pass the
+  // last kickoff while the sheet is up) and league/week-derived, and a
+  // stale `true` would pop the sheet open on the next eligible week with no
+  // tap (Vortex + CodeRabbit, PR #792). Never mid-apply.
+  const applyAdvice = useApplyAdvice();
+  useEffect(() => {
+    if (!advisorEligible && !applyAdvice.isPending) setAdvisorOpen(false);
+  }, [advisorEligible, applyAdvice.isPending]);
 
   // Full results glance (X|Y|Z): counts come from the picks envelope, not
   // client math over entries — the server owns the result semantics. X (no
@@ -467,7 +476,6 @@ export default function PicksScreen() {
     [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
-  const applyAdvice = useApplyAdvice();
   const handleApplyAdvice = useCallback(
     (picks: AdvisedPick[]) => {
       if (isReadOnly) return; // deactivated leagues are view-only

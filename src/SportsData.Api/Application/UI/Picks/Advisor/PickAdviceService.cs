@@ -132,19 +132,28 @@ public class PickAdviceService : IPickAdviceService
         var regularSeasonWeeksLeft = await RegularSeasonWeeksLeftAsync(group.Sport, group.SeasonYear, nowUtc, cancellationToken);
 
         // This week's facts: open games, and the most points they can yield.
-        // In a confidence league the values are 1..N over the whole slate;
-        // whatever the caller's LOCKED picks already hold is off the table.
+        // In a confidence league the values are 1..N over the whole slate,
+        // minus whatever the caller's LOCKED picks already hold — and only
+        // the top `gamesThisWeek` of what is left can be spent, since a
+        // locked game the caller never picked keeps its value off the table.
+        // Same arithmetic as the planner's `available`, so the ceiling and
+        // the sheet agree (Vortex, PR #791).
         var lockedContests = slate.Value.Matchups
             .Where(m => PickemGroupMatchupExtensions.IsStartLocked(m.StartDateUtc, nowUtc))
             .Select(m => m.ContestId)
             .ToHashSet();
         var gamesThisWeek = slate.Value.Matchups.Count - lockedContests.Count;
         var slateSize = slate.Value.Matchups.Count;
-        var reservedPoints = ownPicks
+        var reservedValues = ownPicks
             .Where(p => lockedContests.Contains(p.ContestId) && p.ConfidencePoints.HasValue)
-            .Sum(p => p.ConfidencePoints!.Value);
+            .Select(p => p.ConfidencePoints!.Value)
+            .ToHashSet();
         var maxPointsThisWeek = group.UseConfidencePoints
-            ? Math.Max(0, slateSize * (slateSize + 1) / 2 - reservedPoints)
+            ? Enumerable.Range(1, slateSize)
+                .Where(v => !reservedValues.Contains(v))
+                .OrderByDescending(v => v)
+                .Take(gamesThisWeek)
+                .Sum()
             : gamesThisWeek;
 
         // Spread of per-game scoring across scored member-weeks — points and
@@ -185,8 +194,13 @@ public class PickAdviceService : IPickAdviceService
             : 1 + board.Count(x => x.UserId != me.UserId
                                    && x.TotalPoints + ExpectedThisWeek(x.PointsPerGame) >= myTotal + maxPointsThisWeek);
 
+        // An unknown horizon is passed through as unknown — never as "one
+        // week left", which would max out the risk whenever the Season
+        // service happened to be down (Vortex, PR #791).
         var recommended = _planner.RecommendLevel(new PickAdvisorStandings(
-            deficit, Math.Max(1, regularSeasonWeeksLeft ?? 1), gamesThisWeek, pointsPerGameStdDev, leader?.PointsPerGame ?? 0));
+            deficit,
+            regularSeasonWeeksLeft is int w ? Math.Max(1, w) : null,
+            gamesThisWeek, pointsPerGameStdDev, leader?.PointsPerGame ?? 0));
 
         var applied = level ?? recommended;
 

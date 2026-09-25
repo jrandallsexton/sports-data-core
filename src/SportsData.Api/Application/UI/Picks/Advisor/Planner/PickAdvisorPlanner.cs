@@ -85,11 +85,13 @@ public sealed record PickAdvisorPlanInput(
 /// weeks left and compared with how much a week like this one typically
 /// swings (per-game spread × this week's games).
 /// <paramref name="PointsPerGameStdDev"/> is null when the league has too
-/// few scored member-weeks to compute one.
+/// few scored member-weeks to compute one. <paramref name="WeeksRemaining"/>
+/// is null when the season calendar could not be read — distinct from
+/// "last week", which is 1.
 /// </summary>
 public sealed record PickAdvisorStandings(
     int DeficitToLeader,
-    int WeeksRemaining,
+    int? WeeksRemaining,
     int GamesThisWeek,
     double? PointsPerGameStdDev,
     decimal LeaderPointsPerGame);
@@ -132,9 +134,6 @@ public class PickAdvisorPlanner : IPickAdvisorPlanner
         if (standings.DeficitToLeader <= 0)
             return AdvisorLevel.Prevent;
 
-        var weeks = Math.Max(1, standings.WeeksRemaining);
-        var neededPerWeek = (double)standings.DeficitToLeader / weeks;
-
         // Unit: how much a week like this one typically swings — the league's
         // per-game spread scaled by this week's slate. Fall back to a fraction
         // of the leader's per-game rate when the league is too young for a
@@ -144,7 +143,18 @@ public class PickAdvisorPlanner : IPickAdvisorPlanner
             : Math.Max(_options.MinUnit, (double)standings.LeaderPointsPerGame * _options.FallbackUnitFraction);
         var unit = perGame * Math.Max(1, standings.GamesThisWeek);
 
-        var ratio = neededPerWeek / unit;
+        // Unknown horizon: stay neutral. Judge the deficit against ONE week's
+        // swing and never go past the middle — treating "unknown" as "last
+        // week" would max out the risk whenever the calendar was unreachable.
+        if (standings.WeeksRemaining is null)
+        {
+            return standings.DeficitToLeader / unit < _options.GoalLineMaxUnits
+                ? AdvisorLevel.GoalLine
+                : AdvisorLevel.QbDraw;
+        }
+
+        var weeks = Math.Max(1, standings.WeeksRemaining.Value);
+        var ratio = (double)standings.DeficitToLeader / weeks / unit;
 
         if (ratio < _options.GoalLineMaxUnits) return AdvisorLevel.GoalLine;
         if (ratio < _options.QbDrawMaxUnits) return AdvisorLevel.QbDraw;

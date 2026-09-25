@@ -10,8 +10,11 @@ http:
   url: "{{baseUrlApi}}/ui/picks/{{leagueId}}/week/{{week}}/advice?level="
   headers:
     - name: Authorization
-      value: "Bearer {{firebaseIdToken}}"
-  auth: inherit
+      value: "Bearer {{firebaseToken}}"
+      disabled: true
+  auth:
+    type: bearer
+    token: "{{firebaseToken}}"
 
 vars:
   pre-request:
@@ -19,8 +22,6 @@ vars:
       value: ""
     - name: week
       value: "4"
-    - name: firebaseIdToken
-      value: ""
 
 settings:
   encodeUrl: true

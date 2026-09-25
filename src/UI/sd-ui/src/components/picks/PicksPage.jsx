@@ -905,6 +905,13 @@ function PicksPage() {
     const lockTime = new Date(new Date(m.startDateUtc).getTime() - 5 * 60 * 1000);
     return now <= lockTime;
   });
+  // The advisor's entry point gates on an UNLOCKED game, picked or not: a
+  // fully-picked week is exactly when "Replace N picks" matters, and the
+  // dialog itself never touches locked rows.
+  const anyUnlocked = enrichedMatchups.some((m) => {
+    const lockTime = new Date(new Date(m.startDateUtc).getTime() - 5 * 60 * 1000);
+    return now <= lockTime;
+  });
 
   // hidePicked is inert whenever nothing is actionable: the filter keeps only
   // pickable games, so honoring a stale value in a read-only/locked-out week
@@ -946,7 +953,7 @@ function PicksPage() {
                 🔒 Ended
               </span>
             )}
-            {!isReadOnly && anyActionable && (
+            {!isReadOnly && anyUnlocked && (
               <button
                 type="button"
                 className="advisor-open-button"

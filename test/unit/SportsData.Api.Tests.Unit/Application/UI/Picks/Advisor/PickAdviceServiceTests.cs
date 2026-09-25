@@ -198,7 +198,11 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
         new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.52)
     ];
 
-    private void MockSlate(PickType pickType, bool useConfidence, params Slate[] games)
+    private void MockSlate(PickType pickType, bool useConfidence, params Slate[] games) =>
+        MockSlate(pickType, useConfidence, lockedCount: 0, games);
+
+    /// <summary>The first <paramref name="lockedCount"/> games kicked off yesterday; the rest are two days out.</summary>
+    private void MockSlate(PickType pickType, bool useConfidence, int lockedCount, params Slate[] games)
     {
         var dto = new LeagueWeekMatchupsDto
         {
@@ -207,11 +211,11 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
             PickType = pickType,
             UseConfidencePoints = useConfidence,
             Sport = "FootballNcaa",
-            Matchups = games.Select(g => new LeagueWeekMatchupsDto.MatchupForPickDto
+            Matchups = games.Select((g, i) => new LeagueWeekMatchupsDto.MatchupForPickDto
             {
                 ContestId = g.ContestId,
                 HeadLine = "Away @ Home",
-                StartDateUtc = NowUtc.AddDays(2),
+                StartDateUtc = i < lockedCount ? NowUtc.AddDays(-1) : NowUtc.AddDays(2),
                 HomeFranchiseSeasonId = g.Home,
                 AwayFranchiseSeasonId = g.Away,
                 AiWinnerFranchiseSeasonId = g.PHome >= 0.5 ? g.Home : g.Away,
@@ -420,6 +424,30 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
     }
 
     [Fact]
+    public async Task MaxPointsThisWeek_CountsOnlyWhatTheOpenGamesCanSpend()
+    {
+        // 4-game confidence slate, 2 locked: one the caller holds at 4 points,
+        // one never picked. Unreserved values {1,2,3}; two open games can spend
+        // at most 3 + 2 = 5 — not the naive 1+2+3+4 − 4 = 6.
+        var groupId = SeedLeague();
+        SeedStandings(groupId);
+        var games = Enumerable.Range(0, 4).Select(_ => new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.7)).ToArray();
+        SeedCurrentWeekPick(groupId, _me, games[0].ContestId, games[0].Home, 4);
+        await DataContext.SaveChangesAsync();
+        MockSlate(PickType.StraightUp, true, lockedCount: 2, games);
+
+        var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, AdvisorLevel.Prevent);
+
+        var a = result.Value.Analysis;
+        a.GamesThisWeek.Should().Be(2);
+        a.MaxPointsThisWeek.Should().Be(5);
+        // And the sheet agrees: the two open picks carry exactly those values.
+        result.Value.Picks.Where(p => p.Kind != AdvisedPickKind.Locked)
+            .Select(p => p.ConfidencePoints).Should().BeEquivalentTo([3, 2]);
+        result.Value.LockedCount.Should().Be(2);
+    }
+
+    [Fact]
     public async Task Reachability_AccountsForTheOtherMembersPace()
     {
         // A big slate: 10 games → max 55 confidence points. Rival (12 total,
@@ -457,6 +485,10 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
         result.IsSuccess.Should().BeTrue();
         result.Value.Analysis.RegularSeasonWeeksLeft.Should().BeNull();
         result.Value.Picks.Should().HaveCount(3);
+        // Unknown horizon must not read as "last week": with 9 weeks known this
+        // league recommends QB Draw, and with the calendar down it must not
+        // escalate past that.
+        result.Value.RecommendedLevel.Should().Be(AdvisorLevel.QbDraw);
     }
 
     [Fact]

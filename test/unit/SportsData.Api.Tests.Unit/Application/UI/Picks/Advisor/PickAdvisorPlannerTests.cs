@@ -301,6 +301,17 @@ public class PickAdvisorPlannerTests
     }
 
     [Fact]
+    public void RecommendLevel_UnknownHorizon_StaysNeutral_NeverHailMary()
+    {
+        // Same 45-point deficit that is Hail Mary with 1 week left (see the
+        // theory above) is capped at QB Draw when the horizon is unknown …
+        _planner.RecommendLevel(new PickAdvisorStandings(45, null, 10, 0.5, 5)).Should().Be(AdvisorLevel.QbDraw);
+        // … a small one is still Goal-line, and leading is still Prevent.
+        _planner.RecommendLevel(new PickAdvisorStandings(2, null, 10, 0.5, 5)).Should().Be(AdvisorLevel.GoalLine);
+        _planner.RecommendLevel(new PickAdvisorStandings(0, null, 10, 0.5, 5)).Should().Be(AdvisorLevel.Prevent);
+    }
+
+    [Fact]
     public void RecommendLevel_FallsBackToAFractionOfTheLeaderRate_WhenNoStdDev()
     {
         // 15% of 5.0 points per game = 0.75 per game × 10 games = 7.5 per week

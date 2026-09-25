@@ -39,21 +39,29 @@ function StatBotAdvisorDialog({
   const [error, setError] = useState(null);
 
   const dialogRef = useRef(null);
+  // Monotonic request id: only the LATEST request may write selection or
+  // clear loading. Clicking through the level cards fires overlapping
+  // fetches, and without this the last response to land — not the last
+  // click — decided what Apply would submit.
+  const requestRef = useRef(0);
 
   const fetchAdvice = useCallback(
     async (level) => {
+      const id = ++requestRef.current;
       setLoading(true);
       setError(null);
       try {
         const res = await apiWrapper.Picks.getAdvice(leagueId, week, level);
         const advice = res.data;
+        // Every response is worth caching; only the latest may steer.
         setAdviceByLevel((prev) => ({ ...prev, [advice.level]: advice }));
-        setSelectedLevel(advice.level);
+        if (id === requestRef.current) setSelectedLevel(advice.level);
       } catch (err) {
+        if (id !== requestRef.current) return;
         console.error("StatBot advice failed:", err);
         setError("StatBot couldn't put a sheet together. Try again in a moment.");
       } finally {
-        setLoading(false);
+        if (id === requestRef.current) setLoading(false);
       }
     },
     [leagueId, week]
@@ -112,15 +120,23 @@ function StatBotAdvisorDialog({
   };
 
   const advice = selectedLevel ? adviceByLevel[selectedLevel] : null;
-  const recommendedLevel = advice?.recommendedLevel ?? null;
-  const analysis = advice?.analysis ?? null;
+  // Recommendation and analysis are level-independent; read them from any
+  // cached response so the card doesn't blank while a new level loads.
+  const anyAdvice = advice ?? Object.values(adviceByLevel)[0] ?? null;
+  const recommendedLevel = anyAdvice?.recommendedLevel ?? null;
+  const analysis = anyAdvice?.analysis ?? null;
 
   const chooseLevel = (key) => {
     if (applying || key === selectedLevel) return;
-    if (adviceByLevel[key]) {
-      setSelectedLevel(key);
-    } else {
+    // The click decides the selection immediately; an uncached level shows
+    // "thinking…" (no advice for it yet, Apply disabled) until ITS response
+    // lands. A stale response for another level only fills the cache.
+    setSelectedLevel(key);
+    if (!adviceByLevel[key]) {
       fetchAdvice(key);
+    } else {
+      requestRef.current++; // a cached pick supersedes any fetch in flight
+      setLoading(false);
     }
   };
 
@@ -211,7 +227,7 @@ function StatBotAdvisorDialog({
                 aria-checked={selected}
                 className={`advisor-level${selected ? " selected" : ""}`}
                 onClick={() => chooseLevel(l.key)}
-                disabled={applying || (loading && !advice)}
+                disabled={applying || (loading && !anyAdvice)}
               >
                 <span className="advisor-level-name">
                   {l.name}
@@ -228,16 +244,14 @@ function StatBotAdvisorDialog({
         )}
 
         <div className="advisor-sheet" aria-live="polite">
-          {loading && !advice && <p className="advisor-dialog-message">StatBot is thinking…</p>}
+          {!advice && !error && <p className="advisor-dialog-message">StatBot is thinking…</p>}
           {advice &&
             advice.picks.map((pick) => {
               const team = teamName(pick.contestId, pick.franchiseSeasonId);
               return (
                 <div
                   key={pick.contestId}
-                  className={`advisor-row kind-${pick.kind.toLowerCase()}${
-                    loading ? " stale" : ""
-                  }`}
+                  className={`advisor-row kind-${pick.kind.toLowerCase()}`}
                 >
                   <div className="advisor-row-main">
                     <span className="advisor-row-matchup">{matchupLabel(pick)}</span>

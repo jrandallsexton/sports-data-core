@@ -24,6 +24,13 @@
 
         public decimal WeeklyAverage { get; set; }
 
+        /// <summary>
+        /// TotalPoints over decided picks. Slate size varies week to week, so
+        /// this is the comparable scoring rate; the weekly average is not.
+        /// Feeds the StatBot advisor's recommendation.
+        /// </summary>
+        public decimal PointsPerGame { get; set; }
+
         public int Rank { get; set; }            // Current rank in the leaderboard
 
         public int? LastWeekRank { get; set; }   // Optional for movement indicator

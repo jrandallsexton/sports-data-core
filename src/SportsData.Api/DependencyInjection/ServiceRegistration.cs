@@ -188,6 +188,17 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
 
+            // StatBot Advisor (docs/features/statbot-advisor.md)
+            services.AddScoped<
+                Application.UI.Picks.Advisor.Planner.IPickAdvisorPlanner,
+                Application.UI.Picks.Advisor.Planner.PickAdvisorPlanner>();
+            services.AddScoped<
+                Application.UI.Picks.Advisor.IPickAdviceService,
+                Application.UI.Picks.Advisor.PickAdviceService>();
+            services.AddScoped<
+                Application.UI.Picks.Advisor.Queries.GetPickAdvice.IGetPickAdviceQueryHandler,
+                Application.UI.Picks.Advisor.Queries.GetPickAdvice.GetPickAdviceQueryHandler>();
+
             // Pick Import (cross-league)
             services.AddScoped<
                 Application.UI.Picks.PickImport.Planner.IPickImportPlanner,

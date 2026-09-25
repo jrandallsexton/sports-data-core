@@ -165,6 +165,11 @@ namespace SportsData.Api
                 SyntheticUserPickStylesConfig.BindFrom(config, "SportsData.Api:SyntheticUserPickStyles"));
             services.Configure<SyntheticUsersConfig>(config.GetSection("CommonConfig:SyntheticUsers"));
 
+            // StatBot advisor tunables: an absent section keeps the code defaults.
+            services.AddSingleton(
+                config.GetSection("SportsData.Api:PickAdvisor").Get<Application.UI.Picks.Advisor.PickAdvisorOptions>()
+                ?? new Application.UI.Picks.Advisor.PickAdvisorOptions());
+
             if (!isTestingEnv)
             {
                 var firebaseSection = config.GetSection("CommonConfig:Firebase");

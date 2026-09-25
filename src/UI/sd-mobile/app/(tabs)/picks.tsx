@@ -612,22 +612,25 @@ export default function PicksScreen() {
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
+              {/* Eye toggle, mirroring web's FaEye/FaEyeSlash: the checkbox +
+                  "Hide Picked" label was the widest thing in the pill once
+                  the robot joined it. Role/state/label stay for screen readers. */}
               <Pressable
                 onPress={() => setHidePicked((v) => !v)}
-                hitSlop={6}
-                style={headerStyles.hideToggle}
+                hitSlop={8}
+                style={[
+                  headerStyles.hideToggle,
+                  { borderColor: hidePicked ? theme.tint : theme.border },
+                ]}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: hidePicked }}
-                accessibilityLabel="Hide picked games"
+                accessibilityLabel={hidePicked ? 'Show all games' : 'Hide picked games'}
               >
                 <Ionicons
-                  name={hidePicked ? 'checkbox' : 'square-outline'}
-                  size={18}
+                  name={hidePicked ? 'eye-off-outline' : 'eye-outline'}
+                  size={16}
                   color={hidePicked ? theme.tint : theme.textMuted}
                 />
-                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-                  {' '}Hide Picked
-                </Text>
               </Pressable>
             </>
           ) : anyScored ? (
@@ -993,9 +996,12 @@ const headerStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  // Same chip shape as the robot button so the two icons read as a pair.
   hideToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 10,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 8,
   },
 });

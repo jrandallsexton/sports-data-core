@@ -4,6 +4,8 @@ import type {
   PickType,
   PickWidgetResponse,
   PickAccuracyByWeek,
+  PickAdvice,
+  AdvisorLevel,
 } from '@/src/types/models';
 
 export interface SubmitPickPayload {
@@ -64,6 +66,13 @@ export const picksApi = {
   // POST /ui/picks
   submitPick: (payload: SubmitPickPayload) =>
     apiClient.post<void>('/ui/picks', payload),
+
+  // GET /ui/picks/{leagueId}/week/{week}/advice?level= — StatBot advisor
+  // (docs/features/statbot-advisor.md). Omit `level` for the recommendation.
+  getAdvice: (leagueId: string, week: number, level?: AdvisorLevel) =>
+    apiClient.get<PickAdvice>(`/ui/picks/${leagueId}/week/${week}/advice`, {
+      params: level ? { level } : undefined,
+    }),
 
   // GET /ui/picks/{year}/widget  — season-to-date pick record for the current user
   getWidget: (year = 2025) =>

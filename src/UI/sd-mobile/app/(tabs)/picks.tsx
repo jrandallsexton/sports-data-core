@@ -8,7 +8,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -23,13 +23,15 @@ import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { useImportAvailability, useImportPicks } from '@/src/hooks/useImportPicks';
 import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksModal';
+import { StatBotAdvisorModal } from '@/src/components/features/picks/StatBotAdvisorModal';
+import { useApplyAdvice, ApplyAdviceError } from '@/src/hooks/useAdvice';
 import { ConfidencePickerModal } from '@/src/components/features/picks/ConfidencePickerModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import { useQuery } from '@tanstack/react-query';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
-import type { League, UserPick } from '@/src/types/models';
+import type { AdvisedPick, League, UserPick } from '@/src/types/models';
 import Toast from 'react-native-toast-message';
 
 // Stable fallback while the picks envelope loads (see usePicks call site).
@@ -141,6 +143,9 @@ export default function PicksScreen() {
     return () => clearInterval(id);
   }, []);
   const [importOpen, setImportOpen] = useState(false);
+  // StatBot advisor (docs/features/statbot-advisor.md). Apply replaces every
+  // unlocked pick through the normal submit path, one call per pick.
+  const [advisorOpen, setAdvisorOpen] = useState(false);
 
 
   // The param's priority is TEMPORAL, not positional: it represents intent at
@@ -362,6 +367,23 @@ export default function PicksScreen() {
       e.pick === null &&
       new Date(e.matchup.startDateUtc).getTime() - 5 * 60 * 1000 > nowMs,
   );
+  // The advisor's entry point gates on an UNLOCKED game, picked or not (a
+  // fully-picked week is exactly when "Replace N picks" matters), and on a
+  // pick type the deetsMeter has numbers for — the server refuses O/U anyway.
+  const anyUnlocked = entries.some(
+    (e) => new Date(e.matchup.startDateUtc).getTime() - 5 * 60 * 1000 > nowMs,
+  );
+  const advisorEligible =
+    !isReadOnly && anyUnlocked && (pickType === 'StraightUp' || pickType === 'AgainstTheSpread');
+  // The sheet's `visible` is gated on eligibility, but the open flag must
+  // follow it too: eligibility is time-derived (the 15s tick can pass the
+  // last kickoff while the sheet is up) and league/week-derived, and a
+  // stale `true` would pop the sheet open on the next eligible week with no
+  // tap (Vortex + CodeRabbit, PR #792). Never mid-apply.
+  const applyAdvice = useApplyAdvice();
+  useEffect(() => {
+    if (!advisorEligible && !applyAdvice.isPending) setAdvisorOpen(false);
+  }, [advisorEligible, applyAdvice.isPending]);
 
   // Full results glance (X|Y|Z): counts come from the picks envelope, not
   // client math over entries — the server owns the result semantics. X (no
@@ -454,6 +476,31 @@ export default function PicksScreen() {
     [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
+  const handleApplyAdvice = useCallback(
+    (picks: AdvisedPick[]) => {
+      if (isReadOnly) return; // deactivated leagues are view-only
+      if (!leagueId || selectedWeek == null || picks.length === 0) return;
+      applyAdvice.mutate(
+        { leagueId, week: selectedWeek, pickType, useConfidencePoints: useConfidence, picks },
+        {
+          onSuccess: ({ applied }) => {
+            setAdvisorOpen(false);
+            Toast.show({ type: 'success', text1: `StatBot set ${applied} pick${applied === 1 ? '' : 's'}.` });
+          },
+          onError: (err) => {
+            const e = err instanceof ApplyAdviceError ? err : null;
+            Toast.show({
+              type: 'error',
+              text1: e && e.applied > 0 ? `Applied ${e.applied} of ${e.total} picks` : "Couldn't apply StatBot's picks",
+              text2: e && e.applied > 0 ? 'Then something failed. Check your sheet.' : 'Please try again.',
+            });
+          },
+        },
+      );
+    },
+    [isReadOnly, leagueId, selectedWeek, pickType, useConfidence, applyAdvice],
+  );
+
   // Hide Picked is a no-op wherever its toggle isn't rendered (i.e. whenever
   // nothing is actionable — the only cascade state that shows the toggle),
   // otherwise a filter left switched on would strand the user with an empty
@@ -524,6 +571,17 @@ export default function PicksScreen() {
               </Text>
             </View>
           )}
+          {advisorEligible && (
+            <Pressable
+              onPress={() => setAdvisorOpen(true)}
+              hitSlop={8}
+              style={[headerStyles.advisorButton, { borderColor: theme.tint }]}
+              accessibilityRole="button"
+              accessibilityLabel="Ask StatBot for pick help"
+            >
+              <MaterialCommunityIcons name="robot" size={16} color={theme.tint} />
+            </Pressable>
+          )}
           {pickModeLabel ? (
             <View style={[headerStyles.modeBadge, { borderColor: theme.tint }]}>
               <Text style={[headerStyles.modeBadgeText, { color: theme.tint }]}>
@@ -562,22 +620,25 @@ export default function PicksScreen() {
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
+              {/* Eye toggle, mirroring web's FaEye/FaEyeSlash: the checkbox +
+                  "Hide Picked" label was the widest thing in the pill once
+                  the robot joined it. Role/state/label stay for screen readers. */}
               <Pressable
                 onPress={() => setHidePicked((v) => !v)}
-                hitSlop={6}
-                style={headerStyles.hideToggle}
+                hitSlop={8}
+                style={[
+                  headerStyles.hideToggle,
+                  { borderColor: hidePicked ? theme.tint : theme.border },
+                ]}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: hidePicked }}
-                accessibilityLabel="Hide picked games"
+                accessibilityLabel={hidePicked ? 'Show all games' : 'Hide picked games'}
               >
                 <Ionicons
-                  name={hidePicked ? 'checkbox' : 'square-outline'}
-                  size={18}
+                  name={hidePicked ? 'eye-off-outline' : 'eye-outline'}
+                  size={16}
                   color={hidePicked ? theme.tint : theme.textMuted}
                 />
-                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-                  {' '}Hide Picked
-                </Text>
               </Pressable>
             </>
           ) : anyScored ? (
@@ -610,7 +671,7 @@ export default function PicksScreen() {
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance, showGlance, anyActionable, anyScored, picksResult]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance, showGlance, anyActionable, anyScored, picksResult, advisorEligible]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;
@@ -862,6 +923,20 @@ export default function PicksScreen() {
         onClose={() => setImportOpen(false)}
         onImport={handleImport}
       />
+
+      {selectedWeek !== null && (
+        <StatBotAdvisorModal
+          visible={advisorEligible && advisorOpen}
+          leagueId={leagueId}
+          week={selectedWeek}
+          matchups={matchups}
+          pickMap={pickMap}
+          useConfidencePoints={useConfidence}
+          applying={applyAdvice.isPending}
+          onClose={() => setAdvisorOpen(false)}
+          onApply={handleApplyAdvice}
+        />
+      )}
     </View>
   );
 }
@@ -913,6 +988,14 @@ const headerStyles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
+  // Robot entry to the StatBot advisor — sits just left of the mode badge.
+  advisorButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginRight: 8,
+  },
   pillText: {
     fontSize: 15,
     fontWeight: '700',
@@ -921,9 +1004,12 @@ const headerStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
+  // Same chip shape as the robot button so the two icons read as a pair.
   hideToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 10,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 8,
   },
 });

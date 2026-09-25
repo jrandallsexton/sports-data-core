@@ -199,6 +199,73 @@ export interface ContestPrediction {
   modelVersion: string;
 }
 
+// ─── StatBot advisor (docs/features/statbot-advisor.md) ─────────────────────
+
+/** Risk level. Working names; the count is the contract. Serialized as strings. */
+export type AdvisorLevel = 'Prevent' | 'GoalLine' | 'QbDraw' | 'HailMary';
+
+export type AdvisedPickKind = 'Lock' | 'Lean' | 'Flip' | 'Locked' | 'NoPrediction';
+
+/** Matches AdvisedPickDto on the API. */
+export interface AdvisedPick {
+  contestId: string;
+  headline?: string | null;
+  kind: AdvisedPickKind;
+  franchiseSeasonId?: string | null;
+  confidencePoints?: number | null;
+  /** deetsMeter probability for the ADVISED side (a flip reads below 0.5). */
+  modelProbability?: number | null;
+  /** Whether StatBot's preview named the deetsMeter's side. Null without a preview. */
+  previewAgrees?: boolean | null;
+  isCoinFlip: boolean;
+  differsFromExisting: boolean;
+}
+
+/** Matches PickAdviceAnalysisDto. Standings and performance only — never other members' picks. */
+export interface PickAdviceAnalysis {
+  rank?: number | null;
+  lastWeekRank?: number | null;
+  memberCount: number;
+  totalPoints: number;
+  weeklyAverage: number;
+  pointsPerGame: number;
+  pickAccuracy: number;
+  leaderName?: string | null;
+  leaderTotalPoints: number;
+  leaderWeeklyAverage: number;
+  leaderPointsPerGame: number;
+  deficit: number;
+  /** From the season calendar; null when it couldn't be read (copy omits it). */
+  regularSeasonWeeksLeft?: number | null;
+  /** The only game count that is a fact; future slates are never forecast. */
+  gamesThisWeek: number;
+  maxPointsThisWeek: number;
+  leaderExpectedThisWeek: number;
+  canCloseGapThisWeek: boolean;
+  bestCaseRankThisWeek?: number | null;
+  nextAheadName?: string | null;
+  nextAheadRank?: number | null;
+  pointsBehindNextAhead?: number | null;
+  nextAheadExpectedThisWeek?: number | null;
+  statBot?: { rank: number; totalPoints: number; weeklyAverage: number; pointsPerGame: number } | null;
+}
+
+/** Matches PickAdviceDto. Read-only; the client applies through POST /ui/picks. */
+export interface PickAdvice {
+  leagueId: string;
+  week: number;
+  pickType: PickType;
+  useConfidencePoints: boolean;
+  recommendedLevel: AdvisorLevel;
+  level: AdvisorLevel;
+  analysis: PickAdviceAnalysis;
+  picks: AdvisedPick[];
+  flipCount: number;
+  coinFlipCount: number;
+  lockedCount: number;
+  noPredictionCount: number;
+}
+
 // Response shape from GET /ui/leagues/{id}/matchups/{week}
 export interface LeagueMatchupsResponse {
   seasonYear: number;

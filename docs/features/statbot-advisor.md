@@ -1,10 +1,11 @@
 # StatBot Advisor — standings-aware pick help
 
-**Status**: backend slice BUILT 2026-09-25 (planner + advice endpoint, 32
-unit tests); web dialog BUILT 2026-09-25 (`StatBotAdvisorDialog.jsx`,
-robot button left of the pick-mode badge, replace-all apply through the
-normal submit path). Not yet: private provenance stamp, commissioner
-toggle (both need a migration), mobile ·
+**Status**: backend + web MERGED in #791 (2026-09-25). Mobile parity BUILT
+2026-09-25 (`StatBotAdvisorModal.tsx`, robot button left of the mode badge
+in the picks header, same helpers ported to `src/lib/advisorSheet.ts`,
+levels keyed as separate React Query entries so switching is race-free by
+construction). Not yet: private provenance stamp, commissioner toggle
+(both need a migration) ·
 **Build order**: web first, mobile parity after (2026-09-25) ·
 **Origin**: owner's note, Week 4 — users who are falling in the standings are
 already wondering what to pick; let StatBot help, tuned to where they sit.
@@ -234,10 +235,18 @@ plan-then-apply pattern — and later on `ImportPicksModal` (mobile).
 
 1. **Entry**: the lucide `Bot` glyph (already StatBot's mark on
    `PickButton.jsx`) immediately left of the `pick-mode-badge` span in the
-   `PicksPage.jsx` header. Mobile later: `MaterialCommunityIcons
-   name="robot"` left of the mode badge in the `headerRight` pill of
+   `PicksPage.jsx` header. Mobile: `MaterialCommunityIcons name="robot"`
+   left of the mode badge in the `headerRight` pill of
    `app/(tabs)/picks.tsx`. Hidden when the week has no unlocked games, the
-   user is not a member, or the league has bot help off.
+   league is read-only, or the pick type is not SU/ATS.
+
+   **Mobile layout** (screen-limited): a `pageSheet` modal like the import
+   sheet. The analysis card and the level picker (the app's
+   `SegmentedControl`, four short labels, "StatBot's call ·" prefixed on
+   the recommended level's detail line) scroll away as the list header;
+   the sheet is the list, two lines per game (matchup · team · points
+   badge, then KIND · reason · CHANGES); Cancel / Apply stay pinned in
+   the footer. Matchups use abbreviations, teams use short display names.
 2. **Analysis card** (top of the modal): rank and movement, total vs
    leader, points per game vs leader (weekly average shown as the familiar
    number, per-game as the honest one), weeks and games remaining, needed

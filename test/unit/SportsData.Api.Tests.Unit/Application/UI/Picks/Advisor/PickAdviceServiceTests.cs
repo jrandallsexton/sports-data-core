@@ -190,7 +190,7 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
         });
     }
 
-    private sealed record Slate(Guid ContestId, Guid Home, Guid Away, double PHome);
+    private sealed record Slate(Guid ContestId, Guid Home, Guid Away, double PHome, bool HasModel = true);
 
     private static Slate[] ThreeGames() =>
     [
@@ -219,13 +219,15 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
                 StartDateUtc = i < lockedCount ? NowUtc.AddDays(-1) : NowUtc.AddDays(2),
                 HomeFranchiseSeasonId = g.Home,
                 AwayFranchiseSeasonId = g.Away,
-                AiWinnerFranchiseSeasonId = g.PHome >= 0.5 ? g.Home : g.Away,
-                Predictions =
-                [
-                    new ContestPredictionDto { ContestId = g.ContestId, WinnerFranchiseSeasonId = g.Home, WinProbability = (decimal)g.PHome, PredictionType = pickType, ModelVersion = "test" },
-                    // The other type's number must be ignored.
-                    new ContestPredictionDto { ContestId = g.ContestId, WinnerFranchiseSeasonId = g.Away, WinProbability = 0.99m, PredictionType = pickType == PickType.StraightUp ? PickType.AgainstTheSpread : PickType.StraightUp, ModelVersion = "test" }
-                ]
+                AiWinnerFranchiseSeasonId = g.HasModel ? (g.PHome >= 0.5 ? g.Home : g.Away) : null,
+                Predictions = g.HasModel
+                    ?
+                    [
+                        new ContestPredictionDto { ContestId = g.ContestId, WinnerFranchiseSeasonId = g.Home, WinProbability = (decimal)g.PHome, PredictionType = pickType, ModelVersion = "test" },
+                        // The other type's number must be ignored.
+                        new ContestPredictionDto { ContestId = g.ContestId, WinnerFranchiseSeasonId = g.Away, WinProbability = 0.99m, PredictionType = pickType == PickType.StraightUp ? PickType.AgainstTheSpread : PickType.StraightUp, ModelVersion = "test" }
+                    ]
+                    : []
             }).ToList()
         };
 
@@ -483,6 +485,69 @@ public class PickAdviceServiceTests : ApiTestBase<PickAdviceService>
         result.Value.Picks.Where(p => p.Kind != AdvisedPickKind.Locked)
             .Select(p => p.ConfidencePoints).Should().BeEquivalentTo([3, 2]);
         result.Value.LockedCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Ceiling_AndSheet_Agree_WhenANoPredictionGameAlreadyHoldsAHighValue()
+    {
+        // Vortex round 3's case: 4-game SU confidence slate, nothing locked,
+        // game D has no deetsMeter number and the caller already holds D at 4.
+        // The planner keeps D=4 and hands out 3,2,1 — a 10-point perfect week —
+        // and the ceiling counts D's open game too: top 4 of {1..4} = 10.
+        var groupId = SeedLeague();
+        SeedStandings(groupId);
+        var games = new[]
+        {
+            new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.9),
+            new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.8),
+            new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.7),
+            new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.0, HasModel: false)
+        };
+        SeedCurrentWeekPick(groupId, _me, games[3].ContestId, games[3].Home, 4);
+        await DataContext.SaveChangesAsync();
+        MockSlate(PickType.StraightUp, true, games);
+
+        var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, AdvisorLevel.Prevent);
+
+        var a = result.Value.Analysis;
+        a.GamesThisWeek.Should().Be(4);
+        a.MaxPointsThisWeek.Should().Be(10);
+        result.Value.Picks.Sum(p => p.ConfidencePoints ?? 0).Should().Be(10);
+        result.Value.Picks.Single(p => p.ContestId == games[3].ContestId)
+            .Should().BeEquivalentTo(new { Kind = AdvisedPickKind.NoPrediction, ConfidencePoints = 4, FranchiseSeasonId = games[3].Home });
+    }
+
+    [Fact]
+    public async Task Reachability_UnitsAreConsistent_PointsPerPickTimesPicksIsPoints()
+    {
+        // Vortex round 3 read the passable test backwards: with a rival at
+        // 12 total and 1.0 per pick on a 10-game slate, 12 + 10 = 22 does NOT
+        // reach my 10 + 55 = 65, so the rival IS passable. Pin it.
+        var groupId = SeedLeague();
+        // Leader far ahead (unreachable), rival barely ahead and slow.
+        SeedScored(groupId, _leader, 1, 100);
+        SeedScored(groupId, _rival, 1, 12);   // 12 points over ONE decided pick → 12/pick; make it slow below
+        SeedScored(groupId, _me, 1, 10);
+        await DataContext.SaveChangesAsync();
+        // Re-shape the rival to 1.0 per pick: 12 points over 12 decided picks.
+        foreach (var i in Enumerable.Range(0, 11))
+            DataContext.UserPicks.Add(new PickemGroupUserPick
+            {
+                Id = Guid.NewGuid(), PickemGroupId = groupId, UserId = _rival, ContestId = Guid.NewGuid(), Week = 2,
+                PickType = PickType.StraightUp, FranchiseSeasonId = Guid.NewGuid(), ConfidencePoints = 1,
+                IsCorrect = false, PointsAwarded = 0, ScoredAt = NowUtc.AddDays(-3), TiebreakerType = TiebreakerType.TotalPoints
+            });
+        await DataContext.SaveChangesAsync();
+        var games = Enumerable.Range(0, 10).Select(_ => new Slate(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), 0.7)).ToArray();
+        MockSlate(PickType.StraightUp, true, games);
+
+        var result = await CreateService().BuildAsync(_me, groupId, CurrentWeek, null);
+
+        var a = result.Value.Analysis;
+        a.MaxPointsThisWeek.Should().Be(55);
+        a.NextAheadName.Should().Be("Rival");
+        a.NextAheadExpectedThisWeek.Should().Be(10);   // 1.0 per pick × 10 picks
+        a.BestCaseRankThisWeek.Should().Be(2);         // rival passable, leader (100) not
     }
 
     [Fact]

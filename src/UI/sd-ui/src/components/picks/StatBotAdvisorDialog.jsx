@@ -139,6 +139,7 @@ function StatBotAdvisorDialog({
     } else {
       requestRef.current++; // a cached pick supersedes any fetch in flight
       setLoading(false);
+      setError(null); // a stale failure from another level must not sit over a good sheet
     }
   };
 
@@ -287,8 +288,9 @@ function StatBotAdvisorDialog({
         {advice && advice.noPredictionCount > 0 && (
           <p className="advisor-dialog-note">
             {advice.noPredictionCount} game{advice.noPredictionCount === 1 ? " has" : "s have"} no
-            model number and {advice.noPredictionCount === 1 ? "is" : "are"} left for you; the lowest
-            values are held back for {advice.noPredictionCount === 1 ? "it" : "them"}.
+            deetsMeter number, so StatBot leaves {advice.noPredictionCount === 1 ? "it" : "them"} to
+            you. A pick you already have there stays as it is; otherwise the lowest values are held
+            back for it.
           </p>
         )}
 

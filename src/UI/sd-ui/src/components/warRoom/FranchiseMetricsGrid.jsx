@@ -26,6 +26,7 @@ function FranchiseMetricsGrid() {
   const [sortBy, setSortBy] = useState('franchiseName');
   const [sortOrder, setSortOrder] = useState('asc');
   const [showAll, setShowAll] = useState(false);
+  const [selectedDivision, setSelectedDivision] = useState('all');
   const [selectedConference, setSelectedConference] = useState('all');
   const [selectedRow, setSelectedRow] = useState(null);
   const [seasonYear, setSeasonYear] = useState(seasonYears[0]);
@@ -74,17 +75,38 @@ function FranchiseMetricsGrid() {
     }
   });
 
-  // Filter by conference first, then apply sorting
-  const filteredMetrics = selectedConference === 'all' 
-    ? sortedMetrics 
-    : sortedMetrics.filter(team => team.conference === selectedConference);
+  // Division (conferenceParent: FBS, FCS, ...) narrows first, then conference.
+  // Teams with an empty conferenceParent only appear under "All Divisions".
+  const divisionMetrics = selectedDivision === 'all'
+    ? sortedMetrics
+    : sortedMetrics.filter(team => team.conferenceParent === selectedDivision);
+
+  const filteredMetrics = selectedConference === 'all'
+    ? divisionMetrics
+    : divisionMetrics.filter(team => team.conference === selectedConference);
 
   // Show only top 10 by default when showing all conferences, show all when conference is filtered
   const shouldShowAll = showAll || selectedConference !== 'all';
   const displayedMetrics = shouldShowAll ? filteredMetrics : filteredMetrics.slice(0, 10);
 
-  // Get unique conferences for dropdown
-  const conferences = [...new Set(metrics.map(team => team.conference).filter(Boolean))].sort();
+  const divisions = [...new Set(metrics.map(team => team.conferenceParent).filter(Boolean))].sort();
+
+  // Conference options are scoped to the selected division
+  const conferences = [...new Set(
+    metrics
+      .filter(team => selectedDivision === 'all' || team.conferenceParent === selectedDivision)
+      .map(team => team.conference)
+      .filter(Boolean)
+  )].sort();
+
+  const handleDivisionChange = (division) => {
+    setSelectedDivision(division);
+    // Drop a conference selection that doesn't exist in the new division
+    const stillValid = selectedConference === 'all' || metrics.some(team =>
+      team.conference === selectedConference &&
+      (division === 'all' || team.conferenceParent === division));
+    if (!stillValid) setSelectedConference('all');
+  };
 
   const formatValue = (value, key) => {
     // Handle null/undefined values
@@ -164,9 +186,23 @@ function FranchiseMetricsGrid() {
             ))}
           </select>
           <select
+            value={selectedDivision}
+            onChange={(e) => handleDivisionChange(e.target.value)}
+            className="conference-filter"
+            aria-label="Division"
+          >
+            <option value="all">All Divisions</option>
+            {divisions.map(division => (
+              <option key={division} value={division}>
+                {division}
+              </option>
+            ))}
+          </select>
+          <select
             value={selectedConference}
             onChange={(e) => setSelectedConference(e.target.value)}
             className="conference-filter"
+            aria-label="Conference"
           >
             <option value="all">All Conferences</option>
             {conferences.map(conference => (
@@ -366,7 +402,9 @@ function FranchiseMetricsGrid() {
       {metrics.length > 0 && (
         <div className="metrics-summary">
           Showing {displayedMetrics.length} of {filteredMetrics.length} teams
-          {selectedConference !== 'all' && ` in ${selectedConference}`}
+          {selectedConference !== 'all'
+            ? ` in ${selectedConference}`
+            : selectedDivision !== 'all' && ` in ${selectedDivision}`}
           {!shouldShowAll && filteredMetrics.length > 10 && (
             <span className="top-ten-note"> (top 10)</span>
           )}

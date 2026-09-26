@@ -377,6 +377,7 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<ICompetitionBroadcastingJob, FootballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
                 services.AddScoped<IContestStartTimeUpdatedConsumerHandler, ContestStartTimeUpdatedConsumerHandler>();
+                services.AddScoped<FootballCompetitionMetricsAuditJob>();
             }
 
             if (mode is Sport.BaseballMlb)
@@ -455,8 +456,6 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
-
-            services.AddScoped<FootballCompetitionMetricsAuditJob>();
 
             return services;
         }

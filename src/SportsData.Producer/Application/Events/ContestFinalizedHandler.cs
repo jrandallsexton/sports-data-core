@@ -31,25 +31,29 @@ namespace SportsData.Producer.Application.Events
     /// constructed it over the abstract context and lost its outbox publish
     /// of FranchiseSeasonEnrichmentCompleted (see FranchiseSeasonEnrichmentJob).
     ///
-    /// Named for its purpose, NOT ContestFinalizedHandler: the kebab-case
-    /// endpoint formatter derives the queue from the class name, and the
-    /// API already consumes this event as ContestFinalizedHandler. Wherever
-    /// API and Producer share a broker (the local docker stack does), a
-    /// same-named class joins the API's "contest-finalized-handler" queue
-    /// as a competing consumer, and each message reaches only one of them,
-    /// silently dropping pick scoring for about half the games.
+    /// Named for the event it handles, by decision (2026-09-27, PR #796).
+    /// Known trade-off: the kebab-case endpoint formatter derives the queue
+    /// name from the class name, and the API also consumes this event as
+    /// ContestFinalizedHandler, so both map to "contest-finalized-handler".
+    /// In production that is harmless: the API's queue is on the API broker
+    /// and this one is on the sport's Producer broker, bridged by
+    /// exchange-level shovels. Where they share ONE broker (the local docker
+    /// stack), the two become competing consumers on a single queue and each
+    /// message reaches only one of them, so local pick scoring and local
+    /// record enrichment each see only some finalizations. Accepted; revisit
+    /// (e.g. a ConsumerDefinition endpoint name) if the broker layout changes.
     ///
     /// Per the "ingest consumers must be thin Hangfire-spawn shims"
     /// convention, this consumer does no inline DB work. Re-deliveries and
     /// re-enrichments of the same contest re-run an idempotent recompute.
     /// </summary>
-    public class FranchiseSeasonEnrichmentContestFinalizedHandler : IConsumer<ContestFinalized>
+    public class ContestFinalizedHandler : IConsumer<ContestFinalized>
     {
-        private readonly ILogger<FranchiseSeasonEnrichmentContestFinalizedHandler> _logger;
+        private readonly ILogger<ContestFinalizedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public FranchiseSeasonEnrichmentContestFinalizedHandler(
-            ILogger<FranchiseSeasonEnrichmentContestFinalizedHandler> logger,
+        public ContestFinalizedHandler(
+            ILogger<ContestFinalizedHandler> logger,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;

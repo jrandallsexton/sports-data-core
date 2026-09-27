@@ -179,7 +179,7 @@ public class Program
             {
                 typeof(CompetitorScoreUpdatedConsumer),
                 typeof(ContestCompletedHandler),
-                typeof(FranchiseSeasonEnrichmentContestFinalizedHandler),
+                typeof(ContestFinalizedHandler),
                 typeof(ContestStartTimeUpdatedConsumer),
                 typeof(DocumentCreatedHandler),
                 // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay

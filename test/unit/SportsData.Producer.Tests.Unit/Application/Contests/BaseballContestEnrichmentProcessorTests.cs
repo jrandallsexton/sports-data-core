@@ -211,7 +211,7 @@ public class BaseballContestEnrichmentProcessorTests
     [Fact]
     public async Task Process_WhenFinal_PublishesContestFinalized_CarryingBothParticipants()
     {
-        // The Producer's FranchiseSeasonEnrichmentContestFinalizedHandler enqueues record
+        // The Producer's ContestFinalizedHandler enqueues record
         // enrichment per participant from these two ids; each must be the
         // competitor on that side, never swapped.
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");

@@ -14,7 +14,7 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Events;
 
-public class FranchiseSeasonEnrichmentContestFinalizedHandlerTests : ProducerTestBase<FranchiseSeasonEnrichmentContestFinalizedHandler>
+public class ContestFinalizedHandlerTests : ProducerTestBase<ContestFinalizedHandler>
 {
     private readonly Guid _contestId = Guid.NewGuid();
     private readonly Guid _correlationId = Guid.NewGuid();
@@ -38,7 +38,7 @@ public class FranchiseSeasonEnrichmentContestFinalizedHandlerTests : ProducerTes
     private async Task ConsumeAsync(ContestFinalized message)
     {
         var context = Mock.Of<ConsumeContext<ContestFinalized>>(ctx => ctx.Message == message);
-        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentContestFinalizedHandler>();
+        var sut = Mocker.CreateInstance<ContestFinalizedHandler>();
         await sut.Consume(context);
     }
 

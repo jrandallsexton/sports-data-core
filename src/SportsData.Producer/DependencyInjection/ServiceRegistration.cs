@@ -310,6 +310,12 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
             services.AddScoped<IRequestFranchiseSeasonSourcingCommandHandler, RequestFranchiseSeasonSourcingCommandHandler>();
             services.AddScoped<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>, RequestFranchiseSeasonSourcingCommandValidator>();
+            services.AddScoped<
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.IRequestSingleFranchiseSeasonSourcingCommandHandler,
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommandHandler>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommand>,
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommandValidator>();
             services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
             services.AddScoped<
                 Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler,

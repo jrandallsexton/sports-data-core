@@ -279,6 +279,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<
                 FluentValidation.IValidator<Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.EnrichFranchiseSeasonCommand>,
                 Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.EnrichFranchiseSeasonCommandValidator>();
+            services.AddScoped<
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.ISourceFranchiseSeasonCommandHandler,
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommandHandler>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommand>,
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommandValidator>();
             services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
             services.AddScoped<IGetContestHistoryQueryHandler, GetContestHistoryQueryHandler>();

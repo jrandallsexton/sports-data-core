@@ -10,6 +10,7 @@ using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchise
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
@@ -165,6 +166,27 @@ public class FranchiseSeasonController : ControllerBase
     {
         var result = await handler.ExecuteAsync(
             new EnqueueSingleFranchiseSeasonEnrichmentCommand(franchiseSeasonId, GetCorrelationIdFromRequest()),
+            cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Re-source ONE franchise season from ESPN: a single DocumentRequested
+    /// for its TeamSeason document with the full child cascade (schedule,
+    /// records, stats, roster). The single-team twin of
+    /// <see cref="RequestFranchiseSeasonSourcing"/>, called by the API's
+    /// admin-gated franchises route. 202 with the correlation id; 404 for an
+    /// unknown id; 400 when the season has no ESPN ref to source from.
+    /// </summary>
+    [HttpPost("id/{franchiseSeasonId}/source")]
+    public async Task<ActionResult<Guid>> RequestSingleFranchiseSeasonSourcing(
+        [FromRoute] Guid franchiseSeasonId,
+        [FromServices] IRequestSingleFranchiseSeasonSourcingCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new RequestSingleFranchiseSeasonSourcingCommand(franchiseSeasonId, GetCorrelationIdFromRequest()),
             cancellationToken);
 
         return result.ToActionResult();

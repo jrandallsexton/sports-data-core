@@ -8,6 +8,11 @@ const FranchiseAdminApi = {
   // 202 with { franchiseId, franchiseSeasonId, seasonYear, correlationId }.
   enrichFranchiseSeason: (sport, league, slug, seasonYear) =>
     apiClient.post(`/api/${sport}/${league}/franchises/${slug}/seasons/${seasonYear}/enrich`),
+
+  // POST /api/{sport}/{league}/franchises/{slug}/seasons/{seasonYear}/source
+  // 202 with { franchiseId, franchiseSeasonId, seasonYear, correlationId }.
+  sourceFranchiseSeason: (sport, league, slug, seasonYear) =>
+    apiClient.post(`/api/${sport}/${league}/franchises/${slug}/seasons/${seasonYear}/source`),
 };
 
 export default FranchiseAdminApi;

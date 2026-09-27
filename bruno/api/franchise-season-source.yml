@@ -1,0 +1,19 @@
+info:
+  name: franchise-season-source
+  type: http
+  seq: 51
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/api/football/ncaa/franchises/south-alabama-jaguars/seasons/2026/source"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

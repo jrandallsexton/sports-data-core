@@ -4,6 +4,7 @@ using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Franchises.Queries.GetFranchises;
 using SportsData.Api.Application.Franchises.Seasons.Commands.EnrichFranchiseSeason;
+using SportsData.Api.Application.Franchises.Seasons.Commands.SourceFranchiseSeason;
 using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
@@ -100,6 +101,29 @@ public class FranchisesController : ApiControllerBase
         CancellationToken cancellationToken = default)
     {
         var command = new EnrichFranchiseSeasonCommand(sport, league, franchiseIdOrSlug, seasonYear);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Admin: re-source this franchise season from ESPN — its TeamSeason
+    /// document and the full child cascade (schedule, records, stats,
+    /// roster). For a season that was incompletely sourced, e.g. a schedule
+    /// missing games. 202 with the Producer correlation id (the Seq handle).
+    /// </summary>
+    [HttpPost("{franchiseIdOrSlug}/seasons/{seasonYear}/source")]
+    [AdminApiToken]
+    [ProducesResponseType(typeof(SourceFranchiseSeasonResponseDto), StatusCodes.Status202Accepted)]
+    public async Task<ActionResult<SourceFranchiseSeasonResponseDto>> SourceFranchiseSeason(
+        [FromServices] ISourceFranchiseSeasonCommandHandler handler,
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromRoute] string franchiseIdOrSlug,
+        [FromRoute] int seasonYear,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new SourceFranchiseSeasonCommand(sport, league, franchiseIdOrSlug, seasonYear);
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

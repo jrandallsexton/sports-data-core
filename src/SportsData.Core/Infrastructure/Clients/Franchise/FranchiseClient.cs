@@ -42,6 +42,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<Guid>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
     /// <summary>Make ONE franchise season current on the Producer (record enrichment, statistics refresh, metrics). Returns the correlation id shared by all legs. NotFound when the Producer has no such franchise season.</summary>
     Task<Result<Guid>> EnrichFranchiseSeason(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    /// <summary>Re-source ONE franchise season from ESPN (its TeamSeason document, full child cascade). Returns the correlation id. NotFound when the Producer has no such franchise season.</summary>
+    Task<Result<Guid>> RequestSingleFranchiseSeasonSourcing(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -134,6 +136,13 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             $"franchise-seasons/id/{franchiseSeasonId}/enrich",
             content: null,
             nameof(EnrichFranchiseSeason),
+            cancellationToken);
+
+    public Task<Result<Guid>> RequestSingleFranchiseSeasonSourcing(Guid franchiseSeasonId, CancellationToken cancellationToken = default) =>
+        PostForCorrelationIdAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/source",
+            content: null,
+            nameof(RequestSingleFranchiseSeasonSourcing),
             cancellationToken);
 
     /// <summary>

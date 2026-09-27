@@ -164,20 +164,22 @@ public class SourceFranchiseSeasonCommandHandlerTests : UnitTestBase<SourceFranc
     }
 
     [Fact]
-    public async Task Execute_ProducerReportsNoEspnRef_PassesTheValidationFailureAndMessageThrough()
+    public async Task Execute_ProducerReportsNoEspnRef_PassesTheBadRequestAndMessageThrough()
     {
         // The Producer's 400 for a season with nothing to source from is the
-        // failure an operator is most likely to see; its text must survive.
+        // failure an operator is most likely to see; its status and text must
+        // survive. BadRequest is what FranchiseClient actually maps a Producer
+        // 400 to (pinned in FranchiseClientTests), so that is what's mocked.
         FranchiseFound();
         SeasonFound();
         _client.Setup(x => x.RequestSingleFranchiseSeasonSourcing(_franchiseSeasonId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Failure<Guid>(default, ResultStatus.Validation,
-                [new ValidationFailure("FranchiseSeasonId", "has no usable ESPN TeamSeason ref to source from")]));
+            .ReturnsAsync(new Failure<Guid>(default, ResultStatus.BadRequest,
+                [new ValidationFailure("RequestSingleFranchiseSeasonSourcing", "Producer returned 400: has no usable ESPN TeamSeason ref to source from")]));
 
         var sut = Mocker.CreateInstance<SourceFranchiseSeasonCommandHandler>();
         var result = await sut.ExecuteAsync(Command());
 
-        result.Status.Should().Be(ResultStatus.Validation);
+        result.Status.Should().Be(ResultStatus.BadRequest);
         ((Failure<SourceFranchiseSeasonResponseDto>)result).Errors
             .Should().ContainSingle(e => e.ErrorMessage.Contains("no usable ESPN TeamSeason ref"));
     }

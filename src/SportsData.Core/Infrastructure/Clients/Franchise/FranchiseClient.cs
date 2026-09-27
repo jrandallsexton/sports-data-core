@@ -173,9 +173,17 @@ public class FranchiseClient : ClientBase, IProvideFranchises
 
             if (!response.IsSuccessStatusCode)
             {
-                var status = response.StatusCode == System.Net.HttpStatusCode.NotFound
-                    ? ResultStatus.NotFound
-                    : ResultStatus.Error;
+                // MapHttpStatusCode is private on ClientBase, so map inline
+                // (same as ContestClient). A Producer 400 is the caller's
+                // mistake or a refusal it reports on purpose (e.g. no ESPN
+                // ref to source from) and must stay a 4xx through the API,
+                // not become a 500.
+                var status = response.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.NotFound => ResultStatus.NotFound,
+                    System.Net.HttpStatusCode.BadRequest => ResultStatus.BadRequest,
+                    _ => ResultStatus.Error
+                };
                 return new Failure<Guid>(
                     default,
                     status,

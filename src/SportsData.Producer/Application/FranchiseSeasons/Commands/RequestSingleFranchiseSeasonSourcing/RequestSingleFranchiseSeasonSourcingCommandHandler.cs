@@ -37,8 +37,13 @@ public interface IRequestSingleFranchiseSeasonSourcingCommandHandler
 /// everything", so the full child tree cascades — events (the schedule),
 /// records, stats, roster. The filter propagates to children, so narrowing it
 /// to Event would stop each event's own children (competitions) from being
-/// sourced. Documents re-requested inside the Provider's republish window are
-/// deduplicated there.
+/// sourced.
+///
+/// Cost: for the CURRENT season the Provider neither serves its Mongo cache
+/// nor applies its republish suppression (both are gated on
+/// IsCurrentSeason), so every call re-fetches the whole tree from ESPN live.
+/// That is the point for a current-season repair, but the action is not
+/// free to repeat. Only historical seasons get the suppression.
 ///
 /// Unlike the bulk handler, a franchise season with no usable ESPN ref is a
 /// failure rather than a skip: sourcing is this action's only job.
@@ -84,15 +89,7 @@ public class RequestSingleFranchiseSeasonSourcingCommandHandler : IRequestSingle
         var franchiseSeason = await _dataContext.FranchiseSeasons
             .AsNoTracking()
             .Where(x => x.Id == command.FranchiseSeasonId)
-            .Select(x => new
-            {
-                x.Id,
-                x.SeasonYear,
-                EspnSourceUrl = x.ExternalIds
-                    .Where(e => e.Provider == SourceDataProvider.Espn)
-                    .Select(e => e.SourceUrl)
-                    .FirstOrDefault()
-            })
+            .Select(x => new { x.Id, x.SeasonYear })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (franchiseSeason is null)
@@ -104,6 +101,18 @@ public class RequestSingleFranchiseSeasonSourcingCommandHandler : IRequestSingle
                     $"FranchiseSeason {command.FranchiseSeasonId} not found.")]);
         }
 
+        // A separate top-level query, not a scalar subquery in the projection
+        // above: "no ESPN external id" is exactly the case the guard below
+        // exists for, and a top-level FirstOrDefault returns null for zero
+        // rows without depending on EF's nullability inference over a
+        // non-nullable column (which the InMemory test provider cannot
+        // exercise). Vortex, PR #795.
+        var espnSourceUrl = await _dataContext.FranchiseSeasonExternalIds
+            .AsNoTracking()
+            .Where(e => e.FranchiseSeasonId == franchiseSeason.Id && e.Provider == SourceDataProvider.Espn)
+            .Select(e => e.SourceUrl)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var correlationId = command.CorrelationId;
 
         using (_logger.BeginScope(new Dictionary<string, object>
@@ -114,8 +123,8 @@ public class RequestSingleFranchiseSeasonSourcingCommandHandler : IRequestSingle
             ["Sport"] = _appMode.CurrentSport
         }))
         {
-            if (string.IsNullOrWhiteSpace(franchiseSeason.EspnSourceUrl) ||
-                !Uri.TryCreate(franchiseSeason.EspnSourceUrl, UriKind.Absolute, out var sourceUrl))
+            if (string.IsNullOrWhiteSpace(espnSourceUrl) ||
+                !Uri.TryCreate(espnSourceUrl, UriKind.Absolute, out var sourceUrl))
             {
                 _logger.LogWarning(
                     "FranchiseSeason {FranchiseSeasonId} has no usable ESPN TeamSeason ref; sourcing not requested.",

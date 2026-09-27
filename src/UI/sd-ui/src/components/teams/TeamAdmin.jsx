@@ -80,6 +80,7 @@ export default function TeamAdmin({ slug, seasonYear, sport, league }) {
           schedule (games), record, statistics, roster. Use it when the season looks incompletely
           sourced, e.g. games missing from the schedule. Documents arrive asynchronously; give it a
           few minutes, reload the page, then run Enrich below to recompute the record from the new games.
+          Each press re-fetches the whole season from ESPN, so check Seq before pressing again.
         </p>
         <button
           type="button"

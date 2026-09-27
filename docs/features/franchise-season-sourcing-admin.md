@@ -29,13 +29,20 @@ because the handler never saves.
 
 The filter propagates to children. Narrowing it to `[Event]` would stop each
 event from spawning its own children (its competition and everything under
-it), so new games would arrive incomplete. Documents that were requested recently are
-deduplicated by the Provider's republish window, so re-requesting the
-unchanged children costs little.
+it), so new games would arrive incomplete.
 
-For the current season the Provider bypasses its Mongo cache
-(`ShouldBypassCache`: season year >= `CommonConfig:CurrentSeason`), so the
-request fetches ESPN live rather than replaying the stale cached copy.
+### Cost: every press is a full live crawl for the current season
+
+For the current season (season year >= `CommonConfig:CurrentSeason`) the
+Provider bypasses its Mongo cache, so the request fetches ESPN live rather
+than replaying the stale cached copy. That is what makes the repair work.
+
+The same season test also turns off the Provider's republish suppression
+(`ResourceIndexItemProcessor`: suppression requires `!IsCurrentSeason`), so
+nothing deduplicates a current-season re-source. Every press re-fetches the
+team's whole tree from ESPN (schedule, every game under it, roster) at the
+Provider's request pacing. Only historical seasons get the suppression, and
+only for unchanged content inside the cooldown.
 
 ## Operating it
 
@@ -46,9 +53,10 @@ request fetches ESPN live rather than replaying the stale cached copy.
    statistics and metrics are recomputed from the new games. Sourcing does not
    trigger enrichment.
 
-Pressing the button again within the Provider's republish window (about 90
-minutes as of 2026-05; check the Provider config for the current value)
-does little, because the Provider suppresses the duplicate requests.
+Don't press it repeatedly. For the current season each press is another full
+live crawl of the team's tree (see Cost above); nothing absorbs the repeat.
+If the first run hasn't landed, follow the correlation id in Seq before
+pressing again.
 
 ## Route and gating
 

@@ -248,6 +248,29 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Process_WhenFinal_PublishesContestFinalized_CarryingBothParticipants()
+    {
+        // The Producer's ContestFinalizedHandler enqueues record
+        // enrichment per participant from these two ids; each must be the
+        // competitor on that side, never swapped.
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 10, homeScore: 21, period: 4, clock: 30));
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(
+                It.Is<ContestFinalized>(e =>
+                    e.AwayFranchiseSeasonId == AwayFranchiseSeasonId &&
+                    e.HomeFranchiseSeasonId == HomeFranchiseSeasonId),
+                It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     /// <summary>
     /// The touchdown and its extra point share a period AND a clock — the game
     /// clock does not run between them. Ordering by period DESC, clock ASC

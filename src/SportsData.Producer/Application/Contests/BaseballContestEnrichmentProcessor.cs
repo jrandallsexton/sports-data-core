@@ -320,7 +320,9 @@ namespace SportsData.Producer.Application.Contests
                     WinnerFranchiseSeasonId: contest.WinnerFranchiseSeasonId,
                     SpreadWinnerFranchiseSeasonId: contest.SpreadWinnerFranchiseSeasonId,
                     OverUnderResultRaw: (int)contest.OverUnder,
-                    CompletedUtc: contest.FinalizedUtc));
+                    CompletedUtc: contest.FinalizedUtc,
+                    AwayFranchiseSeasonId: awayFranchiseSeasonId,
+                    HomeFranchiseSeasonId: homeFranchiseSeasonId));
 
             _logger.LogInformation("Persisting contest enrichment. Starting SaveChangesAsync.");
             var saveSw = Stopwatch.StartNew();

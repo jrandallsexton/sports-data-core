@@ -209,6 +209,37 @@ public class BaseballContestEnrichmentProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenFinal_PublishesContestFinalized_CarryingBothParticipants()
+    {
+        // The Producer's ContestFinalizedHandler enqueues record
+        // enrichment per participant from these two ids; each must be the
+        // competitor on that side, never swapped.
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var competition = await _baseballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+        var home = competition.Competitors.First(c => c.HomeAway == "home");
+
+        _baseballDataContext.CompetitionCompetitorScores.AddRange(
+            CreateScore(away.Id, value: 2, sourceDescription: "Final"),
+            CreateScore(home.Id, value: 5, sourceDescription: "Final"));
+        await _baseballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(
+                It.Is<ContestFinalized>(e =>
+                    e.AwayFranchiseSeasonId == AwayFranchiseSeasonId &&
+                    e.HomeFranchiseSeasonId == HomeFranchiseSeasonId),
+                It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Process_PicksMaxValuePerCompetitor()
     {
         // Earlier ticks (lower values) are ignored — MAX(Value) per

@@ -335,7 +335,9 @@ namespace SportsData.Producer.Application.Contests
                         WinnerFranchiseSeasonId: contest.WinnerFranchiseSeasonId,
                         SpreadWinnerFranchiseSeasonId: contest.SpreadWinnerFranchiseSeasonId,
                         OverUnderResultRaw: (int)contest.OverUnder,
-                        CompletedUtc: contest.FinalizedUtc));
+                        CompletedUtc: contest.FinalizedUtc,
+                        AwayFranchiseSeasonId: awayFranchiseSeasonId,
+                        HomeFranchiseSeasonId: homeFranchiseSeasonId));
                 await _dataContext.SaveChangesAsync();
 
                 _logger.LogInformation(

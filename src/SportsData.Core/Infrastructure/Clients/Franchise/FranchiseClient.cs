@@ -42,6 +42,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<Guid>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
     /// <summary>Make ONE franchise season current on the Producer (record enrichment, statistics refresh, metrics). Returns the correlation id shared by all legs. NotFound when the Producer has no such franchise season.</summary>
     Task<Result<Guid>> EnrichFranchiseSeason(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    /// <summary>Re-source ONE franchise season from ESPN (its TeamSeason document, full child cascade). Returns the correlation id. NotFound when the Producer has no such franchise season.</summary>
+    Task<Result<Guid>> RequestSingleFranchiseSeasonSourcing(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -136,6 +138,13 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             nameof(EnrichFranchiseSeason),
             cancellationToken);
 
+    public Task<Result<Guid>> RequestSingleFranchiseSeasonSourcing(Guid franchiseSeasonId, CancellationToken cancellationToken = default) =>
+        PostForCorrelationIdAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/source",
+            content: null,
+            nameof(RequestSingleFranchiseSeasonSourcing),
+            cancellationToken);
+
     /// <summary>
     /// POST to a Producer endpoint that answers 202 with a bare correlation
     /// id — the operator's Seq handle for a background fan-out. The id must
@@ -164,9 +173,17 @@ public class FranchiseClient : ClientBase, IProvideFranchises
 
             if (!response.IsSuccessStatusCode)
             {
-                var status = response.StatusCode == System.Net.HttpStatusCode.NotFound
-                    ? ResultStatus.NotFound
-                    : ResultStatus.Error;
+                // MapHttpStatusCode is private on ClientBase, so map inline
+                // (same as ContestClient). A Producer 400 is the caller's
+                // mistake or a refusal it reports on purpose (e.g. no ESPN
+                // ref to source from) and must stay a 4xx through the API,
+                // not become a 500.
+                var status = response.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.NotFound => ResultStatus.NotFound,
+                    System.Net.HttpStatusCode.BadRequest => ResultStatus.BadRequest,
+                    _ => ResultStatus.Error
+                };
                 return new Failure<Guid>(
                     default,
                     status,

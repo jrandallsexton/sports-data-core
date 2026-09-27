@@ -6,8 +6,10 @@ franchises API route, deliberately not on the admin controller.
 ## What it does
 
 The **Admin** tab on a team page (`/app/sport/{sport}/{league}/team/{slug}/{season}`,
-visible only to admins, after Logos) has one action: **Enrich {season} season**.
-It makes that one franchise season current on the Producer, the same three legs
+visible only to admins, after Logos) has an **Enrich {season} season** action.
+(It also has **Source {season} season**, documented in
+[franchise-season-sourcing-admin.md](franchise-season-sourcing-admin.md).)
+Enrichment makes that one franchise season current on the Producer, the same three legs
 as the weekly `FranchiseSeasonEnrichmentJob`, scoped to one team:
 
 1. **Record enrichment**: W/L re-derived from finalized contests (Hangfire job,

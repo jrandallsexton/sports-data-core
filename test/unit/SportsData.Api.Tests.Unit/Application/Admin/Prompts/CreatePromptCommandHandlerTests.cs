@@ -97,6 +97,69 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.Prompts
         }
 
         [Fact]
+        public async Task Create_RejectsNameLongerThanThePromptVersionColumn()
+        {
+            // The name is written to MatchupPreviewPrompt.PromptVersion (50) on
+            // every capture; a longer name must be refused at creation, not
+            // accepted and then fail every generation.
+            var sut = BuildSut();
+
+            var result = await sut.ExecuteAsync(new CreatePromptCommand
+            {
+                Name = new string('n', MatchupPreviewPrompt.PromptVersionMaxLength + 1),
+                WithStats = true,
+                Text = "TEXT"
+            }, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Validation, result.Status);
+            Assert.Empty(DataContext.Prompts);
+        }
+
+        [Fact]
+        public async Task Create_AcceptsNameAtTheLimit_MeasuredAfterTrim()
+        {
+            // Exactly at the limit once trimmed (the handler stores Name.Trim()),
+            // with surrounding whitespace that must not count against it.
+            var sut = BuildSut();
+            var name = new string('n', MatchupPreviewPrompt.PromptVersionMaxLength);
+
+            var result = await sut.ExecuteAsync(new CreatePromptCommand
+            {
+                Name = $"  {name}  ",
+                WithStats = true,
+                Text = "TEXT"
+            }, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(name, Assert.Single(DataContext.Prompts).Name);
+        }
+
+        [Fact]
+        public async Task ImportFromBlob_RejectsBlobNameLongerThanThePromptVersionColumn()
+        {
+            // Import names the prompt after the blob when no Name is given; it
+            // goes through the same validator.
+            var longName = new string('b', MatchupPreviewPrompt.PromptVersionMaxLength + 1);
+            Mocker.GetMock<IProvideBlobStorage>()
+                .Setup(x => x.GetFileContentsAsync("prompts", $"{longName}.txt", It.IsAny<CancellationToken>()))
+                .ReturnsAsync("BLOB TEXT");
+
+            Mocker.Use<ICreatePromptCommandHandler>(BuildSut());
+            var importer = Mocker.CreateInstance<ImportPromptFromBlobCommandHandler>();
+
+            var result = await importer.ExecuteAsync(new ImportPromptFromBlobCommand
+            {
+                BlobName = longName,
+                WithStats = false
+            }, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Validation, result.Status);
+            Assert.Empty(DataContext.Prompts);
+        }
+
+        [Fact]
         public async Task SetDefault_FlipsOnlyItsOwnSlot()
         {
             // Arrange — two slots, each with a default; a challenger in slot 1

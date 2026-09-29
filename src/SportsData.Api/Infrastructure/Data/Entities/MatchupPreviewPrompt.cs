@@ -30,6 +30,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public MatchupPreview? MatchupPreview { get; set; }
 
+        /// <summary>
+        /// Column width for <see cref="PromptVersion"/>, which records the
+        /// generating Prompt's Name on every capture. It therefore bounds
+        /// Prompt names too: CreatePromptCommandValidator enforces it, since
+        /// a longer name would be accepted at creation and then fail every
+        /// capture write.
+        /// </summary>
+        public const int PromptVersionMaxLength = 50;
+
         public required string PromptVersion { get; set; }
 
         /// <summary>
@@ -114,7 +123,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasConversion<int>()
                     .IsRequired();
 
-                builder.Property(x => x.PromptVersion).HasMaxLength(50);
+                builder.Property(x => x.PromptVersion).HasMaxLength(PromptVersionMaxLength);
 
                 builder.Property(x => x.PayloadJson)
                     .HasColumnType("jsonb")

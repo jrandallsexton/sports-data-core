@@ -1,5 +1,6 @@
 using FluentValidation;
 
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Admin.Prompts;
@@ -26,9 +27,14 @@ public class CreatePromptCommandValidator : AbstractValidator<CreatePromptComman
 {
     public CreatePromptCommandValidator()
     {
+        // Bounded by the capture column, not Prompt.Name's own (wider) column:
+        // the name is written to MatchupPreviewPrompt.PromptVersion on every
+        // generation, so a longer name would create fine and then fail every
+        // capture write. Checked trimmed, because the handler stores Name.Trim().
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(100);
+            .Must(name => name is null || name.Trim().Length <= MatchupPreviewPrompt.PromptVersionMaxLength)
+            .WithMessage($"Name must be at most {MatchupPreviewPrompt.PromptVersionMaxLength} characters (it is recorded as PromptVersion on every preview capture).");
 
         RuleFor(x => x.Text)
             .NotEmpty()

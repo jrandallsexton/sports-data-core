@@ -381,6 +381,9 @@ export default function AdminPromptsPage() {
                   <input
                     type="text"
                     aria-label="Prompt name"
+                    // Server cap: the name is recorded as PromptVersion
+                    // (50 chars) on every preview capture.
+                    maxLength={50}
                     value={form.name}
                     onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="name (immutable, unique — e.g. prediction-insights-nfl-v2)"

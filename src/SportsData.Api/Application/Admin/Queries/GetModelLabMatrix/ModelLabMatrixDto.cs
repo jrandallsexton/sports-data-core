@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+using SportsData.Api.Infrastructure.Data.Entities;
+
 namespace SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
 
 /// <summary>
@@ -65,6 +67,15 @@ public class ModelLabMatrixDto
 
         /// <summary>Parsed ATS pick (FranchiseSeasonId); null = abstained/unparsed.</summary>
         public Guid? PredictedSpreadWinnerId { get; set; }
+
+        /// <summary>The model's predicted away score (capture AwayScore); null = unparsed or captured before the column existed.</summary>
+        public int? AwayScore { get; set; }
+
+        /// <summary>The model's predicted home score (capture HomeScore); null = unparsed or captured before the column existed.</summary>
+        public int? HomeScore { get; set; }
+
+        /// <summary>The model's over/under pick (capture OverUnderPrediction): None = no pick (no line), Over, Under; null = unparsed/unrecognized.</summary>
+        public OverUnderPrediction? OverUnderPrediction { get; set; }
 
         /// <summary>Validation problems recorded on the capture; null = clean.</summary>
         public string? Problems { get; set; }

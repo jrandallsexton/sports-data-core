@@ -366,9 +366,17 @@ const LeagueCreatePage = () => {
   const fbsConferenceSlugs = allConferences
     .filter((c) => isFbsDivision(c.division))
     .map((c) => c.slug);
+  // The selection that counts is the VISIBLE one: with "FBS Only" on, only
+  // FBS conferences are listed, so a non-FBS slug still in teamFilter
+  // (however it got there) must neither be submitted nor decide the scope.
+  // Derived rather than relying on every handler to prune (Vortex, #797).
+  const visibleTeamFilter =
+    isNcaa && fbsOnly
+      ? teamFilter.filter((slug) => fbsConferenceSlugs.includes(slug))
+      : teamFilter;
   const includesAllFbs =
-    isNcaa && fbsOnly && !rankingFilter && teamFilter.length === 0;
-  const effectiveTeamFilter = includesAllFbs ? fbsConferenceSlugs : teamFilter;
+    isNcaa && fbsOnly && !rankingFilter && visibleTeamFilter.length === 0;
+  const effectiveTeamFilter = includesAllFbs ? fbsConferenceSlugs : visibleTeamFilter;
 
   useEffect(() => {
     if (!isNcaa) return;
@@ -1010,8 +1018,8 @@ const LeagueCreatePage = () => {
                 <strong>{copy.groupLabel}:</strong>{" "}
                 {includesAllFbs
                   ? "All FBS conferences (every game with an FBS team)"
-                  : teamFilter.length
-                  ? teamFilter
+                  : visibleTeamFilter.length
+                  ? visibleTeamFilter
                       .map((slug) => {
                         const group = teamGroups.find((g) => g.slug === slug);
                         return group?.shortName || slug;

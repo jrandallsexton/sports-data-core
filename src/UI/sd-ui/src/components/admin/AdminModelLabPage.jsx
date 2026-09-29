@@ -291,6 +291,18 @@ export default function AdminModelLabPage() {
   const capturesCacheRef = useRef(new Map());
 
   const viewCellPreview = async (contest, model, cell) => {
+    const teamName = (fsId) => {
+      if (!fsId) return null;
+      const id = String(fsId).toLowerCase();
+      if (id === String(contest.awayFranchiseSeasonId).toLowerCase()) return contest.awayShort || contest.away;
+      if (id === String(contest.homeFranchiseSeasonId).toLowerCase()) return contest.homeShort || contest.home;
+      return null;
+    };
+
+    // The dialog's prediction tiles come from the cell's captured values
+    // (MatchupPreviewPrompt columns), not from re-parsing the raw response.
+    // overUnderPrediction is always set, null included, so the dialog shows
+    // its Over/Under tile here ("—" when the capture has no value).
     const base = {
       contestId: contest.contestId,
       away: contest.away,
@@ -299,6 +311,11 @@ export default function AdminModelLabPage() {
       homeShort: contest.homeShort,
       startDateUtc: contest.startDateUtc,
       generatedByLabel: model.name,
+      straightUpWinner: teamName(cell.predictedStraightUpWinnerId),
+      atsWinner: teamName(cell.predictedSpreadWinnerId),
+      awayScore: cell.awayScore ?? null,
+      homeScore: cell.homeScore ?? null,
+      overUnderPrediction: cell.overUnderPrediction ?? null,
     };
     setPreviewView({ matchup: base, loading: true });
 
@@ -327,13 +344,6 @@ export default function AdminModelLabPage() {
 
       const prediction = pick(parsed, 'prediction');
       const predictionObj = prediction && typeof prediction === 'object' ? prediction : null;
-      const teamName = (fsId) => {
-        if (!fsId) return null;
-        const id = String(fsId).toLowerCase();
-        if (id === String(contest.awayFranchiseSeasonId).toLowerCase()) return contest.awayShort || contest.away;
-        if (id === String(contest.homeFranchiseSeasonId).toLowerCase()) return contest.homeShort || contest.home;
-        return null;
-      };
 
       let predictionText = typeof prediction === 'string' ? prediction : null;
       if (predictionObj) {

@@ -430,6 +430,14 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Null(capture.PredictedSpreadWinnerId);
             Assert.Equal(preview.PredictedStraightUpWinner, capture.PredictedStraightUpWinnerId);
             Assert.Equal(preview.PredictedSpreadWinner, capture.PredictedSpreadWinnerId);
+            // ...and the predicted scores and over/under, which the preview
+            // row already held and the capture did not.
+            Assert.Equal(17, capture.AwayScore);
+            Assert.Equal(27, capture.HomeScore);
+            Assert.Equal(preview.AwayScore, capture.AwayScore);
+            Assert.Equal(preview.HomeScore, capture.HomeScore);
+            Assert.Equal(OverUnderPrediction.Under, capture.OverUnderPrediction);
+            Assert.Equal(preview.OverUnderPrediction, capture.OverUnderPrediction);
 
             // The model received exactly what was captured
             Mocker.GetMock<IProvideAiCommunication>()
@@ -493,6 +501,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // The capture carries the CORRECTED picks, the ones the preview holds.
             Assert.Equal(_awayFranchiseSeasonId, capture.PredictedSpreadWinnerId);
             Assert.Equal(_homeFranchiseSeasonId, capture.PredictedStraightUpWinnerId);
+            Assert.Equal(25, capture.AwayScore);
+            Assert.Equal(59, capture.HomeScore);
+            Assert.Equal(OverUnderPrediction.Over, capture.OverUnderPrediction);
 
             // The second call carried the violation feedback and the original
             // (bad) response back to the model.
@@ -541,6 +552,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // Experiment path already does, so the Lab can still score them.
             Assert.Equal(_homeFranchiseSeasonId, capture.PredictedStraightUpWinnerId);
             Assert.Equal(_homeFranchiseSeasonId, capture.PredictedSpreadWinnerId);
+            Assert.Equal(25, capture.AwayScore);
+            Assert.Equal(59, capture.HomeScore);
+            Assert.Equal(OverUnderPrediction.Over, capture.OverUnderPrediction);
 
             Mocker.GetMock<IProvideAiCommunication>()
                 .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -653,6 +667,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal("experiment-model", capture.Model);
             Assert.Equal(responseJson, capture.RawResponse);
             Assert.Null(capture.ResponseValidationErrors);
+            Assert.Equal(17, capture.AwayScore);
+            Assert.Equal(27, capture.HomeScore);
+            Assert.Equal(OverUnderPrediction.Under, capture.OverUnderPrediction);
 
             Mocker.GetMock<IEventBus>()
                 .Verify(x => x.Publish(It.IsAny<PreviewPromptCaptured>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -802,6 +819,92 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // Assert
             var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
             Assert.DoesNotContain("NFC Wild Card", capture.PayloadJson);
+        }
+
+        [Theory]
+        [InlineData(0, OverUnderPrediction.None, OverUnderPrediction.None)]   // no line (rule 18): None on BOTH (the preview used to store Under)
+        [InlineData(1, OverUnderPrediction.Over, OverUnderPrediction.Over)]
+        [InlineData(2, OverUnderPrediction.Under, OverUnderPrediction.Under)]
+        [InlineData(7, OverUnderPrediction.None, null)]                       // unrecognized: preview None (non-nullable), capture null
+        public async Task RealGeneration_PreviewAndCaptureMapOverUnderTheSameWay(
+            int raw, OverUnderPrediction expectedPreview, OverUnderPrediction? expectedCapture)
+        {
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            var responseJson = $$"""
+                {
+                  "overview": "o",
+                  "analysis": "a",
+                  "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": {{raw}},
+                  "awayScore": 17,
+                  "homeScore": 27
+                }
+                """;
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            });
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Equal(expectedPreview, preview.OverUnderPrediction);
+            Assert.Equal(expectedCapture, capture.OverUnderPrediction);
+        }
+
+        [Theory]
+        [InlineData(0, OverUnderPrediction.None)] // no line (prompt rule 18): kept as None, not folded into Under
+        [InlineData(3, null)]                     // outside 0/1/2: unrecognized, recorded as null
+        public async Task Experiment_CapturesOverUnderAsTheModelReturnedIt(int raw, OverUnderPrediction? expected)
+        {
+            SetupPipeline(BuildMatchup("STATUS_FINAL"));
+
+            var responseJson = $$"""
+                {
+                  "overview": "o",
+                  "analysis": "a",
+                  "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": {{raw}},
+                  "awayScore": 17,
+                  "homeScore": 27
+                }
+                """;
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("experiment-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Experiment
+            });
+
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Equal(expected, capture.OverUnderPrediction);
+            Assert.Equal(17, capture.AwayScore);
+            Assert.Equal(27, capture.HomeScore);
         }
 
         [Fact]

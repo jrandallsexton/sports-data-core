@@ -273,6 +273,9 @@ namespace SportsData.Api.Application.Previews
                         // problems column records the caveat alongside it.
                         capture.PredictedStraightUpWinnerId = experimentParsed.PredictedStraightUpWinner;
                         capture.PredictedSpreadWinnerId = experimentParsed.PredictedSpreadWinner;
+                        capture.AwayScore = experimentParsed.AwayScore;
+                        capture.HomeScore = experimentParsed.HomeScore;
+                        capture.OverUnderPrediction = ToOverUnderPrediction(experimentParsed.OverUnderPrediction);
 
                         var experimentValidation = MatchupPreviewValidator.Validate(
                             contestId: command.ContestId,
@@ -404,6 +407,9 @@ namespace SportsData.Api.Application.Previews
                     // pick and the errors column carries the caveat.
                     capture.PredictedStraightUpWinnerId = parsed.PredictedStraightUpWinner;
                     capture.PredictedSpreadWinnerId = parsed.PredictedSpreadWinner;
+                    capture.AwayScore = parsed.AwayScore;
+                    capture.HomeScore = parsed.HomeScore;
+                    capture.OverUnderPrediction = ToOverUnderPrediction(parsed.OverUnderPrediction);
                     await _dataContext.SaveChangesAsync();
                     _logger.LogError(
                         "Preview validation failed after retry for {ContestId}; no preview written. Errors: {Errors}",
@@ -452,9 +458,11 @@ namespace SportsData.Api.Application.Previews
                 Prediction = parsed.Prediction,
                 PredictedStraightUpWinner = parsed.PredictedStraightUpWinner,
                 PredictedSpreadWinner = parsed.PredictedSpreadWinner,
-                OverUnderPrediction = parsed.OverUnderPrediction == 1
-                    ? OverUnderPrediction.Over
-                    : OverUnderPrediction.Under,
+                // Was `== 1 ? Over : Under`, which stored None (the model's
+                // 0 for a game with no line, prompt rule 18) and unrecognized
+                // values as Under. Same mapping as the capture; the column is
+                // non-nullable, so "no recognizable pick" is None.
+                OverUnderPrediction = ToOverUnderPrediction(parsed.OverUnderPrediction) ?? OverUnderPrediction.None,
                 AwayScore = parsed.AwayScore,
                 HomeScore = parsed.HomeScore,
                 Model = wiredModelName,
@@ -481,6 +489,9 @@ namespace SportsData.Api.Application.Previews
             // matrix), live the day the production model earns a column.
             capture.PredictedStraightUpWinnerId = parsed.PredictedStraightUpWinner;
             capture.PredictedSpreadWinnerId = parsed.PredictedSpreadWinner;
+            capture.AwayScore = parsed.AwayScore;
+            capture.HomeScore = parsed.HomeScore;
+            capture.OverUnderPrediction = ToOverUnderPrediction(parsed.OverUnderPrediction);
 
             await _eventBus.Publish(new PreviewGenerated(
                 assembled.Matchup.ContestId,
@@ -725,6 +736,20 @@ namespace SportsData.Api.Application.Previews
         /// answer inside is valid, and discarding it would be waste, not
         /// rigor. Anything short of a leading fence is returned untouched.
         /// </summary>
+        /// <summary>
+        /// The model's over/under pick, for both the MatchupPreview row and its
+        /// capture: 0 None (no line, prompt rule 18), 1 Over, 2 Under; anything
+        /// else, or absent, is null (the capture keeps null; the preview row,
+        /// non-nullable, stores None).
+        /// </summary>
+        private static OverUnderPrediction? ToOverUnderPrediction(int? raw) => raw switch
+        {
+            0 => OverUnderPrediction.None,
+            1 => OverUnderPrediction.Over,
+            2 => OverUnderPrediction.Under,
+            _ => null
+        };
+
         private static string StripCodeFence(string raw)
         {
             var trimmed = raw.Trim();

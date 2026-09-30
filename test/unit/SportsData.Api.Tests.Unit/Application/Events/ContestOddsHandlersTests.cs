@@ -53,9 +53,11 @@ public class ContestOddsHandlersTests : ApiTestBase<ContestOddsUpdatedHandler>
     private ContestOddsCreated Created(DisplayedContestOdds? displayed) => new(
         _contestId, null, Sport.FootballNcaa, 2026, _correlationId, Guid.NewGuid(), DisplayedOdds: displayed);
 
-    private void AssertEnqueuedTheDisplayedOdds()
+    private void AssertEnqueuedTheDisplayedOdds(DateTime expectedAsOfUtc)
     {
         var cmd = Assert.Single(_enqueued);
+        // The event's CreatedUtc is the odds version the job orders by.
+        Assert.Equal(expectedAsOfUtc, cmd.AsOfUtc);
         Assert.Equal(_contestId, cmd.ContestId);
         Assert.Equal(Sport.FootballNcaa, cmd.Sport);
         Assert.Equal(_correlationId, cmd.CorrelationId);
@@ -65,10 +67,11 @@ public class ContestOddsHandlersTests : ApiTestBase<ContestOddsUpdatedHandler>
     [Fact]
     public async Task Updated_WithDisplayedOdds_EnqueuesTheMatchupOddsJob()
     {
+        var msg = Updated(Displayed);
         await Mocker.CreateInstance<ContestOddsUpdatedHandler>()
-            .Consume(Mock.Of<ConsumeContext<ContestOddsUpdated>>(c => c.Message == Updated(Displayed)));
+            .Consume(Mock.Of<ConsumeContext<ContestOddsUpdated>>(c => c.Message == msg));
 
-        AssertEnqueuedTheDisplayedOdds();
+        AssertEnqueuedTheDisplayedOdds(msg.CreatedUtc);
     }
 
     [Fact]
@@ -84,10 +87,11 @@ public class ContestOddsHandlersTests : ApiTestBase<ContestOddsUpdatedHandler>
     [Fact]
     public async Task Created_WithDisplayedOdds_EnqueuesTheMatchupOddsJob()
     {
+        var msg = Created(Displayed);
         await Mocker.CreateInstance<ContestOddsCreatedHandler>()
-            .Consume(Mock.Of<ConsumeContext<ContestOddsCreated>>(c => c.Message == Created(Displayed)));
+            .Consume(Mock.Of<ConsumeContext<ContestOddsCreated>>(c => c.Message == msg));
 
-        AssertEnqueuedTheDisplayedOdds();
+        AssertEnqueuedTheDisplayedOdds(msg.CreatedUtc);
     }
 
     [Fact]

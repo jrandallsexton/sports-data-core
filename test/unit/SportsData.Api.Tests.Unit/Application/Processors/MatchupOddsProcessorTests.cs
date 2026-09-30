@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
@@ -59,9 +62,13 @@ public class MatchupOddsProcessorTests : ApiTestBase<MatchupOddsProcessor>
         await DataContext.SaveChangesAsync();
     }
 
-    private Task RunAsync(DisplayedContestOdds odds, Sport sport = Sport.FootballNcaa) =>
+    // Odds versions (the Producer's event CreatedUtc).
+    private static readonly DateTime V1 = new(2026, 9, 30, 10, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime V2 = V1.AddMinutes(5);
+
+    private Task RunAsync(DisplayedContestOdds odds, Sport sport = Sport.FootballNcaa, DateTime? asOfUtc = null) =>
         Mocker.CreateInstance<MatchupOddsProcessor>()
-            .Process(new ApplyMatchupOddsCommand(_contestId, sport, odds, Guid.NewGuid()));
+            .Process(new ApplyMatchupOddsCommand(_contestId, sport, odds, Guid.NewGuid(), asOfUtc ?? V1));
 
     [Fact]
     public async Task WritesTheWholeDisplayedLine_ToEveryMatchupOfTheContest_InThatSport()
@@ -139,11 +146,89 @@ public class MatchupOddsProcessorTests : ApiTestBase<MatchupOddsProcessor>
         var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
         Assert.Equal(Now, m.ModifiedUtc);
 
-        // Same odds again: nothing changes, so the stamp must not move.
+        // A NEWER event with the same odds: the version advances (so an older
+        // straggler is rejected later) but no value changed, so ModifiedUtc
+        // must not move.
         Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now.AddHours(1));
-        await RunAsync(Odds);
+        await RunAsync(Odds, asOfUtc: V2);
         m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
         Assert.Equal(Now, m.ModifiedUtc);
+        Assert.Equal(V2, m.OddsAsOfUtc);
+    }
+
+    [Fact]
+    public async Task EvictsTheLeagueWeekCache_ForWeeksThatChanged_AndNotForANoOp()
+    {
+        // The slate is served from ILeagueWeekMatchupsCache; without eviction
+        // members keep reading the old line until the entry expires.
+        var league = await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF);
+        await SeedMatchupAsync(league, _contestId);
+        var cache = Mocker.GetMock<ILeagueWeekMatchupsCache>();
+
+        await RunAsync(Odds);
+        cache.Verify(x => x.RemoveAsync(league, 6), Times.Once);
+
+        // A newer event with the same odds: nothing changed, nothing to evict.
+        await RunAsync(Odds, asOfUtc: V2);
+        cache.Verify(x => x.RemoveAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnOlderSnapshot_ArrivingLate_NeverOverwritesANewerOne()
+    {
+        // The delayed-retry case: V2 was applied, then V1's retried job runs.
+        var league = await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF);
+        await SeedMatchupAsync(league, _contestId);
+
+        await RunAsync(Odds with { HomeMoneyLine = -200 }, asOfUtc: V2);
+        await RunAsync(Odds with { HomeMoneyLine = -175 }, asOfUtc: V1);
+
+        var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(-200, m.HomeMoneyLine);
+        Assert.Equal(V2, m.OddsAsOfUtc);
+    }
+
+    [Fact]
+    public async Task ARetryOfTheSameJob_IsSkipped()
+    {
+        var league = await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF);
+        await SeedMatchupAsync(league, _contestId);
+        var cache = Mocker.GetMock<ILeagueWeekMatchupsCache>();
+
+        await RunAsync(Odds, asOfUtc: V1);
+        await RunAsync(Odds with { HomeMoneyLine = -999 }, asOfUtc: V1);
+
+        var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(-175, m.HomeMoneyLine);
+        cache.Verify(x => x.RemoveAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ANewerSnapshot_Applies_AndRecordsItsVersion()
+    {
+        var league = await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF);
+        await SeedMatchupAsync(league, _contestId);
+
+        await RunAsync(Odds, asOfUtc: V1);
+        await RunAsync(Odds with { HomeMoneyLine = -200 }, asOfUtc: V2);
+
+        var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(-200, m.HomeMoneyLine);
+        Assert.Equal(V2, m.OddsAsOfUtc);
+    }
+
+    [Fact]
+    public async Task AnUnspecifiedKindVersion_IsStoredAsUtc()
+    {
+        // Npgsql writes timestamptz only from Utc; a serializer round trip may drop the kind.
+        var league = await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF);
+        await SeedMatchupAsync(league, _contestId);
+
+        await RunAsync(Odds, asOfUtc: DateTime.SpecifyKind(V1, DateTimeKind.Unspecified));
+
+        var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(DateTimeKind.Utc, m.OddsAsOfUtc!.Value.Kind);
+        Assert.Equal(V1, m.OddsAsOfUtc);
     }
 
     [Fact]

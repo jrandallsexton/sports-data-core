@@ -45,7 +45,8 @@ namespace SportsData.Api.Application.Events
                 return Task.CompletedTask;
             }
 
-            var cmd = new ApplyMatchupOddsCommand(msg.ContestId, msg.Sport, msg.DisplayedOdds, msg.CorrelationId);
+            // The event's CreatedUtc (stamped by the Producer) is the odds version.
+            var cmd = new ApplyMatchupOddsCommand(msg.ContestId, msg.Sport, msg.DisplayedOdds, msg.CorrelationId, msg.CreatedUtc);
             _backgroundJobProvider.Enqueue<IApplyMatchupOdds>(p => p.Process(cmd));
 
             _logger.LogInformation(

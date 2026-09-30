@@ -711,5 +711,48 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             created.Should().NotBeNull();
             created!.DisplayedOdds.Should().BeNull();
         }
+
+        [Fact]
+        public async Task EspnBetRowHardReplacedByAnUpdatedEspnBetDocument_StillCarriesTheSnapshot()
+        {
+            // The normal update path: the stored ESPN Bet row is replaced (marked
+            // Deleted, still in the database until SaveChanges) by a moved line
+            // from the same book. The provider must count once and stay displayed.
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
+
+            var oddsId = Guid.NewGuid();
+            Mocker.GetMock<IGenerateExternalRefIdentities>()
+                .Setup(x => x.Generate(It.IsAny<Uri>()))
+                .Returns(new ExternalRefIdentity(oddsId, "hash", "http://x/clean"));
+            var hash = Mocker.GetMock<IJsonHashCalculator>();
+            ContestOddsUpdated updated = null;
+            Mocker.GetMock<IEventBus>()
+                .Setup(x => x.Publish(It.IsAny<ContestOddsUpdated>(), It.IsAny<CancellationToken>()))
+                .Callback<ContestOddsUpdated, CancellationToken>((e, _) => updated = e)
+                .Returns(Task.CompletedTask);
+
+            ProcessDocumentCommand Command() => Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, json)
+                .With(x => x.UrlHash, "url-hash-espnbet")
+                .OmitAutoProperties()
+                .Create();
+
+            hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v1");
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(Command());
+
+            hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v2");
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(Command());
+
+            updated.Should().NotBeNull("the second document replaces the first");
+            updated!.DisplayedOdds.Should().NotBeNull();
+            updated.DisplayedOdds!.ProviderId.Should().Be("58");
+        }
     }
 }

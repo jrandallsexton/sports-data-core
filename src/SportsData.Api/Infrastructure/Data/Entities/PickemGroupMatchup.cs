@@ -53,6 +53,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// <summary>Price on the home spread, e.g. -110.</summary>
         public double? HomeSpreadPrice { get; set; }
 
+        /// <summary>
+        /// Version of the last displayed-odds event applied by MatchupOddsProcessor:
+        /// the Producer's event CreatedUtc. A job applies only when its version is
+        /// newer, so a delayed Hangfire retry or an out-of-order worker can never
+        /// overwrite fresher odds. Null until the first odds event lands.
+        /// Deliberately NOT stamped by MatchupScheduleProcessor: its "now" could be
+        /// later than an event built just before its commit, and would then reject
+        /// that newer event's job.
+        /// </summary>
+        public DateTime? OddsAsOfUtc { get; set; }
+
         // Record snapshots (records at the time of matchup generation)
         public int AwayWins { get; set; }
 

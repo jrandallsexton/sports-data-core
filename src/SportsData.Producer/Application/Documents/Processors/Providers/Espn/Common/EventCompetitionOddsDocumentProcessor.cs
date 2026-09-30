@@ -167,11 +167,15 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         // Displayed-row snapshot: attached only when THIS provider's row is the
         // one the matchup cards read (ESPN Bet, else DraftKings when there is
         // no ESPN Bet row), so the API never applies another book's line or
-        // prices. Other displayed providers are read from the database; this
-        // provider is counted from the incoming row.
+        // prices. OTHER displayed providers are read from the database; this
+        // provider is counted exactly once, from the incoming row. Excluding it
+        // from the query matters: on a hard replace its old row is only marked
+        // Deleted in the tracker and is still in the database until
+        // SaveChanges, so it would otherwise be counted twice (Vortex, #803).
         var displayedPresent = await _dataContext.CompetitionOdds
             .AsNoTracking()
             .Where(o => o.CompetitionId == competition.Id
+                     && o.ProviderId != incoming.ProviderId
                      && OddsProviderPreference.DisplayedProviderIds.Contains(o.ProviderId))
             .Select(o => o.ProviderId)
             .ToListAsync();

@@ -12,6 +12,7 @@ public class ProducerSqlQueryProvider
         "GetContestResultsByContestIds.sql",
         "GetMatchupsByContestIds.sql",
         "GetEnteringRecordsByContestIds.sql",
+        "GetOddsPricingByContestId.sql",
         "GetMatchupForPreview.sql",
         "GetMatchupForPreviewBatch.sql",
         "GetMatchupsForCurrentWeek.sql",
@@ -96,6 +97,7 @@ public class ProducerSqlQueryProvider
     public string GetMatchupsByContestIds() => Get("GetMatchupsByContestIds.sql");
 
     public string GetEnteringRecordsByContestIds() => Get("GetEnteringRecordsByContestIds.sql");
+    public string GetOddsPricingByContestId() => Get("GetOddsPricingByContestId.sql");
 
     public string GetMatchupForPreview() => Get("GetMatchupForPreview.sql");
 

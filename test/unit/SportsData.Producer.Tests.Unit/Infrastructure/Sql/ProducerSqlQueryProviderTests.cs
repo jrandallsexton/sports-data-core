@@ -48,4 +48,33 @@ public class ProducerSqlQueryProviderTests
         sql.Should().Contain("sw_contest.\"EndDate\" AS \"SeasonWeekEndDate\"");
         sql.Should().Contain("public.\"SeasonWeek\" sw_contest");
     }
+
+    /// <summary>
+    /// The odds-pricing query must pick the SAME provider row as the matchup
+    /// queries (so prices pair with the matchup's spread/total), join BOTH
+    /// team sides, and project every OddsPricingDto property by name (Dapper
+    /// maps by alias, so a dropped or renamed alias silently yields nulls).
+    /// </summary>
+    [Fact]
+    public void GetOddsPricingByContestId_UsesTheMatchupProviderRow_AndProjectsEveryDtoField()
+    {
+        var sut = new ProducerSqlQueryProvider();
+
+        var sql = sut.GetOddsPricingByContestId();
+
+        sql.Should().NotBeNullOrWhiteSpace();
+        // Placeholders resolved to the same preferred/fallback pair as the matchups SQL.
+        sql.Should().Contain("\"ProviderId\" IN ('58', '100')");
+        sql.Should().Contain("WHEN o.\"ProviderId\" = '58' THEN 1");
+        sut.GetMatchupsByContestIds().Should().Contain("\"ProviderId\" IN ('58', '100')");
+
+        sql.Should().Contain("away.\"Side\" = 'Away'");
+        sql.Should().Contain("home.\"Side\" = 'Home'");
+        sql.Should().Contain("WHERE c.\"Id\" = @ContestId");
+
+        foreach (var property in typeof(SportsData.Core.Dtos.Canonical.OddsPricingDto).GetProperties())
+        {
+            sql.Should().Contain($"AS \"{property.Name}\"", $"Dapper maps {property.Name} by column alias");
+        }
+    }
 }

@@ -349,6 +349,7 @@ namespace SportsData.Api
                     typeof(AthleteCompetitionStatsUpdatedHandler),
                     typeof(BaseballPlayCompletedHandler),
                     typeof(ContestFinalizedHandler),
+                    typeof(ContestOddsCreatedHandler),
                     typeof(ContestOddsUpdatedHandler),
                     typeof(ContestRecapArticlePublishedHandler),
                     typeof(ContestRefreshRequestedHandler),

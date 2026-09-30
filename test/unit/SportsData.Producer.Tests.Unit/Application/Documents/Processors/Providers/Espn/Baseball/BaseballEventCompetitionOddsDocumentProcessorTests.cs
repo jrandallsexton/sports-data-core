@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Text.Json.Nodes;
 using AutoFixture;
 
 using FluentAssertions;
@@ -294,5 +295,118 @@ public class BaseballEventCompetitionOddsDocumentProcessorTests
         // assert — Updated event (not Created) since rows existed before
         bus.Verify(x => x.Publish(It.IsAny<ContestOddsUpdated>(), It.IsAny<CancellationToken>()), Times.Once);
         bus.Verify(x => x.Publish(It.IsAny<ContestOddsCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── Displayed odds on the published event ──────────────────────────────
+    // The wrapper replaces every provider's row, so the displayed row is the
+    // first displayed provider among the staged items (the fixture's single
+    // item is DraftKings, 100).
+
+    private const string MlbListingUri =
+        "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/odds?lang=en&region=us";
+
+    private void CaptureEvents(Action<ContestOddsCreated> onCreated, Action<ContestOddsUpdated> onUpdated)
+    {
+        var bus = Mocker.GetMock<IEventBus>();
+        bus.Setup(x => x.Publish(It.IsAny<ContestOddsCreated>(), It.IsAny<CancellationToken>()))
+            .Callback<ContestOddsCreated, CancellationToken>((e, _) => onCreated(e))
+            .Returns(Task.CompletedTask);
+        bus.Setup(x => x.Publish(It.IsAny<ContestOddsUpdated>(), It.IsAny<CancellationToken>()))
+            .Callback<ContestOddsUpdated, CancellationToken>((e, _) => onUpdated(e))
+            .Returns(Task.CompletedTask);
+        Mocker.GetMock<IGenerateExternalRefIdentities>()
+            .Setup(x => x.Generate(It.IsAny<Uri>()))
+            .Returns(() => new ExternalRefIdentity(Guid.NewGuid(), $"hash-{Guid.NewGuid()}", "http://x/clean"));
+    }
+
+    private ProcessDocumentCommand MlbCommand(Guid compId, string json) =>
+        Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, compId.ToString())
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+            .With(x => x.Document, json)
+            .With(x => x.SourceUri, new Uri(MlbListingUri))
+            .With(x => x.UrlHash, "url-hash")
+            .OmitAutoProperties()
+            .Create();
+
+    [Fact]
+    public async Task Created_CarriesTheDisplayedSnapshot_FromTheStagedDraftKingsRow()
+    {
+        ContestOddsCreated? created = null;
+        CaptureEvents(e => created = e, _ => { });
+        Mocker.GetMock<IJsonHashCalculator>().Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v1");
+        var compId = Guid.NewGuid();
+        await CreateTestContestAndCompetitionAsync(compId);
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionOdds.json");
+
+        await Mocker.CreateInstance<BaseballEventCompetitionOddsDocumentProcessor<FootballDataContext>>()
+            .ProcessAsync(MlbCommand(compId, json));
+
+        var saved = await FootballDataContext.CompetitionOdds.Include(o => o.Teams).AsNoTracking().SingleAsync();
+        created.Should().NotBeNull();
+        created!.DisplayedOdds.Should().NotBeNull();
+        created.DisplayedOdds!.ProviderId.Should().Be("100");
+        created.DisplayedOdds.Spread.Should().Be(saved.Spread);
+        created.DisplayedOdds.OverUnder.Should().Be(saved.OverUnder);
+        created.DisplayedOdds.AwayMoneyLine.Should().Be(saved.Teams.Single(t => t.Side == "Away").MoneylineCurrent);
+        created.DisplayedOdds.HomeMoneyLine.Should().Be(saved.Teams.Single(t => t.Side == "Home").MoneylineCurrent);
+    }
+
+    [Fact]
+    public async Task Created_WithOnlyANonDisplayedBook_CarriesNoSnapshot()
+    {
+        ContestOddsCreated? created = null;
+        CaptureEvents(e => created = e, _ => { });
+        Mocker.GetMock<IJsonHashCalculator>().Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v1");
+        var compId = Guid.NewGuid();
+        await CreateTestContestAndCompetitionAsync(compId);
+        var node = JsonNode.Parse(await LoadJsonTestData("EspnBaseballMlb/EventCompetitionOdds.json"))!;
+        foreach (var item in node["items"]!.AsArray())
+        {
+            item!["provider"]!["id"] = "40";
+        }
+
+        await Mocker.CreateInstance<BaseballEventCompetitionOddsDocumentProcessor<FootballDataContext>>()
+            .ProcessAsync(MlbCommand(compId, node.ToJsonString()));
+
+        created.Should().NotBeNull();
+        created!.DisplayedOdds.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Updated_CarriesTheSnapshot_AndLeavesOldNewLineFieldsNull()
+    {
+        // Old*/New* stay null on MLB: Notification treats OldSpread != NewSpread
+        // as a line move, so the displayed spread must NOT land in NewSpread.
+        ContestOddsUpdated? updated = null;
+        CaptureEvents(_ => { }, e => updated = e);
+        Mocker.GetMock<IJsonHashCalculator>().Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-NEW");
+        var compId = Guid.NewGuid();
+        await CreateTestContestAndCompetitionAsync(compId);
+        await FootballDataContext.CompetitionOdds.AddAsync(new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            ProviderRef = new Uri("http://sports.core.api.espn.com/v2/providers/100"),
+            ProviderId = "100",
+            ProviderName = "DraftKings",
+            ContentHash = "content-hash-OLD"
+        });
+        await FootballDataContext.SaveChangesAsync();
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionOdds.json");
+
+        await Mocker.CreateInstance<BaseballEventCompetitionOddsDocumentProcessor<FootballDataContext>>()
+            .ProcessAsync(MlbCommand(compId, json));
+
+        updated.Should().NotBeNull();
+        updated!.DisplayedOdds.Should().NotBeNull();
+        updated.DisplayedOdds!.ProviderId.Should().Be("100");
+        updated.OldSpread.Should().BeNull();
+        updated.NewSpread.Should().BeNull();
+        updated.OldOverUnder.Should().BeNull();
+        updated.NewOverUnder.Should().BeNull();
     }
 }

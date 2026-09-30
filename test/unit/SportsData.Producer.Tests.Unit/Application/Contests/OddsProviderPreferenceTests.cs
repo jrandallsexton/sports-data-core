@@ -130,4 +130,53 @@ public class OddsProviderPreferenceTests
         OddsProviderPreference.SelectPrimary(null).Should().BeNull();
         OddsProviderPreference.SelectPrimary(Array.Empty<CompetitionOdds>()).Should().BeNull();
     }
+
+    // ── Displayed row (live odds events → PickemGroupMatchup) ─────────────
+
+    [Theory]
+    [InlineData(new[] { "58", "100" }, "58")]       // ESPN Bet wins when both are present
+    [InlineData(new[] { "100", "58", "40" }, "58")] // order of presence does not matter
+    [InlineData(new[] { "100" }, "100")]            // DraftKings when there is no ESPN Bet row
+    [InlineData(new[] { "100", "40" }, "100")]
+    [InlineData(new[] { "40", "59", "200" }, null)] // only non-displayed / live books: none
+    [InlineData(new string[0], null)]
+    public void SelectDisplayedProviderId_IsTheFirstDisplayedProviderPresent(string[] present, string expected)
+    {
+        OddsProviderPreference.SelectDisplayedProviderId(present).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ToDisplayedSnapshot_CarriesTheLine_TotalsAndEachSidesPrices()
+    {
+        var row = Odds("58", "ESPN BET", spread: -3.5m);
+        row.Details = "HOME -3.5";
+        row.OverUnder = 52.5m;
+        row.OverOdds = -115m;
+        row.UnderOdds = -105m;
+        row.Teams.Add(new CompetitionTeamOdds { Id = Guid.NewGuid(), Side = "Away", MoneylineCurrent = 150, SpreadPriceCurrent = -112m });
+        row.Teams.Add(new CompetitionTeamOdds { Id = Guid.NewGuid(), Side = "Home", MoneylineCurrent = -175, SpreadPriceCurrent = -108m });
+
+        var snapshot = OddsProviderPreference.ToDisplayedSnapshot(row);
+
+        snapshot.ProviderId.Should().Be("58");
+        snapshot.Details.Should().Be("HOME -3.5");
+        snapshot.Spread.Should().Be(-3.5m);
+        snapshot.OverUnder.Should().Be(52.5m);
+        snapshot.OverOdds.Should().Be(-115m);
+        snapshot.UnderOdds.Should().Be(-105m);
+        snapshot.AwayMoneyLine.Should().Be(150);
+        snapshot.HomeMoneyLine.Should().Be(-175);
+        snapshot.AwaySpreadPrice.Should().Be(-112m);
+        snapshot.HomeSpreadPrice.Should().Be(-108m);
+    }
+
+    [Fact]
+    public void ToDisplayedSnapshot_WithoutTeamRows_LeavesTeamPricesNull()
+    {
+        var snapshot = OddsProviderPreference.ToDisplayedSnapshot(Odds("100", "DraftKings", spread: 7m));
+
+        snapshot.Spread.Should().Be(7m);
+        snapshot.AwayMoneyLine.Should().BeNull();
+        snapshot.HomeSpreadPrice.Should().BeNull();
+    }
 }

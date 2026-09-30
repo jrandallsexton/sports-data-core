@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -163,6 +164,23 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         await _dataContext.CompetitionOdds.AddAsync(incoming);
 
+        // Displayed-row snapshot: attached only when THIS provider's row is the
+        // one the matchup cards read (ESPN Bet, else DraftKings when there is
+        // no ESPN Bet row), so the API never applies another book's line or
+        // prices. Other displayed providers are read from the database; this
+        // provider is counted from the incoming row.
+        var displayedPresent = await _dataContext.CompetitionOdds
+            .AsNoTracking()
+            .Where(o => o.CompetitionId == competition.Id
+                     && OddsProviderPreference.DisplayedProviderIds.Contains(o.ProviderId))
+            .Select(o => o.ProviderId)
+            .ToListAsync();
+        displayedPresent.Add(incoming.ProviderId);
+
+        var displayedOdds = OddsProviderPreference.SelectDisplayedProviderId(displayedPresent) == incoming.ProviderId
+            ? OddsProviderPreference.ToDisplayedSnapshot(incoming)
+            : null;
+
         if (existing is null)
         {
             await _publishEndpoint.Publish(new ContestOddsCreated(
@@ -171,7 +189,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                command.MessageId));
+                command.MessageId,
+                DisplayedOdds: displayedOdds));
         }
         else
         {
@@ -188,7 +207,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
+                CausationId.Producer.EventDocumentProcessor,
+                DisplayedOdds: displayedOdds));
         }
 
         await _dataContext.SaveChangesAsync();

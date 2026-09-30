@@ -9,11 +9,13 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Processing;
 
 using System.Linq.Expressions;
+using System.Text.Json.Nodes;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -593,6 +595,121 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // And open prices come from spread.* blocks
             away.SpreadPriceOpen.Should().Be(-105m);
             home.SpreadPriceOpen.Should().Be(-115m);
+        }
+
+        // ── Displayed odds on the published event ──────────────────────────
+        // The API applies DisplayedOdds to PickemGroupMatchup, so it must be
+        // present exactly when this provider's row is the one the matchup cards
+        // read: ESPN Bet (58), else DraftKings (100) when no ESPN Bet row.
+
+        /// <summary>The fixture (ESPN BET, provider 58) re-labelled as another provider.</summary>
+        private static string WithProvider(string json, string providerId)
+        {
+            var node = JsonNode.Parse(json)!;
+            node["provider"]!["id"] = providerId;
+            return node.ToJsonString();
+        }
+
+        private async Task<ContestOddsCreated> ProcessNewOddsAsync(Guid compId, string json)
+        {
+            ContestOddsCreated created = null;
+            Mocker.GetMock<IEventBus>()
+                .Setup(x => x.Publish(It.IsAny<ContestOddsCreated>(), It.IsAny<CancellationToken>()))
+                .Callback<ContestOddsCreated, CancellationToken>((e, _) => created = e)
+                .Returns(Task.CompletedTask);
+            Mocker.GetMock<IGenerateExternalRefIdentities>()
+                .Setup(x => x.Generate(It.IsAny<Uri>()))
+                .Returns(new ExternalRefIdentity(Guid.NewGuid(), "hash", "http://x/clean"));
+            Mocker.GetMock<IJsonHashCalculator>()
+                .Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash");
+
+            var cmd = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, json)
+                .With(x => x.UrlHash, $"url-hash-{Guid.NewGuid()}")
+                .OmitAutoProperties()
+                .Create();
+
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(cmd);
+            return created;
+        }
+
+        [Fact]
+        public async Task EspnBetOdds_PublishTheDisplayedSnapshot_MatchingThePersistedRow()
+        {
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
+
+            var created = await ProcessNewOddsAsync(compId, json);
+
+            var saved = await FootballDataContext.CompetitionOdds.Include(o => o.Teams).SingleAsync();
+            created.Should().NotBeNull();
+            var shown = created!.DisplayedOdds;
+            shown.Should().NotBeNull("ESPN Bet is always the displayed row");
+            shown!.ProviderId.Should().Be("58");
+            shown.Spread.Should().Be(saved.Spread);
+            shown.Details.Should().Be(saved.Details);
+            shown.OverUnder.Should().Be(saved.OverUnder);
+            shown.OverOdds.Should().Be(saved.OverOdds);
+            shown.UnderOdds.Should().Be(saved.UnderOdds);
+            shown.AwayMoneyLine.Should().Be(saved.Teams.Single(t => t.Side == "Away").MoneylineCurrent);
+            shown.HomeMoneyLine.Should().Be(saved.Teams.Single(t => t.Side == "Home").MoneylineCurrent);
+            shown.AwaySpreadPrice.Should().Be(saved.Teams.Single(t => t.Side == "Away").SpreadPriceCurrent);
+            shown.HomeSpreadPrice.Should().Be(saved.Teams.Single(t => t.Side == "Home").SpreadPriceCurrent);
+        }
+
+        [Fact]
+        public async Task DraftKingsOdds_WithNoEspnBetRow_AreDisplayed()
+        {
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            var json = WithProvider(await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json"), "100");
+
+            var created = await ProcessNewOddsAsync(compId, json);
+
+            created!.DisplayedOdds.Should().NotBeNull();
+            created.DisplayedOdds!.ProviderId.Should().Be("100");
+        }
+
+        [Fact]
+        public async Task DraftKingsOdds_WhileAnEspnBetRowExists_AreNotDisplayed()
+        {
+            // The card reads ESPN Bet, so a DraftKings change must not reach the matchup.
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            await FootballDataContext.CompetitionOdds.AddAsync(new CompetitionOdds
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = compId,
+                ProviderRef = new Uri("http://sports.core.api.espn.com/v2/providers/58"),
+                ProviderId = "58",
+                ProviderName = "ESPN BET"
+            });
+            await FootballDataContext.SaveChangesAsync();
+            var json = WithProvider(await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json"), "100");
+
+            var created = await ProcessNewOddsAsync(compId, json);
+
+            created.Should().NotBeNull();
+            created!.DisplayedOdds.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task OddsFromANonDisplayedBook_AreNotDisplayed()
+        {
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            var json = WithProvider(await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json"), "40");
+
+            var created = await ProcessNewOddsAsync(compId, json);
+
+            created.Should().NotBeNull();
+            created!.DisplayedOdds.Should().BeNull();
         }
     }
 }

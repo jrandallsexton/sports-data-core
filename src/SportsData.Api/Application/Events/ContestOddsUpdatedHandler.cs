@@ -1,34 +1,58 @@
-﻿using MassTransit;
+using MassTransit;
 
-using Microsoft.AspNetCore.SignalR;
-
-using SportsData.Api.Infrastructure.Notifications;
+using SportsData.Api.Application.Processors;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Events
 {
+    /// <summary>
+    /// A contest's odds changed. When the event carries the DISPLAYED row
+    /// (<see cref="ContestOddsUpdated.DisplayedOdds"/>: the book the matchup
+    /// cards read), enqueue <see cref="IApplyMatchupOdds"/> to write the line and
+    /// prices onto the contest's PickemGroupMatchups. Every other book's
+    /// update, and events from pods on the prior shape, carry no snapshot and
+    /// are ignored.
+    ///
+    /// Previously this broadcast the event over SignalR to every client, which
+    /// no web or mobile code listened to, and never updated a matchup.
+    ///
+    /// Thin Hangfire-spawn shim per the ingest-consumer convention: no inline
+    /// DB work.
+    /// </summary>
     public class ContestOddsUpdatedHandler : IConsumer<ContestOddsUpdated>
     {
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<ContestOddsUpdatedHandler> _logger;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public ContestOddsUpdatedHandler(IHubContext<NotificationHub> hubContext)
+        public ContestOddsUpdatedHandler(
+            ILogger<ContestOddsUpdatedHandler> logger,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
-            _hubContext = hubContext;
+            _logger = logger;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task Consume(ConsumeContext<ContestOddsUpdated> context)
+        public Task Consume(ConsumeContext<ContestOddsUpdated> context)
         {
             var msg = context.Message;
 
-            await _hubContext.Clients
-                .All // ← simple, global broadcast for now
-                .SendAsync("ContestOddsUpdated", new
-                {
-                    msg.ContestId,
-                    msg.Message,
-                    msg.CorrelationId,
-                    msg.CausationId
-                });
+            if (msg.DisplayedOdds is null)
+            {
+                _logger.LogDebug(
+                    "ContestOddsUpdated without displayed odds (another book changed); ignored. ContestId={ContestId}, ProviderId={ProviderId}",
+                    msg.ContestId, msg.ProviderId);
+                return Task.CompletedTask;
+            }
+
+            var cmd = new ApplyMatchupOddsCommand(msg.ContestId, msg.Sport, msg.DisplayedOdds, msg.CorrelationId);
+            _backgroundJobProvider.Enqueue<IApplyMatchupOdds>(p => p.Process(cmd));
+
+            _logger.LogInformation(
+                "ContestOddsUpdated: displayed odds applied via job. ContestId={ContestId}, ProviderId={ProviderId}, CorrelationId={CorrelationId}",
+                msg.ContestId, msg.DisplayedOdds.ProviderId, msg.CorrelationId);
+
+            return Task.CompletedTask;
         }
     }
 }

@@ -77,4 +77,24 @@ public class ProducerSqlQueryProviderTests
             sql.Should().Contain($"AS \"{property.Name}\"", $"Dapper maps {property.Name} by column alias");
         }
     }
+
+    /// <summary>
+    /// The matchup schedule processor prices a NEW PickemGroupMatchup from this
+    /// query: both teams' prices must come from the displayed odds row (co) and
+    /// be aliased to the Matchup DTO's names, or Dapper silently leaves them null.
+    /// </summary>
+    [Fact]
+    public void GetMatchupsBySeasonWeekId_ProjectsBothTeamsPrices_FromTheDisplayedRow()
+    {
+        var sut = new ProducerSqlQueryProvider();
+
+        var sql = sut.GetMatchupsBySeasonWeekId();
+
+        sql.Should().Contain("ctoAway.\"MoneylineCurrent\"   AS \"AwayMoneyLine\"");
+        sql.Should().Contain("ctoHome.\"MoneylineCurrent\"   AS \"HomeMoneyLine\"");
+        sql.Should().Contain("ctoAway.\"SpreadPriceCurrent\" AS \"AwaySpreadPrice\"");
+        sql.Should().Contain("ctoHome.\"SpreadPriceCurrent\" AS \"HomeSpreadPrice\"");
+        sql.Should().Contain("ctoAway.\"CompetitionOddsId\" = co.\"Id\" AND ctoAway.\"Side\" = 'Away'");
+        sql.Should().Contain("ctoHome.\"CompetitionOddsId\" = co.\"Id\" AND ctoHome.\"Side\" = 'Home'");
+    }
 }

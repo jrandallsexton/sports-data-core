@@ -1,64 +1,17 @@
 
-select * from public."Franchise" where "Slug" = 'lsu-tigers';
+select * from public."Franchise" where "Slug" = 'detroit-lions';
 
-select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc; -- c13b7c74-6892-3efa-2492-36ebf5220464 2025
+select * from public."FranchiseSeason" where "FranchiseId" = 'a8205dd4-8c1f-8bc5-b50c-050eac69ee3f' order by "SeasonYear" desc; -- 20d20bc3-17f4-9754-3acc-f7e6a984d97d 2026
 
-select * from public."FranchiseSeason" where "DisplayName" = 'Texas Tech Red Raiders';
+select * from public."FranchiseSeason" where "Id" = '20d20bc3-17f4-9754-3acc-f7e6a984d97d';
 
-select * from public."FranchiseSeason"
-where "Id" not in (select distinct "FranchiseSeasonId" from public."FranchiseSeasonRecord")
-and "SeasonYear" != 2026
-and ("GroupSeasonMap" like '%fbs%' or "GroupSeasonMap" like '%fcs%')
-order by "SeasonYear" desc;
+select count(*) from public."FranchiseSeason"
 
-select * from public."FranchiseSeason" where "Id" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17';
-select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17';
-select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17'; -- LSU 2009
-
-select count(*) from public."FranchiseSeasonRecord" -- 34,250, 36,598
-
---select count(*) from public."FranchiseSeasonRecord"; 34,074
-
-select fs.*, fsr.*
-from public."FranchiseSeason" fs
-inner join public."FranchiseSeasonRecord" fsr on fsr."FranchiseSeasonId" = fs."Id"
-where fs."FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' and fsr."Type" = 'total'
-order by fs."SeasonYear" desc;
-
--- WITH dupes AS (
---       SELECT r."Id",
---              r."FranchiseSeasonId",
---              r."SeasonYear",
---              r."Name",
---              r."Type",
---              r."Summary",
---              r."CreatedUtc",
---              r."ModifiedUtc",
---              COUNT(*) OVER (PARTITION BY r."FranchiseSeasonId", r."Name", r."Type") AS group_size
---       FROM public."FranchiseSeasonRecord" r
---   )
---   SELECT fs."Slug",
---          d."SeasonYear",
---          d."Name",
---          d."Type",
---          d."Summary",
---          d."Id"          AS record_id,
---          d."CreatedUtc",
---          d."ModifiedUtc",
---          d.group_size
---   FROM dupes d
---   JOIN public."FranchiseSeason" fs ON fs."Id" = d."FranchiseSeasonId"
---   WHERE d.group_size > 1
---   ORDER BY fs."Slug", d."SeasonYear", d."Name", d."Type", d."CreatedUtc";
-
-
-select * from public."FranchiseSeasonMetric" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464';
-
-select * from public."FranchiseSeasonStatisticCategory" limit 10;
-
-select * from public."FranchiseSeason" where "Id" = 'c13b7c74-6892-3efa-2492-36ebf5220464';
+select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = '20d20bc3-17f4-9754-3acc-f7e6a984d97d'; -- Detroit 2026
 
 select * from public."FranchiseSeasonRecord" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7';
+
+select count(*) from public."FranchiseSeasonRecord" -- 5,825
 
 select * from public."Contest" where "SeasonYear" = 2025 and "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"; -- LSU 2025
 

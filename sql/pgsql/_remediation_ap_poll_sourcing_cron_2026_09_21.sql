@@ -72,7 +72,7 @@ FROM public."ResourceIndex"
 WHERE "IsRecurring" AND "IsEnabled"
 ORDER BY "Ordinal";
 
-ROLLBACK; --COMMIT;   -- change to COMMIT once the preview looks right
+COMMIT; --ROLLBACK; --COMMIT;   -- change to COMMIT once the preview looks right
 
 -- AFTER COMMITTING: restart the Provider pod. SourcingJobOrchestrator registers
 -- these with Hangfire at startup, so the old 22:00 UTC schedule keeps running

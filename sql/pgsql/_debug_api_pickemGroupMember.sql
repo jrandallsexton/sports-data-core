@@ -2,7 +2,10 @@
 
 --select * from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813';
 
+-- Goal: Remove User0 from all pickem groups
+
 select * from public."PickemGroup" order by "CreatedUtc" desc;
+
 select * from public."PickemGroup" where "EndsOn" = '2026-09-08 06:59:00+00';
 update public."PickemGroup" set "DeactivatedUtc" = '2026-09-08 06:59:00+00', "InvitationsExpireUtc" = '2026-09-08 06:59:00+00' where "Id" = '3863696c-0293-4241-9760-d11f6fecb9de';
 

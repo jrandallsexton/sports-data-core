@@ -112,6 +112,13 @@ public interface IProvideContests : IProvideHealthChecks
     /// INTO the game, derived from prior finalized outcomes.
     /// </summary>
     Task<Result<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
+
+    /// <summary>
+    /// Current odds pricing for one contest: both teams' moneyline and spread
+    /// price, plus the over/under prices. NotFound when the Producer has no
+    /// such contest; prices are null when the contest has no odds.
+    /// </summary>
+    Task<Result<OddsPricingDto>> GetOddsPricingByContestId(Guid contestId, CancellationToken ct = default);
     Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
     Task<Result<ContestPreviewHistoryDto>> GetContestPreviewHistory(Guid contestId, CancellationToken ct = default);
     Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default);
@@ -454,6 +461,19 @@ public class ContestClient : ClientBase, IProvideContests
                 ResultStatus.Error,
                 [new ValidationFailure("contestIds", $"Producer call failed: {ex.Message}")]);
         }
+    }
+
+    public async Task<Result<OddsPricingDto>> GetOddsPricingByContestId(Guid contestId, CancellationToken ct = default)
+    {
+        if (contestId == Guid.Empty)
+            return new Failure<OddsPricingDto>(default!, ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+
+        // Default failure status is Error, not NotFound: a 404 still maps to
+        // NotFound, but a Producer 5xx must not read as "no such contest".
+        return await GetAsync<OddsPricingDto>(
+            $"contests/{contestId}/odds-pricing",
+            default!, "Odds pricing", ResultStatus.Error, ct);
     }
 
     public async Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default)

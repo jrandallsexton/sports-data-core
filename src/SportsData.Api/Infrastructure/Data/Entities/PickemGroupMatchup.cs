@@ -35,6 +35,24 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public double? UnderOdds { get; set; }
 
+        // Odds pricing, per team: unlike the spread (away = -home), moneyline
+        // and spread price are not derivable from the other side, so both are
+        // stored. Same provider row as the spread/total above (Producer's
+        // preferred-then-fallback selection). Populated by the odds-pricing
+        // backfill until the matchup data flows carry them.
+
+        /// <summary>American moneyline for the away team, e.g. +240.</summary>
+        public int? AwayMoneyLine { get; set; }
+
+        /// <summary>American moneyline for the home team, e.g. -300.</summary>
+        public int? HomeMoneyLine { get; set; }
+
+        /// <summary>Price on the away spread, e.g. -110.</summary>
+        public double? AwaySpreadPrice { get; set; }
+
+        /// <summary>Price on the home spread, e.g. -110.</summary>
+        public double? HomeSpreadPrice { get; set; }
+
         // Record snapshots (records at the time of matchup generation)
         public int AwayWins { get; set; }
 

@@ -1027,6 +1027,26 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Populates odds pricing (per-team moneyline and spread price, over/under
+        /// prices) on every PickemGroupMatchup: enqueues one background job per
+        /// distinct contest, each priced from its sport's Producer. Returns 202
+        /// with the correlation id and per-sport job counts. Writes only values
+        /// the Producer supplies (never erases); idempotent, safe to re-run.
+        /// Example: POST /admin/backfill-matchup-odds-pricing
+        /// </summary>
+        [HttpPost]
+        [Route("backfill-matchup-odds-pricing")]
+        public async Task<ActionResult<Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingResult>> BackfillMatchupOddsPricing(
+            [FromServices] Application.Admin.Commands.BackfillMatchupOddsPricing.IBackfillMatchupOddsPricingCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(
+                new Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingCommand(),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
         // ─────────────────────────────────────────────────────────────
         // SignalR debug harness — see docs/signalr-debug-harness-plan.md
         //

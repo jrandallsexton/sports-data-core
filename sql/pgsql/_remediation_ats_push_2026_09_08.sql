@@ -1,0 +1,1985 @@
+-- Remediation 2026-09-08: ATS pushes graded as losses + Guid.Empty sentinel leak.
+-- Root cause: Producer's odds-row push sentinel (Guid.Empty) leaked onto the
+-- Contest denorm / ContestFinalized wire (contract says null = push), and
+-- PickScoringService graded a detected push as IsCorrect=false for everyone.
+-- Fix PR changes: sentinel translated at the denorm boundary; push now scores
+-- IsCorrect=null ("grades nobody"); leaderboard accuracy excludes pushes.
+--
+-- RUN ORDER: enumeration on the LOCAL BACKUP first (parts 1-2) to see blast
+-- radius; prod healing (parts 3-5) AFTER the fix deploys.
+
+-- ═══════════════ PART 1 · PRODUCER DB (sdProducer.FootballNcaa) ═══════════════
+-- 1a. Contests whose denorm carries the leaked push sentinel.
+SELECT c."Id" AS contest_id, c."Name", c."AwayScore", c."HomeScore",
+       c."FinalizedUtc", c."SpreadWinnerFranchiseSeasonId"
+FROM public."Contest" c
+WHERE c."SpreadWinnerFranchiseSeasonId" = '00000000-0000-0000-0000-000000000000';
+
+-- User Note: Did _all_ of these games have a published spread?  I'll bet not.
+
+-- contest_id	Name	AwayScore	HomeScore	FinalizedUtc	SpreadWinnerFranchiseSeasonId
+-- 132f1358-aa4e-a1b7-3923-ba705270482b	Howard Bison at Norfolk State Spartans	20	21	2026-02-26 07:36:56.887941-05	00000000-0000-0000-0000-000000000000
+-- 8286baa0-776d-7ab3-55d2-9aa0fb6dad30	Fordham Rams at Lafayette Leopards	10	24	2025-10-04 19:29:57.374431-04	00000000-0000-0000-0000-000000000000
+-- 3b0510b7-a6b7-4679-c365-faf608dac192	Furman Paladins at William & Mary Tribe	24	34	2026-02-26 07:37:01.478439-05	00000000-0000-0000-0000-000000000000
+-- 88fc890b-299c-8f24-beb7-8492672e4b5c	Cornell Big Red at Dartmouth Big Green	14	24	2025-11-16 05:53:07.633304-05	00000000-0000-0000-0000-000000000000
+-- 3ad6f83e-dffd-8a69-83ba-bb5b1f364d97	UAlbany Great Danes at Bryant Bulldogs	24	17	2026-02-26 07:37:14.129506-05	00000000-0000-0000-0000-000000000000
+-- ef52f1d0-86bf-87d6-1bb4-da2fbce6be42	Charleston Southern Buccaneers at Tennessee State Tigers	9	13	2026-02-26 07:37:15.116471-05	00000000-0000-0000-0000-000000000000
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	24	12	2026-03-13 20:04:55.230379-04	00000000-0000-0000-0000-000000000000
+-- 97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09	Mississippi Valley State Delta Devils at Tennessee State Tigers	21	41	2026-02-26 07:37:28.993089-05	00000000-0000-0000-0000-000000000000
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	37	34	2026-02-27 04:35:09.684842-05	00000000-0000-0000-0000-000000000000
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	33	38	2026-02-27 04:35:10.466838-05	00000000-0000-0000-0000-000000000000
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	27	20	2026-03-12 06:15:38.999205-04	00000000-0000-0000-0000-000000000000
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	20	14	2026-07-03 02:00:10.848856-04	00000000-0000-0000-0000-000000000000
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	10	20	2026-03-12 06:15:41.640564-04	00000000-0000-0000-0000-000000000000
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	28	31	2026-02-27 04:35:11.411223-05	00000000-0000-0000-0000-000000000000
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	35	31	2026-02-27 04:35:16.932458-05	00000000-0000-0000-0000-000000000000
+-- 92f6d67d-7481-0f1c-9a29-04c73bdf612f	Montana Grizzlies at Northern Colorado Bears	24	0	2026-02-26 07:37:10.408156-05	00000000-0000-0000-0000-000000000000
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	45	31	2026-03-13 20:04:33.513815-04	00000000-0000-0000-0000-000000000000
+-- 169047e7-ff45-0172-5c26-352523da7620	Idaho State Bengals at BYU Cougars	13	59	2026-03-20 14:47:16.460218-04	00000000-0000-0000-0000-000000000000
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	35	38	2026-02-27 04:35:15.333528-05	00000000-0000-0000-0000-000000000000
+-- 1d56c10b-2add-eef0-fabd-efe4c20a6511	East Tennessee State Buccaneers at Mercer Bears	31	37	2026-02-26 07:37:24.933343-05	00000000-0000-0000-0000-000000000000
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	20	27	2026-03-13 20:04:58.171027-04	00000000-0000-0000-0000-000000000000
+-- 9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863	UAlbany Great Danes at Delaware Blue Hens	14	28	2026-02-26 07:36:51.56657-05	00000000-0000-0000-0000-000000000000
+-- 8792912a-194c-6119-f468-570078c37a76	Alcorn State Braves at Alabama State Hornets	17	21	2026-02-26 07:37:14.892551-05	00000000-0000-0000-0000-000000000000
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	22	20	2026-03-12 06:16:05.84667-04	00000000-0000-0000-0000-000000000000
+-- eb76f774-26b2-9796-0ab5-ea1cdc696375	UT Martin Skyhawks at Southeast Missouri State Redhawks	42	45	2026-02-26 07:37:31.426957-05	00000000-0000-0000-0000-000000000000
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	16	13	2026-03-13 20:04:42.789711-04	00000000-0000-0000-0000-000000000000
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	52	28	2026-03-12 06:16:09.124768-04	00000000-0000-0000-0000-000000000000
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	38	52	2026-03-13 20:04:37.675222-04	00000000-0000-0000-0000-000000000000
+-- 1714be5d-3bae-f7cd-b7ab-5574cf97d290	Alabama A&M Bulldogs at Mississippi Valley State Delta Devils	49	35	2026-02-26 07:37:14.455439-05	00000000-0000-0000-0000-000000000000
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	17	34	2026-02-27 04:34:54.380961-05	00000000-0000-0000-0000-000000000000
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	33	37	2026-03-13 20:04:38.698902-04	00000000-0000-0000-0000-000000000000
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	0	56	2026-03-14 05:03:16.494588-04	00000000-0000-0000-0000-000000000000
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	11	14	2026-03-12 06:16:16.011914-04	00000000-0000-0000-0000-000000000000
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	20	13	2026-03-13 20:04:38.767033-04	00000000-0000-0000-0000-000000000000
+-- 19851f23-9ed2-1bb3-9e80-896a7da16269	Kennesaw State Owls at Chattanooga Mocs	20	27	2026-02-27 04:35:06.745185-05	00000000-0000-0000-0000-000000000000
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	10	31	2026-02-27 04:35:16.116438-05	00000000-0000-0000-0000-000000000000
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	14	42	2026-03-13 20:04:45.848735-04	00000000-0000-0000-0000-000000000000
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	27	26	2026-03-14 05:03:20.443232-04	00000000-0000-0000-0000-000000000000
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	30	13	2026-03-14 05:03:20.779581-04	00000000-0000-0000-0000-000000000000
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	23	28	2026-03-14 05:03:21.421377-04	00000000-0000-0000-0000-000000000000
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	27	34	2026-03-14 05:03:22.289607-04	00000000-0000-0000-0000-000000000000
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	44	65	2026-03-14 05:03:23.060763-04	00000000-0000-0000-0000-000000000000
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	31	24	2026-03-14 05:03:23.673862-04	00000000-0000-0000-0000-000000000000
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	3	13	2026-03-13 20:04:45.03798-04	00000000-0000-0000-0000-000000000000
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	14	24	2026-03-13 20:04:42.77283-04	00000000-0000-0000-0000-000000000000
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	21	19	2026-03-12 06:16:47.204812-04	00000000-0000-0000-0000-000000000000
+-- c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720	Drake Bulldogs at South Dakota Coyotes	17	38	2025-11-29 17:02:19-05	00000000-0000-0000-0000-000000000000
+-- c23cfb68-5b14-6c19-0fe4-77c06e247f53	Mercyhurst Lakers at Sacramento State Hornets	28	49	2025-09-13 01:26:12-04	00000000-0000-0000-0000-000000000000
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	27	10	2026-03-12 06:16:58.446313-04	00000000-0000-0000-0000-000000000000
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	22	49	2026-03-13 20:04:50.554033-04	00000000-0000-0000-0000-000000000000
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	34	31	2026-03-13 20:04:47.667474-04	00000000-0000-0000-0000-000000000000
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	17	54	2026-03-13 20:04:51.061353-04	00000000-0000-0000-0000-000000000000
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	35	33	2026-03-13 20:04:48.973997-04	00000000-0000-0000-0000-000000000000
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	17	10	2026-03-13 20:04:57.868006-04	00000000-0000-0000-0000-000000000000
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	23	24	2026-03-13 20:05:05.240872-04	00000000-0000-0000-0000-000000000000
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	24	31	2026-03-13 20:04:57.437443-04	00000000-0000-0000-0000-000000000000
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	17	38	2026-03-13 20:05:12.462863-04	00000000-0000-0000-0000-000000000000
+-- 63ae0559-c0e5-3f9f-cd56-e1f585b233bd	Western Michigan Broncos at Eastern Michigan Eagles	32	29	2026-03-20 14:47:18.931763-04	00000000-0000-0000-0000-000000000000
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	20	24	2026-03-13 20:05:31.462798-04	00000000-0000-0000-0000-000000000000
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	14	66	2026-03-13 20:05:10.848236-04	00000000-0000-0000-0000-000000000000
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	13	20	2026-03-13 20:05:10.672188-04	00000000-0000-0000-0000-000000000000
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	28	42	2026-03-13 20:05:33.271069-04	00000000-0000-0000-0000-000000000000
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	17	34	2026-03-13 20:05:13.239064-04	00000000-0000-0000-0000-000000000000
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	10	41	2026-03-13 20:05:12.197479-04	00000000-0000-0000-0000-000000000000
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	34	31	2026-03-13 20:04:59.43299-04	00000000-0000-0000-0000-000000000000
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	24	17	2026-03-13 20:05:00.031582-04	00000000-0000-0000-0000-000000000000
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	24	39	2026-03-13 20:05:16.700954-04	00000000-0000-0000-0000-000000000000
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	58	37	2026-03-13 20:05:35.237503-04	00000000-0000-0000-0000-000000000000
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	24	31	2026-03-13 20:05:35.729358-04	00000000-0000-0000-0000-000000000000
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	38	41	2026-03-13 20:05:44.310932-04	00000000-0000-0000-0000-000000000000
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	38	35	2026-03-13 20:05:49.460152-04	00000000-0000-0000-0000-000000000000
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	17	18	2026-03-13 20:05:01.287439-04	00000000-0000-0000-0000-000000000000
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	17	20	2026-03-13 20:05:02.752335-04	00000000-0000-0000-0000-000000000000
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	50	43	2026-03-13 20:05:05.520681-04	00000000-0000-0000-0000-000000000000
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	41	35	2026-03-13 20:06:02.829255-04	00000000-0000-0000-0000-000000000000
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	23	41	2026-03-13 20:06:05.966884-04	00000000-0000-0000-0000-000000000000
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	10	34	2026-03-13 20:05:20.500881-04	00000000-0000-0000-0000-000000000000
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	16	27	2026-03-13 20:05:21.216646-04	00000000-0000-0000-0000-000000000000
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	6	23	2026-03-13 20:05:22.512341-04	00000000-0000-0000-0000-000000000000
+-- 4ed01c4f-35c6-ad8b-6b80-afff87b05223	Rice Owls at Tulsa Golden Hurricane	24	27	2026-03-20 14:47:19.537841-04	00000000-0000-0000-0000-000000000000
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	45	24	2026-03-14 05:03:20.853316-04	00000000-0000-0000-0000-000000000000
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	48	54	2026-03-13 20:06:10.366081-04	00000000-0000-0000-0000-000000000000
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	7	35	2026-03-13 20:06:12.790121-04	00000000-0000-0000-0000-000000000000
+-- 0bf62293-9aa7-ca52-72f2-d57bc5061b1f	St. Thomas-Minnesota Tommies at Marist Red Foxes	39	32	2026-02-26 07:37:29.78411-05	00000000-0000-0000-0000-000000000000
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	40	42	2026-03-14 05:03:21.434079-04	00000000-0000-0000-0000-000000000000
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	27	45	2026-03-14 05:03:21.208739-04	00000000-0000-0000-0000-000000000000
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	13	52	2026-03-17 06:57:42.029491-04	00000000-0000-0000-0000-000000000000
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	42	45	2026-03-17 06:57:43.537195-04	00000000-0000-0000-0000-000000000000
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	14	13	2026-03-13 20:05:04.778668-04	00000000-0000-0000-0000-000000000000
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	34	27	2026-03-17 06:57:45.370384-04	00000000-0000-0000-0000-000000000000
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	31	41	2026-03-17 06:57:48.884915-04	00000000-0000-0000-0000-000000000000
+-- cbef07c5-7c60-b5cb-8882-830517e6e0a6	Clemson Tigers at Maryland Terrapins	40	27	2026-03-20 14:47:21.540869-04	00000000-0000-0000-0000-000000000000
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	41	21	2026-03-13 20:06:12.799053-04	00000000-0000-0000-0000-000000000000
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	7	48	2026-03-17 06:57:51.499574-04	00000000-0000-0000-0000-000000000000
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	14	17	2026-03-17 06:57:51.504801-04	00000000-0000-0000-0000-000000000000
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	17	34	2026-03-17 06:57:52.553698-04	00000000-0000-0000-0000-000000000000
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	20	37	2026-03-17 06:57:54.807802-04	00000000-0000-0000-0000-000000000000
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	36	31	2026-03-17 06:57:57.134978-04	00000000-0000-0000-0000-000000000000
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	30	27	2026-03-17 05:24:08.634122-04	00000000-0000-0000-0000-000000000000
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	48	38	2026-03-13 20:05:32.88277-04	00000000-0000-0000-0000-000000000000
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	30	27	2026-03-17 06:57:59.768834-04	00000000-0000-0000-0000-000000000000
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	31	21	2026-03-13 20:05:31.138645-04	00000000-0000-0000-0000-000000000000
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	31	41	2026-03-13 20:05:33.152366-04	00000000-0000-0000-0000-000000000000
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	14	63	2026-03-13 20:05:38.67486-04	00000000-0000-0000-0000-000000000000
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	49	42	2026-03-13 20:05:38.316566-04	00000000-0000-0000-0000-000000000000
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	41	40	2026-03-13 20:05:40.698724-04	00000000-0000-0000-0000-000000000000
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	31	38	2026-03-17 06:58:07.164904-04	00000000-0000-0000-0000-000000000000
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	17	27	2026-03-13 20:04:52.277382-04	00000000-0000-0000-0000-000000000000
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	28	35	2026-03-13 20:05:59.740173-04	00000000-0000-0000-0000-000000000000
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	13	40	2026-03-13 20:06:03.116806-04	00000000-0000-0000-0000-000000000000
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	30	15	2026-03-13 20:06:07.308176-04	00000000-0000-0000-0000-000000000000
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	59	56	2026-03-13 20:06:08.198575-04	00000000-0000-0000-0000-000000000000
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	47	27	2026-03-13 20:06:10.016144-04	00000000-0000-0000-0000-000000000000
+-- ebd49813-ce23-8222-88e2-4f17ce28d230	LSU Tigers at Georgia Bulldogs	41	44	2026-03-20 14:47:30.463197-04	00000000-0000-0000-0000-000000000000
+-- 11e03a15-09ac-2301-43f9-3a213357ed96	Pennsylvania Quakers at Sacred Heart Pioneers	31	27	2026-03-13 20:06:15.623897-04	00000000-0000-0000-0000-000000000000
+-- f51d4c2d-8d0b-df78-2b74-32dda9eca73c	New Mexico State Aggies at Liberty Flames	21	28	2026-03-13 20:06:20.130109-04	00000000-0000-0000-0000-000000000000
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	10	20	2026-03-17 06:58:10.660306-04	00000000-0000-0000-0000-000000000000
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	45	35	2026-03-13 20:04:57.383275-04	00000000-0000-0000-0000-000000000000
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	20	27	2026-03-17 06:58:10.502792-04	00000000-0000-0000-0000-000000000000
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	49	28	2026-03-17 06:58:15.543425-04	00000000-0000-0000-0000-000000000000
+-- cc23f698-bcd8-d31a-2443-c6ac65c9008b	Michigan State Spartans at Notre Dame Fighting Irish	13	17	2026-03-20 14:47:31.585458-04	00000000-0000-0000-0000-000000000000
+-- 43f05e69-0cd2-44c8-4c38-5c5c6bfcc58b	Georgia Bulldogs at Florida Gators	23	20	2026-03-20 14:47:31.297997-04	00000000-0000-0000-0000-000000000000
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	3	24	2026-03-17 06:58:14.509774-04	00000000-0000-0000-0000-000000000000
+-- 1c834641-faad-8dbb-dc8a-7e47a0571c98	Central Arkansas Bears at Colorado Buffaloes	24	38	2026-03-20 14:47:33.934357-04	00000000-0000-0000-0000-000000000000
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	35	27	2026-03-17 05:24:10.030815-04	00000000-0000-0000-0000-000000000000
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	17	31	2026-03-14 05:03:19.975386-04	00000000-0000-0000-0000-000000000000
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	32	35	2026-03-14 05:03:15.574059-04	00000000-0000-0000-0000-000000000000
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	21	28	2026-03-13 20:05:56.272563-04	00000000-0000-0000-0000-000000000000
+-- 4a0d92ca-858b-303b-8337-c8b6271538ff	Rutgers Scarlet Knights at Arkansas Razorbacks	35	26	2026-03-20 14:47:21.456008-04	00000000-0000-0000-0000-000000000000
+-- 68c34cea-d457-8dfe-387f-0281b5af0216	San Jose State Spartans at San Diego State Aztecs	37	34	2026-03-20 14:47:21.520691-04	00000000-0000-0000-0000-000000000000
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	14	12	2026-03-17 05:24:13.37408-04	00000000-0000-0000-0000-000000000000
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	19	16	2026-03-17 05:24:15.429282-04	00000000-0000-0000-0000-000000000000
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	31	48	2026-03-17 05:24:13.216388-04	00000000-0000-0000-0000-000000000000
+-- 74dc2dc2-44df-6fbf-fc52-ad760806cb7a	Colorado State Rams at Boise State Broncos	14	42	2026-03-20 14:47:23.625568-04	00000000-0000-0000-0000-000000000000
+-- 42bbb7fd-72e8-e855-60cf-5509d20999ff	Florida Atlantic Owls at South Alabama Jaguars	34	37	2026-03-20 14:47:23.75542-04	00000000-0000-0000-0000-000000000000
+-- 35b412bd-2f57-43b5-3c03-c8834391af93	South Florida Bulls at Nevada Wolf Pack	32	31	2026-03-20 14:47:27.091026-04	00000000-0000-0000-0000-000000000000
+-- 87c9d551-4f1c-0f5b-e107-971924b65fc1	Tulsa Golden Hurricane at Marshall Thundering Herd	43	38	2026-03-20 14:47:27.502811-04	00000000-0000-0000-0000-000000000000
+-- a34fb9e4-2bd4-25e0-1192-6b9bbdf249bd	Oregon State Beavers at Stanford Cardinal	23	27	2026-03-20 14:47:28.245491-04	00000000-0000-0000-0000-000000000000
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	0	38	2026-03-17 05:24:18.707964-04	00000000-0000-0000-0000-000000000000
+-- 90453591-29b2-d426-4350-02976a67f3ac	Rice Owls at UTEP Miners	20	21	2026-03-20 14:47:30.036393-04	00000000-0000-0000-0000-000000000000
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	21	24	2026-03-17 06:57:51.040623-04	00000000-0000-0000-0000-000000000000
+-- 2a3b238c-98c7-f051-0f9c-e8044f1336d0	Miami (OH) RedHawks at Buffalo Bulls	24	27	2026-03-20 14:47:35.778954-04	00000000-0000-0000-0000-000000000000
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	24	17	2026-03-17 05:24:22.281838-04	00000000-0000-0000-0000-000000000000
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	15	31	2026-03-17 05:24:24.471347-04	00000000-0000-0000-0000-000000000000
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	16	13	2026-03-17 05:24:36.030815-04	00000000-0000-0000-0000-000000000000
+-- 10b057c7-0740-842b-1e9c-2dba68135c17	Kansas Jayhawks at Northern Illinois Huskies	23	30	2026-03-20 14:47:40.482753-04	00000000-0000-0000-0000-000000000000
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	31	38	2026-03-17 05:24:25.295389-04	00000000-0000-0000-0000-000000000000
+-- d2545f25-5f66-6586-c306-fed7ea0ecb6e	Troy Trojans at Middle Tennessee Blue Raiders	21	24	2026-03-20 14:47:43.089334-04	00000000-0000-0000-0000-000000000000
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	14	27	2026-03-17 05:24:35.509423-04	00000000-0000-0000-0000-000000000000
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	21	49	2026-03-17 05:24:27.476175-04	00000000-0000-0000-0000-000000000000
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	13	48	2026-03-17 05:24:37.069954-04	00000000-0000-0000-0000-000000000000
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	14	12	2026-03-17 05:24:44.440677-04	00000000-0000-0000-0000-000000000000
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	14	31	2026-03-17 05:24:15.43955-04	00000000-0000-0000-0000-000000000000
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	24	34	2026-03-17 05:24:32.249638-04	00000000-0000-0000-0000-000000000000
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	14	31	2026-03-17 05:24:14.431187-04	00000000-0000-0000-0000-000000000000
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	27	20	2026-03-24 09:35:50.480839-04	00000000-0000-0000-0000-000000000000
+-- 09aeb04c-9be0-60f0-789d-85f375280714	New Mexico State Aggies at Arkansas Razorbacks	24	42	2026-03-24 09:36:16.040933-04	00000000-0000-0000-0000-000000000000
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	31	21	2026-03-24 09:35:43.672674-04	00000000-0000-0000-0000-000000000000
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	30	10	2026-03-24 09:36:06.098579-04	00000000-0000-0000-0000-000000000000
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	21	0	2026-03-24 09:35:33.411122-04	00000000-0000-0000-0000-000000000000
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	10	24	2026-03-24 09:35:37.97426-04	00000000-0000-0000-0000-000000000000
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	42	27	2026-03-24 09:35:50.223618-04	00000000-0000-0000-0000-000000000000
+-- 3075f473-2315-0c13-73ae-b5816d081430	Arkansas-Pine Bluff Golden Lions at Akron Zips	3	52	2026-03-24 09:37:21.278575-04	00000000-0000-0000-0000-000000000000
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	23	44	2026-03-24 09:35:50.04926-04	00000000-0000-0000-0000-000000000000
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	17	14	2026-03-24 09:35:53.615464-04	00000000-0000-0000-0000-000000000000
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	10	37	2026-03-24 09:36:11.804991-04	00000000-0000-0000-0000-000000000000
+-- bba756d8-1f11-2dd4-2444-581c16dcda01	Charleston Southern Buccaneers at Indiana Hoosiers	0	27	2026-03-24 09:35:56.020811-04	00000000-0000-0000-0000-000000000000
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	55	62	2026-03-24 09:36:27.014406-04	00000000-0000-0000-0000-000000000000
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	10	17	2026-03-24 09:36:30.996001-04	00000000-0000-0000-0000-000000000000
+-- c13b9100-ff83-b2f7-101b-2638fead08f5	North Dakota Fighting Hawks at Utah Utes	16	37	2026-03-24 09:36:08.31364-04	00000000-0000-0000-0000-000000000000
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	24	27	2026-03-24 09:36:24.004379-04	00000000-0000-0000-0000-000000000000
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	38	24	2026-03-24 09:37:18.929582-04	00000000-0000-0000-0000-000000000000
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	14	33	2026-03-24 09:36:24.667749-04	00000000-0000-0000-0000-000000000000
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	24	14	2026-03-24 09:36:13.394006-04	00000000-0000-0000-0000-000000000000
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	45	52	2026-03-24 09:37:24.578776-04	00000000-0000-0000-0000-000000000000
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	7	28	2026-03-24 09:37:42.003925-04	00000000-0000-0000-0000-000000000000
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	21	45	2026-03-24 09:37:26.657992-04	00000000-0000-0000-0000-000000000000
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	27	10	2026-03-24 09:37:04.01355-04	00000000-0000-0000-0000-000000000000
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	28	49	2026-03-24 09:37:15.999775-04	00000000-0000-0000-0000-000000000000
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	26	19	2026-03-24 09:37:41.010719-04	00000000-0000-0000-0000-000000000000
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	16	20	2026-03-24 09:37:38.621445-04	00000000-0000-0000-0000-000000000000
+-- b5023bd7-f1e5-5aed-40ae-4bbae79f9325	Michigan Wolverines at Nebraska Cornhuskers	30	27	2025-09-20 20:33:56.800939-04	00000000-0000-0000-0000-000000000000
+-- 0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f	Lamar Cardinals at Stephen F. Austin Lumberjacks	15	26	2025-11-16 05:53:26.228643-05	00000000-0000-0000-0000-000000000000
+-- 1dbda297-0194-dc53-1b68-f1d2e770052e	Lehigh Mountain Hawks at Lafayette Leopards	42	32	2025-11-22 19:01:41.804745-05	00000000-0000-0000-0000-000000000000
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	17	45	2026-03-12 06:16:08.966347-04	00000000-0000-0000-0000-000000000000
+-- 22c1054c-41ca-5311-f61c-b17c6eea1711	Lindenwood Lions at Stony Brook Seawolves	32	36	2026-09-06 12:47:06.347527-04	00000000-0000-0000-0000-000000000000
+-- b978cac1-f391-c481-a1f9-f4aa34341267	Toledo Rockets at Michigan State Spartans	20	30	2026-09-06 12:47:06.448976-04	00000000-0000-0000-0000-000000000000
+-- 69e60763-d3e2-ad99-1655-ea38cf3ef2d9	SMU Mustangs at Florida State Seminoles	27	24	2026-09-08 00:40:11.061856-04	00000000-0000-0000-0000-000000000000
+
+-- 1b. Push per the SCORING input: the same ESPN(58)-over-DK(100) lateral that
+-- GetMatchupResultByContestId.sql feeds PickScoringService — a contest is a
+-- scoring-push when homeScore + spread == awayScore. This is the authoritative
+-- list for pick healing (the denorm may disagree when providers differ).
+SELECT c."Id" AS contest_id, c."Name", c."AwayScore", c."HomeScore",
+       coo."ProviderName", coo."Spread",
+       c."SpreadWinnerFranchiseSeasonId" AS denorm_spread_winner
+FROM public."Contest" c
+JOIN public."Competition" co ON co."ContestId" = c."Id"
+LEFT JOIN LATERAL (
+  SELECT * FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = co."Id" AND "ProviderId" IN ('58','100')
+  ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+  LIMIT 1
+) coo ON TRUE
+WHERE c."FinalizedUtc" IS NOT NULL
+  AND coo."Spread" IS NOT NULL AND coo."Spread" <> 0
+  AND (c."HomeScore" + coo."Spread") = c."AwayScore";
+
+--   contest_id	Name	AwayScore	HomeScore	ProviderName	Spread	denorm_spread_winner
+-- 13cbffb3-9370-7017-663f-a0f9693fdc46	Tarleton State Texans at Eastern Kentucky Colonels	31	7	ESPN BET	24.000000	NULL
+-- 1dbda297-0194-dc53-1b68-f1d2e770052e	Lehigh Mountain Hawks at Lafayette Leopards	42	32	ESPN BET	10.000000	00000000-0000-0000-0000-000000000000
+-- 9a3f4b2c-6d19-9356-c584-9cec14575330	Eastern Washington Eagles at Incarnate Word Cardinals	21	31	ESPN BET	-10.000000	NULL
+-- 0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f	Lamar Cardinals at Stephen F. Austin Lumberjacks	15	26	ESPN BET	-11.000000	00000000-0000-0000-0000-000000000000
+-- 88fc890b-299c-8f24-beb7-8492672e4b5c	Cornell Big Red at Dartmouth Big Green	14	24	ESPN BET	-10.000000	00000000-0000-0000-0000-000000000000
+-- 6b52352d-9fbf-b399-37ec-2bc8660fbd4f	Youngstown State Penguins at Towson Tigers	31	28	ESPN BET	3.000000	e58a83dc-f2a3-7494-a691-9da7a4ec18b4
+-- c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720	Drake Bulldogs at South Dakota Coyotes	17	38	ESPN BET	-21.000000	00000000-0000-0000-0000-000000000000
+-- 19851f23-9ed2-1bb3-9e80-896a7da16269	Kennesaw State Owls at Chattanooga Mocs	20	27	ESPN BET	-7.000000	00000000-0000-0000-0000-000000000000
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	37	34	ESPN BET	3.000000	00000000-0000-0000-0000-000000000000
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	35	38	ESPN BET	-3.000000	00000000-0000-0000-0000-000000000000
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	35	31	ESPN BET	4.000000	00000000-0000-0000-0000-000000000000
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	17	34	ESPN BET	-17.000000	00000000-0000-0000-0000-000000000000
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	33	38	ESPN BET	-5.000000	00000000-0000-0000-0000-000000000000
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	10	31	ESPN BET	-21.000000	00000000-0000-0000-0000-000000000000
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	28	31	ESPN BET	-3.000000	00000000-0000-0000-0000-000000000000
+-- 92f6d67d-7481-0f1c-9a29-04c73bdf612f	Montana Grizzlies at Northern Colorado Bears	24	0	ESPN BET	24.000000	00000000-0000-0000-0000-000000000000
+-- 3b0510b7-a6b7-4679-c365-faf608dac192	Furman Paladins at William & Mary Tribe	24	34	ESPN BET	-10.000000	00000000-0000-0000-0000-000000000000
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	11	14	ESPN BET	-3.000000	00000000-0000-0000-0000-000000000000
+-- 8792912a-194c-6119-f468-570078c37a76	Alcorn State Braves at Alabama State Hornets	17	21	ESPN BET	-4.000000	00000000-0000-0000-0000-000000000000
+-- 9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863	UAlbany Great Danes at Delaware Blue Hens	14	28	ESPN BET	-14.000000	00000000-0000-0000-0000-000000000000
+-- 3ad6f83e-dffd-8a69-83ba-bb5b1f364d97	UAlbany Great Danes at Bryant Bulldogs	24	17	ESPN BET	7.000000	00000000-0000-0000-0000-000000000000
+-- 1714be5d-3bae-f7cd-b7ab-5574cf97d290	Alabama A&M Bulldogs at Mississippi Valley State Delta Devils	49	35	ESPN BET	14.000000	00000000-0000-0000-0000-000000000000
+-- ef52f1d0-86bf-87d6-1bb4-da2fbce6be42	Charleston Southern Buccaneers at Tennessee State Tigers	9	13	ESPN BET	-4.000000	00000000-0000-0000-0000-000000000000
+-- 1d56c10b-2add-eef0-fabd-efe4c20a6511	East Tennessee State Buccaneers at Mercer Bears	31	37	ESPN BET	-6.000000	00000000-0000-0000-0000-000000000000
+-- 97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09	Mississippi Valley State Delta Devils at Tennessee State Tigers	21	41	ESPN BET	-20.000000	00000000-0000-0000-0000-000000000000
+-- 0bf62293-9aa7-ca52-72f2-d57bc5061b1f	St. Thomas-Minnesota Tommies at Marist Red Foxes	39	32	ESPN BET	7.000000	00000000-0000-0000-0000-000000000000
+-- 132f1358-aa4e-a1b7-3923-ba705270482b	Howard Bison at Norfolk State Spartans	20	21	ESPN BET	-1.000000	00000000-0000-0000-0000-000000000000
+-- eb76f774-26b2-9796-0ab5-ea1cdc696375	UT Martin Skyhawks at Southeast Missouri State Redhawks	42	45	ESPN BET	-3.000000	00000000-0000-0000-0000-000000000000
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	27	20	ESPN BET	7.000000	00000000-0000-0000-0000-000000000000
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	10	20	ESPN BET	-10.000000	00000000-0000-0000-0000-000000000000
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	52	28	ESPN BET	24.000000	00000000-0000-0000-0000-000000000000
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	17	45	ESPN BET	-28.000000	00000000-0000-0000-0000-000000000000
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	22	20	ESPN BET	2.000000	00000000-0000-0000-0000-000000000000
+-- 69e60763-d3e2-ad99-1655-ea38cf3ef2d9	SMU Mustangs at Florida State Seminoles	27	24	DraftKings	3.000000	00000000-0000-0000-0000-000000000000
+-- b978cac1-f391-c481-a1f9-f4aa34341267	Toledo Rockets at Michigan State Spartans	20	30	DraftKings	-10.000000	00000000-0000-0000-0000-000000000000
+-- 22c1054c-41ca-5311-f61c-b17c6eea1711	Lindenwood Lions at Stony Brook Seawolves	32	36	DraftKings	-4.000000	00000000-0000-0000-0000-000000000000
+
+-- ═══════════════ FINDINGS (2026-09-08, from local backup) ═══════════════════
+-- 1a = ~145 contests with the leaked sentinel; 1b = 36 true pushes per the
+-- scoring lateral. The 1a-minus-1b majority (Feb/Mar-backfill era, scores
+-- like 0-56) were NOT pushes on any plausible line — operator's bet is that
+-- those games had no published spread and an older enrichment wrote empty
+-- instead of null. Part 3 heals them identically either way. Run 1c to
+-- confirm origin. Youngstown@Towson: lateral says push (ESPN BET +3) but
+-- the denorm holds a REAL winner — the denorm's OddsProviderPreference chose
+-- a different provider/spread than the scoring lateral. Per-provider scoring
+-- refactor evidence (post-season list); NOT healed here.
+-- Pick exposure: of 36 pushes only three are 2026 league-season games —
+-- SMU@FSU, Toledo@MichiganSt, Lindenwood@StonyBrook (all week 1).
+
+-- 1c FINDINGS (2026-09-08): BOTH prior hypotheses wrong — these are neither
+-- no-spread games nor bug artifacts. The historical corpus carries 10–15
+-- books per game (ProviderPriority 0), and each row's AtsWinner is correct
+-- AT THAT BOOK'S LINE (e.g. Alcorn@MVSU 24–12: push at 12, away at 11,
+-- home at 13). 1a >> 1b because the Contest denorm's book
+-- (OddsProviderPreference era fallback → consensus/accuscore-class) differs
+-- from scoring's lateral (ESPN 58 → DK 100); college lines cluster on whole
+-- numbers, so ~145 contests pushed at the denorm's book vs 36 at scoring's.
+-- Youngstown@Towson is a whole class, not an outlier. Remediation is
+-- unaffected (Part 3 is book-agnostic; Part 5 keys on scoring's book via
+-- 1b). REFACTOR DIRECTIVE (operator, 2026-09-08): pick ONE governing book
+-- per contest, stamp it at matchup generation, and make denorm + scoring +
+-- display all read that stamp.
+
+-- 1c. Origin check for 1a-only contests: what does the primary odds row hold?
+SELECT c."Id", c."Name", o."ProviderName", o."ProviderPriority", o."Spread",
+       o."AtsWinnerFranchiseSeasonId", o."FinalizedUtc"
+FROM public."Contest" c
+JOIN public."Competition" co ON co."ContestId" = c."Id"
+LEFT JOIN public."CompetitionOdds" o ON o."CompetitionId" = co."Id"
+WHERE c."SpreadWinnerFranchiseSeasonId" = '00000000-0000-0000-0000-000000000000'
+ORDER BY c."Name", o."ProviderPriority";
+
+-- Id	Name	ProviderName	ProviderPriority	Spread	AtsWinnerFranchiseSeasonId	FinalizedUtc
+-- 1714be5d-3bae-f7cd-b7ab-5574cf97d290	Alabama A&M Bulldogs at Mississippi Valley State Delta Devils	ESPN Bet - Live Odds	0	14.000000	NULL	NULL
+-- 1714be5d-3bae-f7cd-b7ab-5574cf97d290	Alabama A&M Bulldogs at Mississippi Valley State Delta Devils	ESPN BET	0	14.000000	NULL	NULL
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	Westgate	0	-6.000000	a459df16-8dd7-8925-446e-71af427d5f1e	2026-03-13 20:04:57.43747-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	Unibet	0	-7.500000	b7efb519-7fdc-7630-513f-eef12244e76d	2026-03-13 20:04:57.437461-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.437446-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	Caesars Sportsbook (New Jersey)	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.437472-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	DraftKings	0	-6.500000	a459df16-8dd7-8925-446e-71af427d5f1e	2026-03-13 20:04:57.437466-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	MGM	0	-7.500000	b7efb519-7fdc-7630-513f-eef12244e76d	2026-03-13 20:04:57.437474-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	Titanbets	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.437476-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	PointsBet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.437468-04
+-- 2b4f1c13-144d-18e2-a2e5-bd6cc5523212	Albany Great Danes at William & Mary Tribe	Caesars Sportsbook (Colorado)	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.437464-04
+-- 8792912a-194c-6119-f468-570078c37a76	Alcorn State Braves at Alabama State Hornets	ESPN Bet - Live Odds	0	-4.000000	NULL	NULL
+-- 8792912a-194c-6119-f468-570078c37a76	Alcorn State Braves at Alabama State Hornets	ESPN BET	0	-4.000000	NULL	NULL
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	Caesars Sportsbook (Colorado)	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230398-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	Westgate	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230403-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	Caesars Sportsbook (New Jersey)	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230402-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	consensus	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230381-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	DraftKings	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230397-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	Titanbets	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230391-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	Unibet	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230393-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	SugarHouse	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230396-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	PointsBet	0	13.000000	51d96958-be71-84f9-9311-2eb781aa8060	2026-03-13 20:04:55.2304-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	MGM	0	11.000000	d8bf8c96-4e44-7790-1b25-4825be6dfce0	2026-03-13 20:04:55.230394-04
+-- 62c0fafa-99fd-cd76-c58f-eb04bd74ac02	Alcorn State Braves at Mississippi Valley State Delta Devils	accuscore	0	12.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:55.230399-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Caesars	0	1.500000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698745-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Wynn	0	2.000000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698758-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	numberfire	0	1.500000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698761-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	teamrankings	0	1.500000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698748-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	consensus	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:40.698749-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	accuscore	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:40.698727-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Caesar's	0	1.500000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698757-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Unibet	0	1.500000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.69876-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Caesars Sportsbook	0	-1.500000	042aa9e4-beec-f6a7-3def-0818b15cc08f	2026-03-13 20:05:40.69875-04
+-- be5268e5-b3a4-8e21-91e8-db51718f2f2b	Arizona State Sun Devils at Arizona Wildcats	Westgate	0	2.000000	fc3fa13b-eafe-08b3-66c0-8fcf8d1fad8d	2026-03-13 20:05:40.698755-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	CG Technology	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578808-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	Unibet	0	-7.500000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:37:24.578802-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	teamrankings	0	-6.500000	14314c46-3931-82d8-82fa-d4151cb1d254	2026-03-24 09:37:24.5788-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	Caesar's	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578798-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578796-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578793-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	Wynn	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.57879-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578779-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	Westgate	0	-6.500000	14314c46-3931-82d8-82fa-d4151cb1d254	2026-03-24 09:37:24.578804-04
+-- 67642c8f-5c63-e9f9-22d4-2603b338dba9	Arizona State Sun Devils at Texas Tech Red Raiders	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:24.578806-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	Caesar's	0	-10.000000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.0986-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	teamrankings	0	-9.500000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098603-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	Unibet	0	-9.500000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098602-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	accuscore	0	-9.500000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098597-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	numberfire	0	-10.000000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098596-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	consensus	0	-10.000000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098595-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	CG Technology	0	-10.000000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098594-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	Caesars Sportsbook	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:06.098581-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	Wynn	0	-10.500000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098601-04
+-- ce8d9030-2336-4474-2855-06c920486275	Arizona State Sun Devils at Utah Utes	Westgate	0	-10.000000	3aa82a70-c60c-3ee8-8255-bf21e482d092	2026-03-24 09:36:06.098598-04
+-- 3075f473-2315-0c13-73ae-b5816d081430	Arkansas-Pine Bluff Golden Lions at Akron Zips	Westgate	0	-49.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:21.278595-04
+-- 3075f473-2315-0c13-73ae-b5816d081430	Arkansas-Pine Bluff Golden Lions at Akron Zips	accuscore	0	-48.500000	8e70cf74-2414-194b-0caf-48d1c3196321	2026-03-24 09:37:21.278589-04
+-- 3075f473-2315-0c13-73ae-b5816d081430	Arkansas-Pine Bluff Golden Lions at Akron Zips	consensus	0	-49.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:21.278578-04
+-- 3075f473-2315-0c13-73ae-b5816d081430	Arkansas-Pine Bluff Golden Lions at Akron Zips	Caesars Sportsbook	0	-49.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:21.278591-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	SugarHouse	0	-7.000000	f4d05e12-66b0-9c7e-a6ce-8776ac1374b1	2026-03-13 20:05:31.462822-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Westgate	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462817-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	consensus	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462828-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Caesars	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462827-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Wynn	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462826-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Unibet	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462801-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Caesars Sportsbook	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.462823-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	Betradar	0	-3.500000	25c26029-0060-7f77-b3dd-b73b216a7641	2026-03-13 20:05:31.462825-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	teamrankings	0	-5.000000	f4d05e12-66b0-9c7e-a6ce-8776ac1374b1	2026-03-13 20:05:31.46282-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	accuscore	0	-3.500000	25c26029-0060-7f77-b3dd-b73b216a7641	2026-03-13 20:05:31.462829-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	numberfire	0	-5.000000	f4d05e12-66b0-9c7e-a6ce-8776ac1374b1	2026-03-13 20:05:31.462819-04
+-- 533889c2-644b-0f4c-3468-e1810505a31d	Arkansas Razorbacks at Kentucky Wildcats	DraftKings	0	-6.000000	f4d05e12-66b0-9c7e-a6ce-8776ac1374b1	2026-03-13 20:05:31.462824-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Unibet	0	2.500000	b8c61446-7d41-f14a-847d-e3e6e42c9ef1	2026-03-13 20:04:42.789742-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Caesars Sportsbook	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.78974-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Caesars Sportsbook (Colorado)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789734-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	SugarHouse	0	2.500000	b8c61446-7d41-f14a-847d-e3e6e42c9ef1	2026-03-13 20:04:42.789743-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Caesars Sportsbook (New Jersey)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789733-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Caesars Sportsbook (Pennsylvania)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789732-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	DraftKings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789745-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	MGM	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789715-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789737-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789741-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	PointsBet	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789735-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	Titanbets	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789729-04
+-- 0f31a349-099d-9984-6727-5b7369bc8ba7	Arkansas Razorbacks at LSU Tigers	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.789738-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	Westgate	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411152-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	Caesar's	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411147-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	numberfire	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411146-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	consensus	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411144-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	CG Technology	0	-7.000000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411143-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	teamrankings	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411137-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	Unibet	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411136-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	accuscore	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411134-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	Caesars Sportsbook	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:33.411127-04
+-- 023f69c6-eba2-5fa5-2a80-1733b391f582	Army Black Knights at Air Force Falcons	Wynn	0	-6.500000	3c099e57-ef51-9a84-17f6-f847ffacb9f9	2026-03-24 09:35:33.411148-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	Fantasy911.com	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:25.295403-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	consensus	0	14.000000	5f934257-796e-5d4a-689a-a405174962e6	2026-03-17 05:24:25.295398-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	numberfire	0	-6.500000	5f934257-796e-5d4a-689a-a405174962e6	2026-03-17 05:24:25.295401-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	BETONLINE.ag	0	-6.500000	5f934257-796e-5d4a-689a-a405174962e6	2026-03-17 05:24:25.295399-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	BOVADA.lv	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:25.295406-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	SportsBetting.ag	0	-6.500000	5f934257-796e-5d4a-689a-a405174962e6	2026-03-17 05:24:25.295404-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	5Dimes.eu	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:25.295405-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	Opening	0	14.000000	5f934257-796e-5d4a-689a-a405174962e6	2026-03-17 05:24:25.2954-04
+-- 67d2c365-b653-d4d2-d7ef-418e3569956a	Army Black Knights at Rice Owls	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:25.295392-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	Unibet	0	14.500000	8e4ee705-2969-4c27-9db5-67002f710252	2026-03-24 09:35:50.22363-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	numberfire	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.223624-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	consensus	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.22362-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	Westgate	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.223631-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	CG Technology	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.223629-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	Caesar's	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.223626-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	accuscore	0	14.500000	8e4ee705-2969-4c27-9db5-67002f710252	2026-03-24 09:35:50.223627-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	teamrankings	0	14.500000	8e4ee705-2969-4c27-9db5-67002f710252	2026-03-24 09:35:50.223636-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	Caesars Sportsbook	0	15.500000	80d619f9-c53c-9ee9-0d64-cebe86d5fbeb	2026-03-24 09:35:50.223633-04
+-- 4d921f61-2b24-3675-1e89-34e1b27c6524	Auburn Tigers at Texas A&M Aggies	Wynn	0	14.500000	8e4ee705-2969-4c27-9db5-67002f710252	2026-03-24 09:35:50.223632-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	DraftKings	0	-35.500000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.061378-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	Titanbets	0	-36.500000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.061384-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	PointsBet	0	-37.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:51.061385-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	Westgate	0	-37.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:51.061358-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	accuscore	0	-37.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:51.061382-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	consensus	0	-37.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:51.061386-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	Caesars Sportsbook (New Jersey)	0	-37.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:51.061388-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	MGM	0	-36.000000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.061387-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	Unibet	0	-36.500000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.06138-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	SugarHouse	0	-36.500000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.061389-04
+-- 7eca74e7-f72e-1fda-b956-c337184ba97b	Austin Peay Governors at Ole Miss Rebels	Caesars Sportsbook	0	-36.500000	b17f1218-9f76-0876-6e6b-343537e85f77	2026-03-13 20:04:51.061381-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	BOVADA.lv	0	22.000000	f3dcedd2-3e5f-1e7d-1919-3204b11e97cb	2026-03-17 06:58:15.543441-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	BETONLINE.ag	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:15.543428-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	Fantasy911.com	0	21.500000	f3dcedd2-3e5f-1e7d-1919-3204b11e97cb	2026-03-17 06:58:15.543434-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	5Dimes.eu	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:15.543435-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	consensus	0	22.000000	f3dcedd2-3e5f-1e7d-1919-3204b11e97cb	2026-03-17 06:58:15.543436-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	teamrankings	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:15.543438-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	SportsBetting.ag	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:15.543439-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	numberfire	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:15.54344-04
+-- 04461763-8342-5a07-0aae-8d4ac4c5cb93	Baylor Bears at Iowa State Cyclones	Opening	0	22.000000	f3dcedd2-3e5f-1e7d-1919-3204b11e97cb	2026-03-17 06:58:15.543442-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	numberfire	0	-10.500000	dd4457ef-4b01-f188-9cc4-fadd46674208	2026-03-13 20:05:21.216664-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	SugarHouse	0	-10.500000	dd4457ef-4b01-f188-9cc4-fadd46674208	2026-03-13 20:05:21.216662-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	teamrankings	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216649-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	Westgate	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216665-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	DraftKings	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216668-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	Caesars	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216669-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	Unibet	0	-10.500000	dd4457ef-4b01-f188-9cc4-fadd46674208	2026-03-13 20:05:21.216671-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	Caesars Sportsbook	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216672-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	consensus	0	-11.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:21.216674-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:21.216676-04
+-- f23f3e0f-457c-e6e8-a96d-a3098376fdd8	Baylor Bears at Texas Longhorns	accuscore	0	-10.500000	dd4457ef-4b01-f188-9cc4-fadd46674208	2026-03-13 20:05:21.216677-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	Caesars Sportsbook	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.240893-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	Unibet	0	1.500000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.240891-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	DraftKings	0	0.500000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.24089-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:05.240888-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	Caesars Sportsbook (New Jersey)	0	0.000000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.240887-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	teamrankings	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.240885-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	Caesars	0	1.000000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.240884-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	numberfire	0	-0.500000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.240883-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	SugarHouse	0	1.500000	ef8cabd3-5d6c-e0bf-5dc3-a4db382055ce	2026-03-13 20:05:05.240881-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	accuscore	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.24088-04
+-- 3a708719-25f8-74a9-dccc-cc3da2de96e3	Baylor Bears at Texas Tech Red Raiders	consensus	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.240874-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Caesars Sportsbook	0	9.500000	527aae7a-56b3-ec2b-4adc-895353c52f76	2026-03-13 20:05:32.882792-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	numberfire	0	9.500000	527aae7a-56b3-ec2b-4adc-895353c52f76	2026-03-13 20:05:32.882791-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Wynn	0	9.500000	527aae7a-56b3-ec2b-4adc-895353c52f76	2026-03-13 20:05:32.882799-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Caesar's	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882798-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	accuscore	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882796-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Unibet	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882794-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	teamrankings	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882797-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	consensus	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882793-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Westgate	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.88279-04
+-- 9ea4c83c-041e-6331-5d11-399a785390f0	Boise State Broncos at Air Force Falcons	Caesars	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:32.882773-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	BETONLINE.ag	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502819-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	Opening	0	-6.500000	eb60da4d-578e-f507-f9f5-c08f625ad9b2	2026-03-17 06:58:10.502817-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	Fantasy911.com	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502818-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	SportsBetting.ag	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502811-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	consensus	0	-6.500000	eb60da4d-578e-f507-f9f5-c08f625ad9b2	2026-03-17 06:58:10.502814-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502816-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	BOVADA.lv	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502796-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	5Dimes.eu	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.502815-04
+-- 12812607-a1e7-ee7e-ced7-cd52547ef42e	Bowling Green Falcons at Toledo Rockets	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.50281-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	DraftKings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999209-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999224-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	MGM	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999217-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	Titanbets	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999219-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999221-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	Caesars Sportsbook (Colorado)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999222-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	Unibet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999225-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	Caesars Sportsbook (New Jersey)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999226-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	SugarHouse	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.999228-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	Westgate	0	7.500000	93958bcb-dd59-375c-117a-a95575c98329	2026-03-12 06:15:38.999227-04
+-- a1d354dd-8193-111b-1fe9-2943e6f4e9cf	Brown Bears at Central Connecticut Blue Devils	ESPN BET	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:38.99922-04
+-- 1c834641-faad-8dbb-dc8a-7e47a0571c98	Central Arkansas Bears at Colorado Buffaloes	consensus	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:33.934366-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	PointsBet	0	-9.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277398-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	Unibet	0	-9.000000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277399-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	Caesars Sportsbook (New Jersey)	0	-9.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277398-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	Westgate	0	-9.000000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277396-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	MGM	0	-10.500000	d81541fe-aafe-7b5c-f366-633e5c98a83d	2026-03-13 20:04:52.277395-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	SugarHouse	0	-9.000000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277394-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	accuscore	0	-9.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277393-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	Caesars Sportsbook (Colorado)	0	-9.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.277392-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	Titanbets	0	-9.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:04:52.27739-04
+-- 17b6e488-1d5a-d5c2-e59f-3de9bb4d90a2	Central Connecticut Blue Devils at Sacred Heart Pioneers	DraftKings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:52.277384-04
+-- bba756d8-1f11-2dd4-2444-581c16dcda01	Charleston Southern Buccaneers at Indiana Hoosiers	Westgate	0	-27.500000	b127e4b6-83cf-d2d2-fc4c-287cfcae35b9	2026-03-24 09:35:56.020825-04
+-- bba756d8-1f11-2dd4-2444-581c16dcda01	Charleston Southern Buccaneers at Indiana Hoosiers	accuscore	0	-27.500000	b127e4b6-83cf-d2d2-fc4c-287cfcae35b9	2026-03-24 09:35:56.020823-04
+-- bba756d8-1f11-2dd4-2444-581c16dcda01	Charleston Southern Buccaneers at Indiana Hoosiers	Caesars Sportsbook	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:56.020815-04
+-- bba756d8-1f11-2dd4-2444-581c16dcda01	Charleston Southern Buccaneers at Indiana Hoosiers	consensus	0	-27.500000	b127e4b6-83cf-d2d2-fc4c-287cfcae35b9	2026-03-24 09:35:56.020827-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	Titanbets	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640599-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	accuscore	0	-10.500000	8b4cdd3d-a953-4af5-6b47-f7d1d7db41f9	2026-03-12 06:15:41.640596-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	Unibet	0	-10.500000	8b4cdd3d-a953-4af5-6b47-f7d1d7db41f9	2026-03-12 06:15:41.640601-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	ESPN BET	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:15:41.64057-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	Caesars Sportsbook (New Jersey)	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640582-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	PointsBet	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640587-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	DraftKings	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640589-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	Caesars Sportsbook (Colorado)	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640591-04
+-- 59876a6f-afb4-95d6-4088-fc197e804a93	Charleston Southern Buccaneers at North Carolina A&T Aggies	MGM	0	-9.500000	2f61dac7-fe60-0860-b7b5-26f32a39e5dd	2026-03-12 06:15:41.640594-04
+-- ef52f1d0-86bf-87d6-1bb4-da2fbce6be42	Charleston Southern Buccaneers at Tennessee State Tigers	ESPN Bet - Live Odds	0	-4.000000	NULL	NULL
+-- ef52f1d0-86bf-87d6-1bb4-da2fbce6be42	Charleston Southern Buccaneers at Tennessee State Tigers	ESPN BET	0	-4.000000	NULL	NULL
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	unknown	0	-18.000000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:13.216401-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	5Dimes.eu	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.216406-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	numberfire	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.21639-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	consensus	0	-19.000000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:13.216409-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	Fantasy911.com	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.216404-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	teamrankings	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.216408-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	SportsBetting.ag	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.216402-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	BETONLINE.ag	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.2164-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	BOVADA.lv	0	-17.500000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:13.216409-04
+-- d04de8d6-e10f-558b-ee30-5c7a8998381f	Charlotte 49ers at Florida Intl Golden Panthers	Opening	0	-19.000000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:13.216405-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	accuscore	0	-10.500000	f9c4111e-d6ef-4973-a92c-28db37b031e9	2026-03-13 20:04:42.772852-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	DraftKings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772857-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Titanbets	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772854-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Caesars Sportsbook	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772833-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	consensus	0	-10.500000	f9c4111e-d6ef-4973-a92c-28db37b031e9	2026-03-13 20:04:42.772851-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	PointsBet	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772844-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Caesars Sportsbook (Pennsylvania)	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772855-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	MGM	0	-10.500000	f9c4111e-d6ef-4973-a92c-28db37b031e9	2026-03-13 20:04:42.772847-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	SugarHouse	0	-10.500000	f9c4111e-d6ef-4973-a92c-28db37b031e9	2026-03-13 20:04:42.772858-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Caesars Sportsbook (Colorado)	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772856-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Unibet	0	-10.500000	f9c4111e-d6ef-4973-a92c-28db37b031e9	2026-03-13 20:04:42.77286-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	Caesars Sportsbook (New Jersey)	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772848-04
+-- 8232b4e7-0832-d635-7a04-c2b75eb067f1	Charlotte 49ers at Illinois Fighting Illini	teamrankings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:42.772849-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	BOVADA.lv	0	2.000000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429296-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	teamrankings	0	1.500000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429298-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	BETONLINE.ag	0	2.000000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429294-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	unknown	0	1.500000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429295-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	numberfire	0	2.000000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429297-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:15.429299-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	5Dimes.eu	0	2.000000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.429292-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	SportsBetting.ag	0	2.000000	be2ac53d-c2d1-a7b4-68a3-9e9867eba60e	2026-03-17 05:24:15.4293-04
+-- 70924658-b250-8e45-704b-c28d78f25f10	Cincinnati Bearcats at East Carolina Pirates	Opening	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:15.429285-04
+-- cbef07c5-7c60-b5cb-8882-830517e6e0a6	Clemson Tigers at Maryland Terrapins	teamrankings	0	16.500000	e1e70a79-57b9-206b-5760-11c1e6e135e0	2026-03-20 14:47:21.540878-04
+-- cbef07c5-7c60-b5cb-8882-830517e6e0a6	Clemson Tigers at Maryland Terrapins	consensus	0	13.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:21.54087-04
+-- cbef07c5-7c60-b5cb-8882-830517e6e0a6	Clemson Tigers at Maryland Terrapins	numberfire	0	16.500000	e1e70a79-57b9-206b-5760-11c1e6e135e0	2026-03-20 14:47:21.540876-04
+-- 74dc2dc2-44df-6fbf-fc52-ad760806cb7a	Colorado State Rams at Boise State Broncos	teamrankings	0	-29.500000	86e4b28e-a835-4a4a-8b2a-bc979c612403	2026-03-20 14:47:23.62558-04
+-- 74dc2dc2-44df-6fbf-fc52-ad760806cb7a	Colorado State Rams at Boise State Broncos	consensus	0	-30.000000	86e4b28e-a835-4a4a-8b2a-bc979c612403	2026-03-20 14:47:23.625577-04
+-- 74dc2dc2-44df-6fbf-fc52-ad760806cb7a	Colorado State Rams at Boise State Broncos	accuscore	0	-28.500000	86e4b28e-a835-4a4a-8b2a-bc979c612403	2026-03-20 14:47:23.625578-04
+-- 74dc2dc2-44df-6fbf-fc52-ad760806cb7a	Colorado State Rams at Boise State Broncos	numberfire	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:23.62557-04
+-- 88fc890b-299c-8f24-beb7-8492672e4b5c	Cornell Big Red at Dartmouth Big Green	ESPN Bet - Live Odds	0	-10.000000	NULL	NULL
+-- 88fc890b-299c-8f24-beb7-8492672e4b5c	Cornell Big Red at Dartmouth Big Green	ESPN BET	0	-10.000000	NULL	NULL
+-- c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720	Drake Bulldogs at South Dakota Coyotes	ESPN BET	0	-21.000000	NULL	NULL
+-- c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720	Drake Bulldogs at South Dakota Coyotes	ESPN Bet - Live Odds	0	-21.000000	NULL	NULL
+-- 1d56c10b-2add-eef0-fabd-efe4c20a6511	East Tennessee State Buccaneers at Mercer Bears	ESPN BET	0	-6.000000	NULL	NULL
+-- 1d56c10b-2add-eef0-fabd-efe4c20a6511	East Tennessee State Buccaneers at Mercer Bears	ESPN Bet - Live Odds	0	-6.000000	NULL	NULL
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	BETONLINE.ag	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.476187-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	BOVADA.lv	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.476202-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	Fantasy911.com	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.4762-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	teamrankings	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.476201-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	Opening	0	-27.500000	8dc34422-553b-9704-c542-beb70a6f3765	2026-03-17 05:24:27.476188-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	5Dimes.eu	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.47619-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	numberfire	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.476203-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	SportsBetting.ag	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:27.476177-04
+-- d85c3e19-fca6-93ee-5c38-75dd23b63e93	Eastern Michigan Eagles at Northern Illinois Huskies	consensus	0	-27.500000	8dc34422-553b-9704-c542-beb70a6f3765	2026-03-17 05:24:27.476191-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	Unibet	0	1.500000	2b3ba8ea-0b46-acdc-8682-65109a91f4f7	2026-03-13 20:04:48.974022-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	Westgate	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974026-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	SugarHouse	0	1.500000	2b3ba8ea-0b46-acdc-8682-65109a91f4f7	2026-03-13 20:04:48.974027-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	Titanbets	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974035-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	consensus	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974023-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	Caesars Sportsbook (Colorado)	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974001-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	MGM	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.97402-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	DraftKings	0	1.500000	2b3ba8ea-0b46-acdc-8682-65109a91f4f7	2026-03-13 20:04:48.974029-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	PointsBet	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974018-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	Caesars Sportsbook (New Jersey)	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.97403-04
+-- b8998330-809a-e531-6acb-f6802083c017	Eastern Washington Eagles at UNLV Rebels	accuscore	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:48.974032-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	consensus	0	-38.000000	a49a8cff-cc4f-cf74-145b-6094c2d3c083	2026-03-17 06:57:42.029512-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	Opening	0	-38.000000	a49a8cff-cc4f-cf74-145b-6094c2d3c083	2026-03-17 06:57:42.02951-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	BOVADA.lv	0	-39.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:42.029493-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	SportsBetting.ag	0	-38.500000	a49a8cff-cc4f-cf74-145b-6094c2d3c083	2026-03-17 06:57:42.029507-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	5Dimes.eu	0	-38.000000	a49a8cff-cc4f-cf74-145b-6094c2d3c083	2026-03-17 06:57:42.029508-04
+-- c891a71c-ded3-2645-bcf7-363cfc5a36ba	Elon Phoenix at Duke Blue Devils	BETONLINE.ag	0	-38.500000	a49a8cff-cc4f-cf74-145b-6094c2d3c083	2026-03-17 06:57:42.029509-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Caesars	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674878-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Caesar's	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674893-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	CG Technology	0	-19.500000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674879-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	numberfire	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674883-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Caesars Sportsbook	0	-49.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.674862-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	teamrankings	0	-18.500000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674873-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Unibet	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.67488-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Westgate	0	-18.500000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674875-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	Wynn	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674882-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	accuscore	0	-18.500000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674894-04
+-- 26071545-aca7-6c5c-8981-78db6b2c3b0a	Florida Atlantic Owls at Oklahoma Sooners	consensus	0	-19.000000	9c203790-a451-4852-be9a-d8c388f65a92	2026-03-13 20:05:38.674892-04
+-- 42bbb7fd-72e8-e855-60cf-5509d20999ff	Florida Atlantic Owls at South Alabama Jaguars	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:23.755421-04
+-- 42bbb7fd-72e8-e855-60cf-5509d20999ff	Florida Atlantic Owls at South Alabama Jaguars	accuscore	0	-4.500000	d767abda-9716-80cd-4906-8b49309098db	2026-03-20 14:47:23.755428-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	DraftKings	0	-14.500000	a6d3fac4-fac2-4866-f7d1-6efdcdb95cf1	2026-03-13 20:05:33.271093-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Caesars	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271082-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Caesars Sportsbook	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271088-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	consensus	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271089-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Unibet	0	-14.500000	a6d3fac4-fac2-4866-f7d1-6efdcdb95cf1	2026-03-13 20:05:33.271084-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	numberfire	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271071-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	accuscore	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271086-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	teamrankings	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271085-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Betradar	0	-14.500000	a6d3fac4-fac2-4866-f7d1-6efdcdb95cf1	2026-03-13 20:05:33.271089-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Westgate	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.271091-04
+-- 03c732c1-5d21-5cd0-7838-f6479c9925e1	Florida Gators at LSU Tigers	Wynn	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.27109-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	teamrankings	0	2.500000	1a24c9d5-a93a-0158-f200-483e957e848d	2026-03-14 05:03:20.443246-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	BOVADA.lv	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443252-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	BETNOW.eu	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443257-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	consensus	0	0.000000	94a196e6-82a7-27c3-9ae3-c93e3a6b183a	2026-03-14 05:03:20.443255-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	Westgate	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443249-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	SportsBetting.ag	0	1.500000	1a24c9d5-a93a-0158-f200-483e957e848d	2026-03-14 05:03:20.443254-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	Sportsbook.com	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443256-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	Opening	0	0.000000	94a196e6-82a7-27c3-9ae3-c93e3a6b183a	2026-03-14 05:03:20.443243-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	BetUS.COM	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443234-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	BETONLINE.ag	0	1.500000	1a24c9d5-a93a-0158-f200-483e957e848d	2026-03-14 05:03:20.443258-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	5Dimes.eu	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.443253-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	numberfire	0	1.500000	1a24c9d5-a93a-0158-f200-483e957e848d	2026-03-14 05:03:20.44325-04
+-- df8aab68-6b34-7118-2bb5-6dee4dd02b1a	Florida Intl Golden Panthers at Charlotte 49ers	SportsInteraction.com	0	2.500000	1a24c9d5-a93a-0158-f200-483e957e848d	2026-03-14 05:03:20.443248-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	5Dimes.eu	0	-2.500000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504815-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	teamrankings	0	-2.500000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504819-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	consensus	0	-2.000000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504813-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	numberfire	0	-2.000000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504816-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	BETONLINE.ag	0	-2.500000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504817-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	Fantasy911.com	0	-2.500000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504822-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	Opening	0	-2.000000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504823-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	SportsBetting.ag	0	-2.500000	c0f34d53-1bcd-0c9e-7db9-cb4bfc131d73	2026-03-17 06:57:51.504821-04
+-- f54a3bab-e24f-fbf1-24e9-170c33841a54	Florida Intl Golden Panthers at North Texas Mean Green	BOVADA.lv	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.504804-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.72936-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Betradar	0	-7.500000	a5198cf1-2029-a935-3ac2-ca6914317cb1	2026-03-13 20:05:35.729383-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729392-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	SugarHouse	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729393-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729391-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729386-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729389-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729387-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Wynn	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.72939-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	DraftKings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729381-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Unibet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729385-04
+-- d643759c-5d07-fff7-dc2f-3c372db2ccd5	Florida State Seminoles at Virginia Cavaliers	Caesars	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.729388-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	numberfire	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010733-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	consensus	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010729-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	Caesars Sportsbook	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010727-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	Westgate	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010726-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	Caesar's	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:41.010721-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	accuscore	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.01073-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:41.010731-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	Wynn	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010732-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	Unibet	0	7.500000	8ac3dfcd-51ec-12d4-f370-195b0e53148e	2026-03-24 09:37:41.010734-04
+-- 39427cd6-dcb6-0242-34f9-cd19854cc113	Florida State Seminoles at Wake Forest Demon Deacons	CG Technology	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:41.010735-04
+-- 8286baa0-776d-7ab3-55d2-9aa0fb6dad30	Fordham Rams at Lafayette Leopards	ESPN BET	0	-15.500000	NULL	NULL
+-- 8286baa0-776d-7ab3-55d2-9aa0fb6dad30	Fordham Rams at Lafayette Leopards	ESPN Bet - Live Odds	0	-15.500000	NULL	NULL
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	CG Technology	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.672721-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	Unibet	0	9.500000	d77ac517-2248-5d86-7ead-cf4689eb0639	2026-03-24 09:35:43.672713-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	Wynn	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.67268-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	accuscore	0	9.500000	d77ac517-2248-5d86-7ead-cf4689eb0639	2026-03-24 09:35:43.672724-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	numberfire	0	9.500000	d77ac517-2248-5d86-7ead-cf4689eb0639	2026-03-24 09:35:43.672733-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	consensus	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.672709-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	Westgate	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.672705-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	Caesar's	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.672717-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	Caesars Sportsbook	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:43.672701-04
+-- 98ea92ce-e2da-e920-1d11-11c99d556753	Fresno State Bulldogs at Hawai'i Rainbow Warriors	teamrankings	0	9.500000	d77ac517-2248-5d86-7ead-cf4689eb0639	2026-03-24 09:35:43.67273-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	Unibet	0	17.500000	c408ffd1-fab4-af83-1292-c67813d3f51d	2026-03-24 09:37:04.013583-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	Wynn	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013553-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	consensus	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013588-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	Westgate	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013585-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	Caesars Sportsbook	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013581-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	numberfire	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.01358-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	teamrankings	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013577-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	CG Technology	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:04.013574-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	Caesar's	0	17.500000	c408ffd1-fab4-af83-1292-c67813d3f51d	2026-03-24 09:37:04.013572-04
+-- 3f75a63c-baa3-7bf6-23d6-ab4edf357502	Fresno State Bulldogs at San Jose State Spartans	accuscore	0	17.500000	c408ffd1-fab4-af83-1292-c67813d3f51d	2026-03-24 09:37:04.013569-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	DraftKings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.038032-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	Caesars Sportsbook (New Jersey)	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.038043-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	PointsBet	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.03805-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	consensus	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.037988-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	Westgate	0	-9.500000	f2b0b2e5-aabe-f3e0-3151-58370f720473	2026-03-13 20:04:45.038053-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	Unibet	0	-10.500000	afb65fad-fa90-3721-ed6b-0ee9806c43ad	2026-03-13 20:04:45.03804-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	Caesars Sportsbook (Colorado)	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.038065-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	Titanbets	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.03806-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	accuscore	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.038068-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	MGM	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.038028-04
+-- 3dea9f2a-a795-1dfa-17be-eeafe42b1cc9	Furman Paladins at Chattanooga Mocs	SugarHouse	0	-11.500000	afb65fad-fa90-3721-ed6b-0ee9806c43ad	2026-03-13 20:04:45.038036-04
+-- 3b0510b7-a6b7-4679-c365-faf608dac192	Furman Paladins at William & Mary Tribe	ESPN Bet - Live Odds	0	-10.000000	NULL	NULL
+-- 3b0510b7-a6b7-4679-c365-faf608dac192	Furman Paladins at William & Mary Tribe	ESPN BET	0	-10.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	Unibet	0	-21.500000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	Caesars Sportsbook (Colorado)	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	Caesars Sportsbook (Tennessee)	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	ESPN BET	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	PointsBet	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	SugarHouse	0	-21.500000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	Titanbets	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	Caesars Sportsbook (New Jersey)	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	accuscore	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	DraftKings	0	-21.000000	NULL	NULL
+-- 69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96	Georgetown Hoyas at Holy Cross Crusaders	MGM	0	-21.500000	NULL	NULL
+-- 43f05e69-0cd2-44c8-4c38-5c5c6bfcc58b	Georgia Bulldogs at Florida Gators	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:31.297999-04
+-- 43f05e69-0cd2-44c8-4c38-5c5c6bfcc58b	Georgia Bulldogs at Florida Gators	teamrankings	0	3.500000	0a331c6d-9d69-6bde-b878-735df8d1b753	2026-03-20 14:47:31.298004-04
+-- 43f05e69-0cd2-44c8-4c38-5c5c6bfcc58b	Georgia Bulldogs at Florida Gators	consensus	0	2.500000	2a010448-ee41-c981-e034-4f90f6858e6b	2026-03-20 14:47:31.298005-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	Wynn	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974291-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	teamrankings	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974267-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	accuscore	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974277-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	CG Technology	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974279-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	Caesars Sportsbook	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974281-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	consensus	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974282-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	numberfire	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974285-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	Caesar's	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974287-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	Unibet	0	-13.500000	c0e5f0b4-6388-9dea-a126-d27b64530510	2026-03-24 09:35:37.974289-04
+-- 4aacc231-99cf-0ea6-d4c9-fac198cc93a7	Georgia Tech Yellow Jackets at Clemson Tigers	Westgate	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:37.974437-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	SugarHouse	0	NULL	NULL	2026-03-13 20:06:05.966902-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Wynn	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.966907-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Unibet	0	-17.500000	08df6479-58e8-406a-437d-a8d6b1183449	2026-03-13 20:06:05.9669-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Westgate	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.966906-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Caesars Sportsbook	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.966909-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Betradar	0	-18.500000	adf158c6-d4b7-2395-8a5b-919f5899390b	2026-03-13 20:06:05.966905-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	numberfire	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.96691-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	DraftKings	0	-17.500000	08df6479-58e8-406a-437d-a8d6b1183449	2026-03-13 20:06:05.966898-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	teamrankings	0	-17.500000	08df6479-58e8-406a-437d-a8d6b1183449	2026-03-13 20:06:05.966903-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	accuscore	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.966887-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	consensus	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:05.966911-04
+-- 02a8d512-9b53-e268-f515-bf54024bf548	Georgia Tech Yellow Jackets at Duke Blue Devils	Caesars	0	-17.500000	08df6479-58e8-406a-437d-a8d6b1183449	2026-03-13 20:06:05.966904-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667488-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667499-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Unibet	0	2.500000	bda73918-6aa9-7e4b-9da4-c0348aa177e0	2026-03-13 20:04:47.66749-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Caesars Sportsbook (New Jersey)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667501-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	DraftKings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667476-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Caesars Sportsbook (Pennsylvania)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667492-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	PointsBet	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667495-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Westgate	0	3.500000	faa717f5-9e2d-95f5-6953-9d38600a8ace	2026-03-13 20:04:47.667502-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	SugarHouse	0	2.500000	bda73918-6aa9-7e4b-9da4-c0348aa177e0	2026-03-13 20:04:47.667496-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Titanbets	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667493-04
+-- d3b0bdae-66a5-0b90-cae6-ee6dbdd4226f	Harvard Crimson at Yale Bulldogs	Caesars Sportsbook	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:47.667498-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Westgate	0	-6.500000	d50340be-8e80-b978-69f2-b9160e92c881	2026-03-13 20:05:56.27258-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	CG Technology	0	-6.500000	d50340be-8e80-b978-69f2-b9160e92c881	2026-03-13 20:05:56.272579-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	consensus	0	-6.500000	d50340be-8e80-b978-69f2-b9160e92c881	2026-03-13 20:05:56.272578-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Caesars	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272582-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Wynn	0	-6.500000	d50340be-8e80-b978-69f2-b9160e92c881	2026-03-13 20:05:56.272581-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272576-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272564-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Unibet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272573-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Caesars Sportsbook	0	0.500000	d50340be-8e80-b978-69f2-b9160e92c881	2026-03-13 20:05:56.272584-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272585-04
+-- 1a85354c-d417-235b-0fc3-8cc325124b1b	Hawai'i Rainbow Warriors at Army Black Knights	Caesar's	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:56.272575-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	numberfire	0	-42.500000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.70798-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	teamrankings	0	-41.000000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707984-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	SportsBetting.ag	0	-42.500000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707986-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	BETONLINE.ag	0	-42.500000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707981-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	Fantasy911.com	0	-43.000000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707983-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	Opening	0	-38.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:18.707966-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	BOVADA.lv	0	-43.500000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707978-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	consensus	0	-38.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:18.707987-04
+-- e021e580-41b0-6e78-3aee-655d4dff797b	Hawai'i Rainbow Warriors at Ohio State Buckeyes	5Dimes.eu	0	-43.000000	71041d13-cc5b-c130-f310-0b2744d43f8d	2026-03-17 05:24:18.707985-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	numberfire	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660323-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	Fantasy911.com	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660309-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	SportsBetting.ag	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660319-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	Opening	0	-10.500000	f376b355-eed0-aba0-6325-6b4b4168fc5e	2026-03-17 06:58:10.660321-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	5Dimes.eu	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660322-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	consensus	0	-10.500000	f376b355-eed0-aba0-6325-6b4b4168fc5e	2026-03-17 06:58:10.66032-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	BETONLINE.ag	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660325-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	teamrankings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660324-04
+-- d43b219b-e615-0fd1-8765-8985f3a30363	Hawai'i Rainbow Warriors at San Diego State Aztecs	BOVADA.lv	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:10.660324-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	5Dimes.eu	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:07.164938-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	BETONLINE.ag	0	-7.500000	843493e0-2aee-9f43-7b6e-0102a2443dcf	2026-03-17 06:58:07.164936-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:07.164937-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	SportsBetting.ag	0	-7.500000	843493e0-2aee-9f43-7b6e-0102a2443dcf	2026-03-17 06:58:07.16493-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	Opening	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:07.164911-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	BOVADA.lv	0	-7.500000	843493e0-2aee-9f43-7b6e-0102a2443dcf	2026-03-17 06:58:07.164932-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:07.164933-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	Fantasy911.com	0	-7.500000	843493e0-2aee-9f43-7b6e-0102a2443dcf	2026-03-17 06:58:07.164934-04
+-- c63e16ba-c66a-cef1-3fd5-1c6b9ac59e6b	Houston Cougars at Cincinnati Bearcats	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:07.164938-04
+-- 132f1358-aa4e-a1b7-3923-ba705270482b	Howard Bison at Norfolk State Spartans	ESPN Bet - Live Odds	0	-1.000000	NULL	NULL
+-- 132f1358-aa4e-a1b7-3923-ba705270482b	Howard Bison at Norfolk State Spartans	ESPN BET	0	-1.000000	NULL	NULL
+-- 169047e7-ff45-0172-5c26-352523da7620	Idaho State Bengals at BYU Cougars	consensus	0	-46.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:16.460223-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	numberfire	0	7.500000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537226-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	SportsBetting.ag	0	7.500000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537223-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	BETONLINE.ag	0	7.500000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537222-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	Fantasy911.com	0	9.000000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.53722-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	Opening	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:43.537197-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	teamrankings	0	8.500000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537227-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	5Dimes.eu	0	8.000000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537229-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	BOVADA.lv	0	8.000000	163b2314-3421-c04e-b972-b5eb94b9e04e	2026-03-17 06:57:43.537225-04
+-- dabdf99d-772b-cf11-2024-1e194f9d85f7	Indiana Hoosiers at Bowling Green Falcons	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:43.537224-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	teamrankings	0	10.500000	84bea599-be56-2625-771b-0a7c4df1553b	2026-03-24 09:36:13.394025-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	consensus	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:13.394043-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	numberfire	0	9.500000	6ba8a2a5-951f-bc85-cfe5-1851aa3936e1	2026-03-24 09:36:13.394021-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	Westgate	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:13.394008-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	Wynn	0	10.500000	84bea599-be56-2625-771b-0a7c4df1553b	2026-03-24 09:36:13.394041-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	Caesar's	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:13.394039-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	Unibet	0	9.500000	6ba8a2a5-951f-bc85-cfe5-1851aa3936e1	2026-03-24 09:36:13.394036-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	accuscore	0	10.500000	84bea599-be56-2625-771b-0a7c4df1553b	2026-03-24 09:36:13.394034-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	CG Technology	0	10.500000	84bea599-be56-2625-771b-0a7c4df1553b	2026-03-24 09:36:13.394031-04
+-- 702eee4c-33e9-f353-4e8e-84801be4ddbb	Indiana Hoosiers at Illinois Fighting Illini	Caesars Sportsbook	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:13.394029-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	consensus	0	8.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:10.030817-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	BOVADA.lv	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030829-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	numberfire	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.03084-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	5Dimes.eu	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030827-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	Opening	0	8.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:10.030826-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	teamrankings	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.03083-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	SportsBetting.ag	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030839-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	unknown	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030843-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	BETONLINE.ag	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030842-04
+-- b23d19b4-cc60-47fc-eb89-877b7d74afd4	Iowa Hawkeyes at Indiana Hoosiers	Fantasy911.com	0	7.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:10.030841-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Caesars Sportsbook (Pennsylvania)	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752388-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Titanbets	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.75234-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752361-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Caesars Sportsbook	0	1.000000	c22b10a0-bf33-8a92-5e42-0997de4c541f	2026-03-13 20:05:02.752364-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Caesars Sportsbook (Colorado)	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752368-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752371-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752374-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Caesars Sportsbook (New Jersey)	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752377-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	SugarHouse	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752379-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	PointsBet	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752382-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	Unibet	0	-2.500000	c22b10a0-bf33-8a92-5e42-0997de4c541f	2026-03-13 20:05:02.752385-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	DraftKings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.75239-04
+-- b9c42a74-79d5-e8e4-33f6-3fbc2fbb5b58	Iowa Hawkeyes at Kentucky Wildcats	MGM	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:02.752393-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	consensus	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:54.807868-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	Opening	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:54.807846-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	numberfire	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:54.807863-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	5Dimes.eu	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:54.807809-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	BOVADA.lv	0	-17.500000	f3dcedd2-3e5f-1e7d-1919-3204b11e97cb	2026-03-17 06:57:54.807851-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	BETONLINE.ag	0	-16.500000	05c60506-e70f-912e-b432-922c34539dc6	2026-03-17 06:57:54.807865-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	teamrankings	0	-16.500000	05c60506-e70f-912e-b432-922c34539dc6	2026-03-17 06:57:54.807854-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	SportsBetting.ag	0	-16.500000	05c60506-e70f-912e-b432-922c34539dc6	2026-03-17 06:57:54.807857-04
+-- 35bff434-c5f9-c078-766d-8f9f8c8e04bb	Iowa State Cyclones at Oklahoma State Cowboys	Fantasy911.com	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:54.80786-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	Wynn	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:38.621446-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	Westgate	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621464-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	Unibet	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621462-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	teamrankings	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.62146-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	Caesar's	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621459-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	numberfire	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:38.621466-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	CG Technology	0	-3.000000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621468-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	consensus	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621469-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	accuscore	0	-3.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621471-04
+-- 6ca0a43c-1ca2-ecdb-a44d-74e86782d0b7	Iowa State Cyclones at West Virginia Mountaineers	Caesars Sportsbook	0	0.500000	ead5e993-a658-27ad-6ad5-c38043f3a87c	2026-03-24 09:37:38.621456-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Titanbets	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554036-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	MGM	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554064-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	numberfire	0	-26.500000	52b89220-0d57-c7b8-6764-2f0b6dd099fc	2026-03-13 20:04:50.554055-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Caesars Sportsbook (Colorado)	0	-26.500000	52b89220-0d57-c7b8-6764-2f0b6dd099fc	2026-03-13 20:04:50.554048-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	teamrankings	0	-26.500000	52b89220-0d57-c7b8-6764-2f0b6dd099fc	2026-03-13 20:04:50.554058-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	DraftKings	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554061-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Caesars Sportsbook (Pennsylvania)	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554052-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Caesars Sportsbook	0	-26.500000	52b89220-0d57-c7b8-6764-2f0b6dd099fc	2026-03-13 20:04:50.554053-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Unibet	0	-26.500000	52b89220-0d57-c7b8-6764-2f0b6dd099fc	2026-03-13 20:04:50.554054-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	Caesars Sportsbook (New Jersey)	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554065-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	consensus	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.55406-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	accuscore	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.55405-04
+-- 674d2e03-ff23-3ec9-4034-66cfabc728a4	Kansas Jayhawks at Coastal Carolina Chanticleers	PointsBet	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:50.554057-04
+-- 10b057c7-0740-842b-1e9c-2dba68135c17	Kansas Jayhawks at Northern Illinois Huskies	accuscore	0	-8.500000	3c7f28ec-ee3b-b5e3-63b5-a1baa8b02c48	2026-03-20 14:47:40.482771-04
+-- 10b057c7-0740-842b-1e9c-2dba68135c17	Kansas Jayhawks at Northern Illinois Huskies	numberfire	0	8.500000	b8ae12b0-eb07-f73b-c398-27cdf4ba724b	2026-03-20 14:47:40.482774-04
+-- 10b057c7-0740-842b-1e9c-2dba68135c17	Kansas Jayhawks at Northern Illinois Huskies	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:40.482765-04
+-- 10b057c7-0740-842b-1e9c-2dba68135c17	Kansas Jayhawks at Northern Illinois Huskies	consensus	0	10.000000	b8ae12b0-eb07-f73b-c398-27cdf4ba724b	2026-03-20 14:47:40.482773-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	5Dimes.eu	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509454-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	Fantasy911.com	0	-13.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:35.509426-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	SportsBetting.ag	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509439-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	BOVADA.lv	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509442-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	consensus	0	-13.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:35.509444-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	teamrankings	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509446-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	Opening	0	-13.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:35.509448-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	BETONLINE.ag	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509451-04
+-- 1c5f8bb9-c45f-a507-379a-cdf0a6634d28	Kansas Jayhawks at Rutgers Scarlet Knights	numberfire	0	-13.500000	326cdc6d-5925-0048-55fa-80f66700555a	2026-03-17 05:24:35.509453-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:12.462885-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	DraftKings	0	-21.500000	d2c18070-d9ad-d116-a1da-702ea3d97659	2026-03-13 20:05:12.462894-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	accuscore	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462893-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	numberfire	0	-20.500000	7f35fc57-6af0-86a2-778c-262bf155d4bf	2026-03-13 20:05:12.462891-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Unibet	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.46289-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Caesars Sportsbook (New Jersey)	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462889-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Westgate	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462888-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Caesars	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462892-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	consensus	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462887-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	Caesars Sportsbook	0	-21.500000	d2c18070-d9ad-d116-a1da-702ea3d97659	2026-03-13 20:05:12.462884-04
+-- d92a8fa4-14e5-5100-f50a-d5f600120ab0	Kansas Jayhawks at West Virginia Mountaineers	teamrankings	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.462866-04
+-- 19851f23-9ed2-1bb3-9e80-896a7da16269	Kennesaw State Owls at Chattanooga Mocs	ESPN BET	0	-7.000000	NULL	NULL
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	Caesars	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500895-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	Unibet	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500904-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	teamrankings	0	-23.500000	c8c14d24-611c-b4d1-874f-e8ad707e9f4a	2026-03-13 20:05:20.500902-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	accuscore	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500901-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	numberfire	0	-23.500000	c8c14d24-611c-b4d1-874f-e8ad707e9f4a	2026-03-13 20:05:20.5009-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	consensus	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500899-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:20.500897-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	Caesars Sportsbook	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500894-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	Caesars Sportsbook (New Jersey)	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500893-04
+-- 417a2b3d-efeb-e583-7897-05658fe12162	Kentucky Wildcats at Florida Gators	SugarHouse	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:20.500883-04
+-- 0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f	Lamar Cardinals at Stephen F. Austin Lumberjacks	ESPN BET	0	-11.000000	NULL	NULL
+-- 0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f	Lamar Cardinals at Stephen F. Austin Lumberjacks	ESPN Bet - Live Odds	0	-11.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	Unibet	0	-16.500000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	accuscore	0	-16.500000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	ESPN BET	0	-17.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	MGM	0	-16.500000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	DraftKings	0	-17.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	PointsBet	0	-17.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	Caesars Sportsbook (Tennessee)	0	-17.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	Caesars Sportsbook (Colorado)	0	-17.000000	NULL	NULL
+-- 4ff0f7d8-62aa-6802-13b2-85d7556c83ab	Lehigh Mountain Hawks at Dartmouth Big Green	Titanbets	0	-17.000000	NULL	NULL
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	SugarHouse	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204839-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	PointsBet	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204835-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	consensus	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204845-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Caesars Sportsbook (Colorado)	0	2.500000	587b41a6-4c3a-ca38-4d3b-5d181325ca68	2026-03-12 06:16:47.204841-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	accuscore	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204843-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Westgate	0	2.500000	587b41a6-4c3a-ca38-4d3b-5d181325ca68	2026-03-12 06:16:47.204844-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Unibet	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.20484-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	DraftKings	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204815-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Titanbets	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:47.204836-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Caesars Sportsbook (New Jersey)	0	2.500000	587b41a6-4c3a-ca38-4d3b-5d181325ca68	2026-03-12 06:16:47.204842-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	Caesars Sportsbook	0	-1.000000	5203c183-af80-2c17-41a2-bbccacdd6ef2	2026-03-12 06:16:47.204838-04
+-- d8a5a84b-8866-dc5a-2af1-6f84c16cdb56	Lehigh Mountain Hawks at Georgetown Hoyas	MGM	0	1.500000	5203c183-af80-2c17-41a2-bbccacdd6ef2	2026-03-12 06:16:47.204834-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	SugarHouse	0	-3.500000	5203c183-af80-2c17-41a2-bbccacdd6ef2	2026-03-12 06:16:16.011944-04
+-- 1dbda297-0194-dc53-1b68-f1d2e770052e	Lehigh Mountain Hawks at Lafayette Leopards	ESPN Bet - Live Odds	0	10.000000	NULL	NULL
+-- 1dbda297-0194-dc53-1b68-f1d2e770052e	Lehigh Mountain Hawks at Lafayette Leopards	ESPN BET	0	10.000000	NULL	NULL
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	Titanbets	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011917-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	Caesars Sportsbook (New Jersey)	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011936-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	Caesars Sportsbook (Colorado)	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011938-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	ESPN BET	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011939-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	DraftKings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.01194-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	Unibet	0	-3.500000	5203c183-af80-2c17-41a2-bbccacdd6ef2	2026-03-12 06:16:16.011941-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	PointsBet	0	-4.000000	5203c183-af80-2c17-41a2-bbccacdd6ef2	2026-03-12 06:16:16.011942-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	MGM	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011943-04
+-- f91f5d7d-4946-5353-e974-32000da48276	Lehigh Mountain Hawks at Lafayette Leopards	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:16.011945-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Caesars Sportsbook (New Jersey)	0	-6.500000	9dddf971-c921-cce6-5fd7-9583b684407f	2026-03-13 20:05:10.672206-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Caesars Sportsbook (Pennsylvania)	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.672202-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Caesars	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.672189-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	accuscore	0	-6.500000	9dddf971-c921-cce6-5fd7-9583b684407f	2026-03-13 20:05:10.67221-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.672207-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	PointsBet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.672209-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	DraftKings	0	-6.500000	9dddf971-c921-cce6-5fd7-9583b684407f	2026-03-13 20:05:10.672205-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.6722-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	Unibet	0	-6.500000	9dddf971-c921-cce6-5fd7-9583b684407f	2026-03-13 20:05:10.672204-04
+-- 5a59f6ac-72e5-79d2-a122-c0ab5a2d57fc	Lehigh Mountain Hawks at Lafayette Leopards	SugarHouse	0	-6.500000	9dddf971-c921-cce6-5fd7-9583b684407f	2026-03-13 20:05:10.672201-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	DraftKings	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966372-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Caesars Sportsbook (New Jersey)	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966389-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	ESPN BET	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:08.966397-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	accuscore	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:08.966391-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Westgate	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966398-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	MGM	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966387-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Unibet	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966392-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Caesars Sportsbook	0	-27.000000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966374-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	PointsBet	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:08.966395-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Caesars Sportsbook (Colorado)	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:08.966353-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	SugarHouse	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.96639-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	Titanbets	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:08.966396-04
+-- 657c8632-1f91-fc07-05ff-cd5101c2c6c1	Lehigh Mountain Hawks at Villanova Wildcats	consensus	0	-27.500000	9054e231-6b61-7a59-eafa-e54d5762098e	2026-03-12 06:16:08.966393-04
+-- 22c1054c-41ca-5311-f61c-b17c6eea1711	Lindenwood Lions at Stony Brook Seawolves	DraftKings	1	-4.000000	00000000-0000-0000-0000-000000000000	2026-09-06 12:47:06.347529-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	teamrankings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.249655-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	BETONLINE.ag	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.24964-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	consensus	0	-7.000000	4311cb37-d177-2c7b-7cae-687182a1fa46	2026-03-17 05:24:32.249653-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	numberfire	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.249649-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	5Dimes.eu	0	-9.500000	4311cb37-d177-2c7b-7cae-687182a1fa46	2026-03-17 05:24:32.249656-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	Opening	0	-7.000000	4311cb37-d177-2c7b-7cae-687182a1fa46	2026-03-17 05:24:32.249646-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	BOVADA.lv	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.249652-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	SportsBetting.ag	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.249651-04
+-- 9069e434-cdc9-a0d6-1856-d85cba1b2786	Louisiana Monroe Warhawks at Tulsa Golden Hurricane	Fantasy911.com	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:32.249648-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370386-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	5Dimes.eu	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370401-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	Opening	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370397-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	Fantasy911.com	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370399-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	numberfire	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370395-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	SportsBetting.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370405-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	BETONLINE.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.3704-04
+-- 93fabf44-1ffa-b3e3-1431-c48569ec2ce2	Louisiana Ragin' Cajuns at Louisiana Monroe Warhawks	BOVADA.lv	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:45.370404-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	Wynn	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.658024-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	CG Technology	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.658022-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	Caesars Sportsbook	0	-23.500000	80d619f9-c53c-9ee9-0d64-cebe86d5fbeb	2026-03-24 09:37:26.658027-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	Caesar's	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.658025-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	Unibet	0	-22.500000	80d619f9-c53c-9ee9-0d64-cebe86d5fbeb	2026-03-24 09:37:26.658028-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	accuscore	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.658033-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	teamrankings	0	-23.500000	80d619f9-c53c-9ee9-0d64-cebe86d5fbeb	2026-03-24 09:37:26.658032-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	numberfire	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.65803-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	Westgate	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.657995-04
+-- cb2aa536-c7f0-61fa-fe21-2de670b96f37	Louisiana Ragin' Cajuns at Texas A&M Aggies	consensus	0	-24.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:26.658015-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	Westgate	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.85335-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	BETNOW.eu	0	18.000000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853377-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	Opening	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.853319-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	Sportsbook.com	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853365-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	BETONLINE.ag	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853363-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	numberfire	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853362-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	consensus	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.853379-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	5Dimes.eu	0	18.000000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853361-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	teamrankings	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.85336-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	SportsInteraction.com	0	19.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853359-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	BOVADA.lv	0	18.000000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853356-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	SportsBetting.ag	0	17.500000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853354-04
+-- 1b88c115-99e5-3014-9748-e0baf4c7f7c9	Louisiana Tech Bulldogs at North Texas Mean Green	BetUS.COM	0	18.000000	05963adc-3891-83f5-3451-9a9e3fe98238	2026-03-14 05:03:20.853352-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	consensus	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675245-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	Caesars Sportsbook (New Jersey)	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:37.675249-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	Titanbets	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675244-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	teamrankings	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:37.675253-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	SugarHouse	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675252-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	Unibet	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675246-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	DraftKings	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:37.675251-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	Caesars Sportsbook (Pennsylvania)	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:37.675225-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	accuscore	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675247-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	Caesars Sportsbook	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:37.675243-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	MGM	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.67525-04
+-- b01c8511-b5d6-ec0d-1e85-3f1a9859497d	Louisiana Tech Bulldogs at UAB Blazers	PointsBet	0	-13.500000	84d4c907-0fd5-fcb9-e666-02bfebcacb1e	2026-03-13 20:04:37.675255-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	teamrankings	0	2.000000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768854-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	Fantasy911.com	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:59.768837-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	Opening	0	1.000000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768845-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	SportsBetting.ag	0	2.500000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768846-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	BOVADA.lv	0	2.000000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768848-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	BETONLINE.ag	0	2.500000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768849-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	5Dimes.eu	0	2.500000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.76885-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	numberfire	0	1.500000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768851-04
+-- e16ba208-6aec-35fe-c603-394b20f5df1f	LSU Tigers at Florida Gators	consensus	0	1.000000	cb50aabd-a512-a598-d9f6-f5b28ad53e3b	2026-03-17 06:57:59.768852-04
+-- ebd49813-ce23-8222-88e2-4f17ce28d230	LSU Tigers at Georgia Bulldogs	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.463198-04
+-- ebd49813-ce23-8222-88e2-4f17ce28d230	LSU Tigers at Georgia Bulldogs	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.463207-04
+-- ebd49813-ce23-8222-88e2-4f17ce28d230	LSU Tigers at Georgia Bulldogs	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.463213-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	Caesars	0	22.000000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.237527-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	Westgate	0	21.500000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.237526-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	Caesars Sportsbook	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.237521-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	DraftKings	0	21.500000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.237518-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	SugarHouse	0	21.500000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.23752-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	Unibet	0	21.500000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.237516-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	accuscore	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.237505-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	numberfire	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.237523-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	teamrankings	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.237525-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	CG Technology	0	22.000000	2c60702c-fd53-b6d1-cfb6-885a9a72a36e	2026-03-13 20:05:35.237522-04
+-- ddeef852-68b8-dff9-8b36-a6781f49636d	LSU Tigers at Ole Miss Rebels	consensus	0	21.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:35.237522-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	Opening	0	-16.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:24.471364-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	SportsBetting.ag	0	-17.500000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471366-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	5Dimes.eu	0	-18.000000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471368-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	teamrankings	0	-17.500000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471358-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	consensus	0	-16.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:24.471349-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	BOVADA.lv	0	-18.000000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471362-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	numberfire	0	-17.500000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.47136-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	BETONLINE.ag	0	-17.500000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471365-04
+-- 9d78aaaf-91ac-46e3-5e57-c5cbda5641ed	Maryland Terrapins at Iowa Hawkeyes	Fantasy911.com	0	-18.000000	ab49d066-9381-97da-684d-b0c1e810ed68	2026-03-17 05:24:24.471363-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	teamrankings	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509797-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	numberfire	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509791-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	SportsBetting.ag	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509777-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	Fantasy911.com	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509789-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	BETONLINE.ag	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.50979-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	consensus	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509792-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	BOVADA.lv	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509795-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	5Dimes.eu	0	-20.500000	7754310b-781b-42bc-8a21-0ddbb4897f7f	2026-03-17 06:58:14.509796-04
+-- fb334b4e-b398-cd19-db90-209803096262	Memphis Tigers at Ole Miss Rebels	Opening	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:58:14.509794-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	numberfire	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:22.281842-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	Opening	0	10.500000	57f70577-a364-fa12-19ed-92d95d2f5d11	2026-03-17 05:24:22.281862-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	BETONLINE.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:22.281869-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:22.281868-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	SportsBetting.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:22.281867-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	5Dimes.eu	0	7.500000	57f70577-a364-fa12-19ed-92d95d2f5d11	2026-03-17 05:24:22.281866-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	BOVADA.lv	0	8.000000	57f70577-a364-fa12-19ed-92d95d2f5d11	2026-03-17 05:24:22.281864-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	Fantasy911.com	0	7.500000	57f70577-a364-fa12-19ed-92d95d2f5d11	2026-03-17 05:24:22.281863-04
+-- a2a4e5da-e841-8c2e-6ccf-28df1ef32fdf	Memphis Tigers at South Florida Bulls	consensus	0	10.500000	57f70577-a364-fa12-19ed-92d95d2f5d11	2026-03-17 05:24:22.28186-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	accuscore	0	-6.500000	d752e5c8-3bd8-a361-c186-45d0fbe0348e	2026-03-24 09:36:27.014424-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	CG Technology	0	-6.500000	d752e5c8-3bd8-a361-c186-45d0fbe0348e	2026-03-24 09:36:27.014425-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	Unibet	0	-8.500000	fb722739-1ad5-ee09-0eec-318fd6995f57	2026-03-24 09:36:27.014419-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:27.014418-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	Wynn	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:27.014415-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	numberfire	0	-6.500000	d752e5c8-3bd8-a361-c186-45d0fbe0348e	2026-03-24 09:36:27.014414-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	teamrankings	0	-6.500000	d752e5c8-3bd8-a361-c186-45d0fbe0348e	2026-03-24 09:36:27.014412-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:27.014407-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:27.014422-04
+-- dd6a01b6-db71-8691-d1db-7f243e70dcc5	Memphis Tigers at UCF Knights	Caesar's	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:27.014421-04
+-- c23cfb68-5b14-6c19-0fe4-77c06e247f53	Mercyhurst Lakers at Sacramento State Hornets	ESPN BET	0	-21.500000	NULL	NULL
+-- c23cfb68-5b14-6c19-0fe4-77c06e247f53	Mercyhurst Lakers at Sacramento State Hornets	ESPN Bet - Live Odds	0	-21.500000	NULL	NULL
+-- 2a3b238c-98c7-f051-0f9c-e8044f1336d0	Miami (OH) RedHawks at Buffalo Bulls	numberfire	0	-3.500000	5cdf47d1-af3f-97f9-f6eb-5bdb18d4e50a	2026-03-20 14:47:35.778963-04
+-- 2a3b238c-98c7-f051-0f9c-e8044f1336d0	Miami (OH) RedHawks at Buffalo Bulls	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:35.778955-04
+-- 2a3b238c-98c7-f051-0f9c-e8044f1336d0	Miami (OH) RedHawks at Buffalo Bulls	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:35.778965-04
+-- 2a3b238c-98c7-f051-0f9c-e8044f1336d0	Miami (OH) RedHawks at Buffalo Bulls	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:35.778961-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	BOVADA.lv	0	4.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:36.030836-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	5Dimes.eu	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.030818-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	Opening	0	4.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:36.030838-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	consensus	0	4.000000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:36.030839-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	unknown	0	3.500000	43cd230b-ebb6-ffd6-0f07-9186c94c4300	2026-03-17 05:24:36.030845-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	SportsBetting.ag	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.030843-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.03084-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	Westgate	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.030842-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.030843-04
+-- ab9460a0-5ffb-77ea-d289-f239f8dd7c3a	Michigan State Spartans at Iowa Hawkeyes	BETONLINE.ag	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:36.030847-04
+-- cc23f698-bcd8-d31a-2443-c6ac65c9008b	Michigan State Spartans at Notre Dame Fighting Irish	consensus	0	-6.000000	96e8691a-0c29-9b0c-39e6-95c216110379	2026-03-20 14:47:31.585464-04
+-- cc23f698-bcd8-d31a-2443-c6ac65c9008b	Michigan State Spartans at Notre Dame Fighting Irish	teamrankings	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:31.585459-04
+-- cc23f698-bcd8-d31a-2443-c6ac65c9008b	Michigan State Spartans at Notre Dame Fighting Irish	numberfire	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:31.585466-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	numberfire	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700973-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	consensus	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700973-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	Unibet	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700974-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	Caesars Sportsbook (Pennsylvania)	0	-15.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:16.700975-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	accuscore	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700977-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	Caesars Sportsbook (New Jersey)	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700978-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	SugarHouse	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700979-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	DraftKings	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.70098-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	Westgate	0	-3.000000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700972-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	teamrankings	0	-14.500000	53381de5-20ea-1799-0a0a-beacdc58626e	2026-03-13 20:05:16.700969-04
+-- 0ccd359b-6910-5ef4-4e1a-761efc734f97	Michigan State Spartans at Penn State Nittany Lions	Caesars	0	-15.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:16.700956-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	Westgate	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.48086-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	Wynn	0	7.500000	6ba8a2a5-951f-bc85-cfe5-1851aa3936e1	2026-03-24 09:35:50.480866-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480864-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480846-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	Caesar's	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480879-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	numberfire	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480871-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	Unibet	0	7.500000	6ba8a2a5-951f-bc85-cfe5-1851aa3936e1	2026-03-24 09:35:50.480877-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	CG Technology	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480874-04
+-- 7a302c45-35d0-6f95-d41e-d15de4e8ee59	Michigan Wolverines at Indiana Hoosiers	Caesars Sportsbook	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.480869-04
+-- b5023bd7-f1e5-5aed-40ae-4bbae79f9325	Michigan Wolverines at Nebraska Cornhuskers	ESPN Bet - Live Odds	0	6.500000	NULL	NULL
+-- b5023bd7-f1e5-5aed-40ae-4bbae79f9325	Michigan Wolverines at Nebraska Cornhuskers	ESPN BET	0	1.500000	NULL	NULL
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	BetUS.COM	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779583-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	SportsInteraction.com	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779594-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	Opening	0	16.000000	62064e52-0f85-57c1-36bc-52027b39dc4b	2026-03-14 05:03:20.779599-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	SportsBetting.ag	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779604-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	BOVADA.lv	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779606-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	BETNOW.eu	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779602-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	5Dimes.eu	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779601-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	Sportsbook.com	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.7796-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	BETONLINE.ag	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779597-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	numberfire	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779596-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	teamrankings	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779605-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	consensus	0	16.000000	62064e52-0f85-57c1-36bc-52027b39dc4b	2026-03-14 05:03:20.779603-04
+-- 935618d0-de58-4bac-0b59-7357bf4693a2	Middle Tennessee Blue Raiders at North Texas Mean Green	Westgate	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:20.779607-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	teamrankings	0	-2.500000	347d2570-0436-f7db-9439-62c8dbc33a39	2026-03-17 06:57:51.040637-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040635-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	Fantasy911.com	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040638-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	SportsBetting.ag	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040626-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	numberfire	0	-2.500000	347d2570-0436-f7db-9439-62c8dbc33a39	2026-03-17 06:57:51.04064-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	Opening	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040642-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	BOVADA.lv	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040643-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	5Dimes.eu	0	-2.500000	347d2570-0436-f7db-9439-62c8dbc33a39	2026-03-17 06:57:51.040639-04
+-- 2f514426-238b-e04e-3c37-4f492cdda32d	Middle Tennessee Blue Raiders at UTEP Miners	BETONLINE.ag	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.040644-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.460187-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.460188-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.460155-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	Caesars Sportsbook	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.460175-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	Unibet	0	3.500000	b264182d-9a26-66e3-b58c-b463483df526	2026-03-13 20:05:49.460184-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	SugarHouse	0	3.500000	b264182d-9a26-66e3-b58c-b463483df526	2026-03-13 20:05:49.460185-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.460182-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	Caesars	0	2.500000	495eb47c-b246-08b4-f6f0-9652673dde4a	2026-03-13 20:05:49.460181-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	Betradar	0	2.500000	495eb47c-b246-08b4-f6f0-9652673dde4a	2026-03-13 20:05:49.460177-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	Wynn	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:49.46018-04
+-- 9bcbc77f-0f11-916d-9e39-c13a6aa4834d	Minnesota Golden Gophers at Fresno State Bulldogs	DraftKings	0	3.500000	b264182d-9a26-66e3-b58c-b463483df526	2026-03-13 20:05:49.46019-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	Caesar's	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996029-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	CG Technology	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996025-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996023-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	Unibet	0	-7.500000	3ef125f4-1d1a-fd74-62a3-dd2709fb5326	2026-03-24 09:36:30.996018-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996015-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	Wynn	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996004-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996036-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	numberfire	0	-6.500000	c136ca1c-ff1e-8fa0-ab39-c0abde861f7b	2026-03-24 09:36:30.996034-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996031-04
+-- f5b63c85-6f4e-eb34-72c4-417750aee1d0	Minnesota Golden Gophers at Iowa Hawkeyes	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:30.996027-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	SportsInteraction.com	0	-15.000000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975401-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	Westgate	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:19.975405-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	Sportsbook.com	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:19.975388-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	BOVADA.lv	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975413-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	BETNOW.eu	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975416-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	numberfire	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975406-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	teamrankings	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:19.975412-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	5Dimes.eu	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.97541-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	BetUS.COM	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975414-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	BETONLINE.ag	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975403-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	consensus	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:19.975411-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	SportsBetting.ag	0	-14.500000	118d2a2a-8b6f-aa71-b14f-551dfe3b9d17	2026-03-14 05:03:19.975408-04
+-- b0cb2c5d-7618-eebc-7095-d89b831a43ef	Minnesota Golden Gophers at Wisconsin Badgers	Opening	0	-14.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:19.975407-04
+-- 97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09	Mississippi Valley State Delta Devils at Tennessee State Tigers	ESPN Bet - Live Odds	0	-20.000000	NULL	NULL
+-- 97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09	Mississippi Valley State Delta Devils at Tennessee State Tigers	ESPN BET	0	-20.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	ESPN BET	0	-3.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	accuscore	0	-3.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	PointsBet	0	-3.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	Titanbets	0	-3.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	Caesars Sportsbook (Tennessee)	0	-2.500000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	Unibet	0	-3.000000	NULL	NULL
+-- 309a3360-7558-c00a-3a0c-b5422361e976	Monmouth Hawks at William & Mary Tribe	Caesars Sportsbook (Colorado)	0	-2.500000	NULL	NULL
+-- 92f6d67d-7481-0f1c-9a29-04c73bdf612f	Montana Grizzlies at Northern Colorado Bears	ESPN Bet - Live Odds	0	24.000000	NULL	NULL
+-- 92f6d67d-7481-0f1c-9a29-04c73bdf612f	Montana Grizzlies at Northern Colorado Bears	ESPN BET	0	24.000000	NULL	NULL
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	Westgate	0	6.500000	f2ade598-e630-e01e-a894-1be485d72ce0	2026-03-13 20:04:38.76707-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	Unibet	0	6.500000	f2ade598-e630-e01e-a894-1be485d72ce0	2026-03-13 20:04:38.767068-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	Titanbets	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.767038-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	SugarHouse	0	6.500000	f2ade598-e630-e01e-a894-1be485d72ce0	2026-03-13 20:04:38.767061-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	PointsBet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.767058-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	DraftKings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.767055-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	Caesars Sportsbook (New Jersey)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.767052-04
+-- e2a3b75d-1915-f3b6-7e8b-3289a7dc3e5f	Murray State Racers at Eastern Illinois Panthers	accuscore	0	7.500000	b6d7e0a2-c1a3-a399-c439-b510caad5f2e	2026-03-13 20:04:38.767065-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.615485-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.61549-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	numberfire	0	3.500000	4325898f-7f27-160f-1252-2a68363aec08	2026-03-24 09:35:53.61552-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	Wynn	0	3.500000	4325898f-7f27-160f-1252-2a68363aec08	2026-03-24 09:35:53.615493-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.615496-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	Caesars Sportsbook	0	3.500000	4325898f-7f27-160f-1252-2a68363aec08	2026-03-24 09:35:53.615499-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	Unibet	0	3.500000	4325898f-7f27-160f-1252-2a68363aec08	2026-03-24 09:35:53.615504-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	Westgate	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.615506-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	SportsInsights	0	NULL	NULL	2026-03-24 09:35:53.615513-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	CG Technology	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.615517-04
+-- 555ddde0-6f44-85f9-080e-a4854e7a9765	NC State Wolfpack at Boston College Eagles	Caesar's	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:53.61547-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	SportsBetting.ag	0	-16.500000	224c357a-fba5-274d-db76-82fe5bac18aa	2026-03-17 05:24:14.431197-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	Opening	0	-14.000000	224c357a-fba5-274d-db76-82fe5bac18aa	2026-03-17 05:24:14.431202-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	unknown	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:14.43119-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	consensus	0	-14.000000	224c357a-fba5-274d-db76-82fe5bac18aa	2026-03-17 05:24:14.431205-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	BETONLINE.ag	0	-16.500000	224c357a-fba5-274d-db76-82fe5bac18aa	2026-03-17 05:24:14.431206-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	teamrankings	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:14.431204-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	numberfire	0	-16.500000	224c357a-fba5-274d-db76-82fe5bac18aa	2026-03-17 05:24:14.4312-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	5Dimes.eu	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:14.431199-04
+-- b77bff94-075f-372a-2dff-a0adeff14e9b	Nevada Wolf Pack at San Diego State Aztecs	BOVADA.lv	0	-17.500000	e748855a-4aea-8741-c2e4-4367188f97f5	2026-03-17 05:24:14.431201-04
+-- 09aeb04c-9be0-60f0-789d-85f375280714	New Mexico State Aggies at Arkansas Razorbacks	numberfire	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:16.040956-04
+-- 09aeb04c-9be0-60f0-789d-85f375280714	New Mexico State Aggies at Arkansas Razorbacks	teamrankings	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:16.040936-04
+-- f51d4c2d-8d0b-df78-2b74-32dda9eca73c	New Mexico State Aggies at Liberty Flames	teamrankings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:20.130125-04
+-- f51d4c2d-8d0b-df78-2b74-32dda9eca73c	New Mexico State Aggies at Liberty Flames	numberfire	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:20.130111-04
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	Unibet	0	-49.500000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:10.84825-04
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	consensus	0	-50.000000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:10.848255-04
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	Westgate	0	-52.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:10.848238-04
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	accuscore	0	-51.000000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:10.848252-04
+-- 67e9622a-2416-8d9e-20f1-4c1b140f12ae	North Alabama Lions at BYU Cougars	Caesars Sportsbook (New Jersey)	0	-50.000000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:10.848253-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	Caesars Sportsbook (Colorado)	0	2.500000	d57b1eef-85ae-ad7e-38b7-dc31f534d880	2026-03-12 06:16:05.846716-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	Unibet	0	1.500000	4ef667d0-2e1f-6ac9-4b69-cec1b41c10a4	2026-03-12 06:16:05.846715-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	Caesars Sportsbook (New Jersey)	0	2.500000	d57b1eef-85ae-ad7e-38b7-dc31f534d880	2026-03-12 06:16:05.846714-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	ESPN BET	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:05.846678-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	accuscore	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:05.8467-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	DraftKings	0	2.500000	d57b1eef-85ae-ad7e-38b7-dc31f534d880	2026-03-12 06:16:05.846702-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	Titanbets	0	2.500000	d57b1eef-85ae-ad7e-38b7-dc31f534d880	2026-03-12 06:16:05.846703-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	PointsBet	0	2.500000	d57b1eef-85ae-ad7e-38b7-dc31f534d880	2026-03-12 06:16:05.846705-04
+-- bd93ee50-4195-c84b-9d96-f5f49eebc436	North Carolina Central Eagles at Tennessee Tech Golden Eagles	MGM	0	1.500000	4ef667d0-2e1f-6ac9-4b69-cec1b41c10a4	2026-03-12 06:16:05.846712-04
+-- c13b9100-ff83-b2f7-101b-2638fead08f5	North Dakota Fighting Hawks at Utah Utes	Caesars Sportsbook	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:08.313669-04
+-- c13b9100-ff83-b2f7-101b-2638fead08f5	North Dakota Fighting Hawks at Utah Utes	accuscore	0	-20.500000	22bc0259-bfcc-989c-cb3d-c7cac34d3cdb	2026-03-24 09:36:08.313671-04
+-- c13b9100-ff83-b2f7-101b-2638fead08f5	North Dakota Fighting Hawks at Utah Utes	Westgate	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:08.313662-04
+-- c13b9100-ff83-b2f7-101b-2638fead08f5	North Dakota Fighting Hawks at Utah Utes	consensus	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:08.313643-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Caesar's	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138666-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Caesars Sportsbook	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.13866-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Wynn	0	10.500000	f5be923f-3a0b-8343-8814-266eb6a016f3	2026-03-13 20:05:31.138662-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Caesars	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138667-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Westgate	0	9.500000	26eac08d-8949-85c8-d171-3a13c974f078	2026-03-13 20:05:31.138665-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	Unibet	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138669-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	consensus	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138658-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	teamrankings	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138668-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	numberfire	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138647-04
+-- f56ba2c1-036c-c41c-2c32-ce10e6afa7bd	Notre Dame Fighting Irish at Northwestern Wildcats	accuscore	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:31.138663-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	numberfire	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208758-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	consensus	0	-17.000000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208757-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	5Dimes.eu	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208753-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	teamrankings	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208762-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	SportsBetting.ag	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208752-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	BETNOW.eu	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208759-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	Sportsbook.com	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208751-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	Opening	0	-17.000000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208749-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	Westgate	0	-18.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.208741-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	BOVADA.lv	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208761-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	BetUS.COM	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208759-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	SportsInteraction.com	0	-17.000000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208756-04
+-- 000243a4-67e0-3c81-497f-67536b2996e1	Notre Dame Fighting Irish at USC Trojans	BETONLINE.ag	0	-17.500000	3e5f3bec-a441-dd34-38d4-30e53825abfd	2026-03-14 05:03:21.208754-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	teamrankings	0	2.500000	ec2cbbc2-db54-a196-a992-970b2f7f741e	2026-03-17 05:24:13.374094-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	consensus	0	4.000000	ec2cbbc2-db54-a196-a992-970b2f7f741e	2026-03-17 05:24:13.374094-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	numberfire	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.374093-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	BOVADA.lv	0	3.000000	ec2cbbc2-db54-a196-a992-970b2f7f741e	2026-03-17 05:24:13.37409-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	SportsBetting.ag	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.374082-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	BETONLINE.ag	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.374101-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	Opening	0	4.000000	ec2cbbc2-db54-a196-a992-970b2f7f741e	2026-03-17 05:24:13.3741-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	Fantasy911.com	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:13.374097-04
+-- 70a15b10-ca52-6e17-9ae5-68cd45d2bbca	Ohio Bobcats at Akron Zips	5Dimes.eu	0	2.500000	ec2cbbc2-db54-a196-a992-970b2f7f741e	2026-03-17 05:24:13.374095-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	Opening	0	-5.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.421399-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	SportsBetting.ag	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421387-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	5Dimes.eu	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421394-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	consensus	0	-5.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.421379-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	BetUS.COM	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421398-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	Sportsbook.com	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421401-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	SportsInteraction.com	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421396-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	numberfire	0	-6.000000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421395-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	teamrankings	0	-6.000000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.42139-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	Westgate	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421389-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	BOVADA.lv	0	-6.000000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.4214-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	BETNOW.eu	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421392-04
+-- 99fc1d4e-52ef-cf2f-d65e-ad47d5fb04b0	Ohio Bobcats at Troy Trojans	BETONLINE.ag	0	-6.500000	c2f1c49b-2005-97c6-f213-62e03a1c86d9	2026-03-14 05:03:21.421395-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	MGM	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.51383-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	numberfire	0	13.500000	04d89c33-0b74-40b7-2f0d-8f84cde29dc5	2026-03-13 20:04:33.513834-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	teamrankings	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513836-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	consensus	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513833-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	Unibet	0	13.500000	04d89c33-0b74-40b7-2f0d-8f84cde29dc5	2026-03-13 20:04:33.513838-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	Caesars Sportsbook (Colorado)	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513831-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	Caesars Sportsbook (Pennsylvania)	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513828-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	Caesars Sportsbook (New Jersey)	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513832-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	Titanbets	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513818-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	DraftKings	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.51384-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	SugarHouse	0	13.500000	04d89c33-0b74-40b7-2f0d-8f84cde29dc5	2026-03-13 20:04:33.513835-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	accuscore	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513837-04
+-- 5c287941-425c-c654-bffa-c7300269e427	Ohio State Buckeyes at Minnesota Golden Gophers	PointsBet	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:33.513826-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	DraftKings	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698955-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	Caesars Sportsbook (New Jersey)	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.699002-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	SugarHouse	0	-4.500000	81a653ce-142c-2643-0311-ef9ed3951355	2026-03-13 20:04:38.698978-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	MGM	0	-4.500000	81a653ce-142c-2643-0311-ef9ed3951355	2026-03-13 20:04:38.69897-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	Unibet	0	-4.500000	81a653ce-142c-2643-0311-ef9ed3951355	2026-03-13 20:04:38.69896-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	Caesars Sportsbook (Pennsylvania)	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.699007-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	PointsBet	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.69899-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	teamrankings	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698909-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	Titanbets	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698995-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	Westgate	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698966-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	accuscore	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698986-04
+-- d00c8e38-e138-f79e-9d23-1320c7aa3375	Oklahoma Sooners at Oklahoma State Cowboys	consensus	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:38.698982-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Unibet	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198606-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Caesars Sportsbook	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198604-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198602-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Caesar's	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198578-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198599-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Wynn	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.1986-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Caesars	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198607-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	Westgate	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198601-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198603-04
+-- 499da8a6-eabc-c8d9-c844-9f5d412eb37c	Oklahoma Sooners at West Virginia Mountaineers	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:08.198597-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	Wynn	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049272-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	Unibet	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049277-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	Caesar's	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049279-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	numberfire	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.049264-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	Caesars Sportsbook	0	-22.000000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.04928-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	CG Technology	0	-23.000000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049281-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	Westgate	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049282-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	consensus	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049284-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	accuscore	0	-21.500000	50565834-d877-f38c-ec76-24ebb51c34e1	2026-03-24 09:35:50.049276-04
+-- 0627ca24-0611-a363-35e8-9c105689db75	Ole Miss Rebels at Auburn Tigers	teamrankings	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:35:50.049274-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Unibet	0	-2.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016156-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	accuscore	0	2.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016161-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	CG Technology	0	1.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016164-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	numberfire	0	2.000000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016162-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Westgate	0	2.000000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016159-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Wynn	0	1.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.01616-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	SportsInsights	0	NULL	NULL	2026-03-13 20:06:10.016163-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Caesar's	0	2.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016157-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Caesars	0	2.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016154-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	Caesars Sportsbook	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:10.016146-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	consensus	0	1.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016155-04
+-- 3c65af39-fb5a-b37e-50bb-466b08bec719	Ole Miss Rebels at Texas Tech Red Raiders	teamrankings	0	2.500000	3a1b2eff-9ecb-2d41-4226-f752af2b9959	2026-03-13 20:06:10.016152-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	5Dimes.eu	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574075-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	BOVADA.lv	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574077-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	BETONLINE.ag	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574078-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	SportsInteraction.com	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574079-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	Sportsbook.com	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574081-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	SportsBetting.ag	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574082-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574083-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574084-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	Westgate	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574085-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	Opening	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574061-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574071-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	BETNOW.eu	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574073-04
+-- c7aafa20-aefe-7ac3-7145-8813192bdc21	Oregon Ducks at Nebraska Cornhuskers	BetUS.COM	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:15.574076-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	Caesar's	0	-20.500000	d6730719-5195-1bd6-35a9-6514e7a0017e	2026-03-24 09:37:15.99979-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	consensus	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999789-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	Wynn	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999787-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	Caesars Sportsbook	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999785-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	Westgate	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999778-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	numberfire	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999798-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	teamrankings	0	-20.500000	d6730719-5195-1bd6-35a9-6514e7a0017e	2026-03-24 09:37:15.999797-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	Unibet	0	-20.500000	d6730719-5195-1bd6-35a9-6514e7a0017e	2026-03-24 09:37:15.999795-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	CG Technology	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:15.999794-04
+-- 3a726374-a907-09df-5b88-1512d051faa6	Oregon State Beavers at Arizona Wildcats	accuscore	0	-20.500000	d6730719-5195-1bd6-35a9-6514e7a0017e	2026-03-24 09:37:15.999792-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	Fantasy911.com	0	5.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:57.135037-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	BOVADA.lv	0	5.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:57.135022-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	teamrankings	0	4.000000	706f677b-821e-ed41-0104-0814d012ef6d	2026-03-17 06:57:57.135026-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	BETONLINE.ag	0	4.500000	706f677b-821e-ed41-0104-0814d012ef6d	2026-03-17 06:57:57.13503-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	5Dimes.eu	0	4.000000	706f677b-821e-ed41-0104-0814d012ef6d	2026-03-17 06:57:57.13504-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	Opening	0	7.000000	4d42da44-5796-7e0f-9700-7e3efe926a22	2026-03-17 06:57:57.135017-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	numberfire	0	5.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:57.134985-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	consensus	0	7.500000	4d42da44-5796-7e0f-9700-7e3efe926a22	2026-03-17 06:57:57.135033-04
+-- 80708f5f-9f31-d2d9-0207-5541762e92bc	Oregon State Beavers at Colorado Buffaloes	SportsBetting.ag	0	4.500000	706f677b-821e-ed41-0104-0814d012ef6d	2026-03-17 06:57:57.135044-04
+-- a34fb9e4-2bd4-25e0-1192-6b9bbdf249bd	Oregon State Beavers at Stanford Cardinal	teamrankings	0	-3.500000	ebf821a5-955a-81e9-33f5-c89110162e6e	2026-03-20 14:47:28.245496-04
+-- a34fb9e4-2bd4-25e0-1192-6b9bbdf249bd	Oregon State Beavers at Stanford Cardinal	consensus	0	-5.500000	3cb8f49a-b775-c5e5-19f6-5ffad896a9bd	2026-03-20 14:47:28.245498-04
+-- a34fb9e4-2bd4-25e0-1192-6b9bbdf249bd	Oregon State Beavers at Stanford Cardinal	numberfire	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:28.245499-04
+-- a34fb9e4-2bd4-25e0-1192-6b9bbdf249bd	Oregon State Beavers at Stanford Cardinal	accuscore	0	-4.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:28.245492-04
+-- 11e03a15-09ac-2301-43f9-3a213357ed96	Pennsylvania Quakers at Sacred Heart Pioneers	consensus	0	4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:15.623904-04
+-- 11e03a15-09ac-2301-43f9-3a213357ed96	Pennsylvania Quakers at Sacred Heart Pioneers	accuscore	0	4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:15.623899-04
+-- 11e03a15-09ac-2301-43f9-3a213357ed96	Pennsylvania Quakers at Sacred Heart Pioneers	Westgate	0	4.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:15.623905-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	Westgate	0	-20.000000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667771-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	consensus	0	-20.000000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667772-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	numberfire	0	-20.500000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667776-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	teamrankings	0	-19.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.667774-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	CG Technology	0	-20.000000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667773-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	Caesars Sportsbook	0	-19.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.667751-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	Caesar's	0	-20.000000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667765-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	Wynn	0	-20.000000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.667763-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	Unibet	0	-18.500000	d8fb0b22-7794-4644-7e7d-87a552367b3c	2026-03-24 09:36:24.667766-04
+-- 7235b5cc-6d9b-ad0c-14ef-24e308d8e2de	Pittsburgh Panthers at Penn State Nittany Lions	accuscore	0	-18.500000	d8fb0b22-7794-4644-7e7d-87a552367b3c	2026-03-24 09:36:24.667767-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	Unibet	0	-3.500000	822555d5-eebb-f66c-34c4-6357ed00ee23	2026-03-24 09:36:24.004407-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	Caesars Sportsbook	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004382-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004395-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	CG Technology	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004398-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	Caesar's	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.0044-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004401-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	Westgate	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004404-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004406-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004411-04
+-- 3c0ab282-929f-cb48-05c1-37d4695d9957	Pittsburgh Panthers at Syracuse Orange	Wynn	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:24.004409-04
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	SugarHouse	0	3.500000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	MGM	0	2.500000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	Titanbets	0	3.000000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	ESPN BET	0	3.000000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	DraftKings	0	3.000000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	accuscore	0	3.000000	NULL	NULL
+-- 1cffa8c9-b20b-2298-e50b-3abf075301af	Prairie View A&M Panthers at Texas Southern Tigers	Unibet	0	3.000000	NULL	NULL
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	5Dimes.eu	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060794-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	BETNOW.eu	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060791-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	Westgate	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.060766-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	SportsBetting.ag	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060784-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	Opening	0	-22.000000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060786-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	consensus	0	-22.000000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060788-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	BetUS.COM	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060792-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	BOVADA.lv	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060795-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	BETONLINE.ag	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060796-04
+-- 5e67716b-cc84-e64a-ac2e-3f5bedfee596	Prairie View Panthers at Rice Owls	SportsInteraction.com	0	-21.500000	48509879-7300-d35e-1dfa-020efca50796	2026-03-14 05:03:23.060799-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	numberfire	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790139-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Betradar	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790145-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	consensus	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790142-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	teamrankings	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790136-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Westgate	0	-29.000000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.79014-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Caesars	0	-29.000000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790145-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Wynn	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790141-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Unibet	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790137-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	SugarHouse	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.790143-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	DraftKings	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.790124-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	Caesars Sportsbook	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790146-04
+-- cb2f8dfa-d4ff-31a9-f92c-ae2d857d87ff	Purdue Boilermakers at Penn State Nittany Lions	accuscore	0	-28.500000	e27d09c3-5cd7-a198-03d6-8d1b59bf1059	2026-03-13 20:06:12.790134-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	consensus	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499591-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	SportsBetting.ag	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499576-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	5Dimes.eu	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499588-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	BETONLINE.ag	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499593-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	BOVADA.lv	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499592-04
+-- 265783b1-fdeb-a2be-f2eb-1a3c61a9c80a	Rhode Island Rams at Marshall Thundering Herd	Opening	0	-41.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:51.499586-04
+-- 4ed01c4f-35c6-ad8b-6b80-afff87b05223	Rice Owls at Tulsa Golden Hurricane	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:19.537859-04
+-- 4ed01c4f-35c6-ad8b-6b80-afff87b05223	Rice Owls at Tulsa Golden Hurricane	consensus	0	-2.500000	f02099fa-a0fa-077c-e91c-2e7bec335b23	2026-03-20 14:47:19.537853-04
+-- 4ed01c4f-35c6-ad8b-6b80-afff87b05223	Rice Owls at Tulsa Golden Hurricane	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:19.537844-04
+-- 90453591-29b2-d426-4350-02976a67f3ac	Rice Owls at UTEP Miners	accuscore	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.036416-04
+-- 90453591-29b2-d426-4350-02976a67f3ac	Rice Owls at UTEP Miners	numberfire	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.036413-04
+-- 90453591-29b2-d426-4350-02976a67f3ac	Rice Owls at UTEP Miners	teamrankings	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.036406-04
+-- 90453591-29b2-d426-4350-02976a67f3ac	Rice Owls at UTEP Miners	consensus	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:30.036394-04
+-- 4a0d92ca-858b-303b-8337-c8b6271538ff	Rutgers Scarlet Knights at Arkansas Razorbacks	numberfire	0	9.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:21.456015-04
+-- 4a0d92ca-858b-303b-8337-c8b6271538ff	Rutgers Scarlet Knights at Arkansas Razorbacks	consensus	0	2.000000	4a338043-c002-8974-b6ec-522899c88cbc	2026-03-20 14:47:21.456066-04
+-- 4a0d92ca-858b-303b-8337-c8b6271538ff	Rutgers Scarlet Knights at Arkansas Razorbacks	accuscore	0	-9.500000	4a338043-c002-8974-b6ec-522899c88cbc	2026-03-20 14:47:21.456068-04
+-- 4a0d92ca-858b-303b-8337-c8b6271538ff	Rutgers Scarlet Knights at Arkansas Razorbacks	teamrankings	0	-8.500000	4a338043-c002-8974-b6ec-522899c88cbc	2026-03-20 14:47:21.456026-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	MGM	0	-1.000000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:05:04.778697-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	accuscore	0	1.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:04.778693-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	Unibet	0	-1.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:05:04.778694-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	DraftKings	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:04.778696-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	Caesars Sportsbook (New Jersey)	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:04.778695-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	Titanbets	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:04.778671-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	PointsBet	0	1.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:04.778698-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	Westgate	0	-1.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:05:04.77869-04
+-- 98f8fa22-5776-9a9b-cd7a-d8ddad5a5f53	Sacred Heart Pioneers at St. Francis (PA) Red Flash	SugarHouse	0	-1.500000	4147063d-2d1a-6f9b-541f-fb3af72adcd7	2026-03-13 20:05:04.778692-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	Titanbets	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383312-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	SugarHouse	0	9.500000	fe4a3da1-7be3-81c3-9b9b-102e6eb0b544	2026-03-13 20:04:57.383296-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	PointsBet	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383292-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	DraftKings	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383294-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	Caesars Sportsbook (New Jersey)	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383291-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	accuscore	0	10.500000	8c0544a9-8380-3358-4dfd-358c66f527d1	2026-03-13 20:04:57.383295-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	Caesars Sportsbook (Colorado)	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383276-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	MGM	0	10.500000	8c0544a9-8380-3358-4dfd-358c66f527d1	2026-03-13 20:04:57.383311-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	consensus	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383297-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	Westgate	0	10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.383289-04
+-- 3adc0db7-89aa-6ac7-6d41-d9babc147325	Sam Houston Bearkats at Central Arkansas Bears	Unibet	0	9.500000	fe4a3da1-7be3-81c3-9b9b-102e6eb0b544	2026-03-13 20:04:57.383288-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868031-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868032-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Unibet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868034-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	MGM	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868025-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Titanbets	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868026-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Caesars Sportsbook (New Jersey)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868027-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Caesars Sportsbook (Pennsylvania)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868036-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Caesars Sportsbook	0	7.500000	af32fbc1-1830-f083-ede3-37ee9c3dd690	2026-03-13 20:04:57.868028-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	Caesars Sportsbook (Colorado)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868029-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	SugarHouse	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868023-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	DraftKings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868033-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	PointsBet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868008-04
+-- be14908e-d75d-6fd6-5320-f0776ee243ec	San Diego State Aztecs at Hawai'i Rainbow Warriors	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:57.868031-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310948-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310953-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Betradar	0	-2.500000	a969b63c-7d42-1b02-c99b-637ab99d5b1d	2026-03-13 20:05:44.310946-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Caesars Sportsbook	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310934-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Caesars	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.31095-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310952-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Westgate	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310943-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	DraftKings	0	-2.500000	a969b63c-7d42-1b02-c99b-637ab99d5b1d	2026-03-13 20:05:44.310947-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Wynn	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310949-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	teamrankings	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:44.310945-04
+-- f7b9801d-301d-eca4-06de-7ed062698c63	San José St Spartans at Nevada Wolf Pack	Unibet	0	-2.500000	a969b63c-7d42-1b02-c99b-637ab99d5b1d	2026-03-13 20:05:44.310951-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	Opening	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:48.884919-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	consensus	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:48.88495-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	Fantasy911.com	0	-8.500000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884936-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	SportsBetting.ag	0	-8.000000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884951-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	numberfire	0	-8.500000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884944-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	BETONLINE.ag	0	-8.000000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884946-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	5Dimes.eu	0	-8.500000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884948-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	teamrankings	0	-8.500000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884933-04
+-- 7ed62737-4fbc-2e9e-4e32-0facaec4afd3	San Jose State Spartans at Navy Midshipmen	BOVADA.lv	0	-8.500000	215381c7-d761-038c-77e9-8103398fd93a	2026-03-17 06:57:48.884943-04
+-- 68c34cea-d457-8dfe-387f-0281b5af0216	San Jose State Spartans at San Diego State Aztecs	accuscore	0	-2.500000	0be09b64-a350-f89d-fc16-fe28dc2eeb04	2026-03-20 14:47:21.520697-04
+-- 68c34cea-d457-8dfe-387f-0281b5af0216	San Jose State Spartans at San Diego State Aztecs	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:21.520692-04
+-- 68c34cea-d457-8dfe-387f-0281b5af0216	San Jose State Spartans at San Diego State Aztecs	consensus	0	3.500000	00cb4e49-1475-11f8-2959-0f3ff324ca98	2026-03-20 14:47:21.5207-04
+-- 68c34cea-d457-8dfe-387f-0281b5af0216	San Jose State Spartans at San Diego State Aztecs	teamrankings	0	-2.500000	0be09b64-a350-f89d-fc16-fe28dc2eeb04	2026-03-20 14:47:21.520699-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	BOVADA.lv	0	-56.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:16.494591-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	5Dimes.eu	0	-56.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:16.49462-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	SportsInteraction.com	0	-56.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:16.494609-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	Westgate	0	-57.500000	62cc2080-2aed-0342-88dd-0c23cd29efdb	2026-03-14 05:03:16.494614-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	consensus	0	-57.000000	62cc2080-2aed-0342-88dd-0c23cd29efdb	2026-03-14 05:03:16.494612-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	Opening	0	-57.000000	62cc2080-2aed-0342-88dd-0c23cd29efdb	2026-03-14 05:03:16.494616-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	BETONLINE.ag	0	-56.500000	62cc2080-2aed-0342-88dd-0c23cd29efdb	2026-03-14 05:03:16.494619-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	SportsBetting.ag	0	-56.500000	62cc2080-2aed-0342-88dd-0c23cd29efdb	2026-03-14 05:03:16.494622-04
+-- 75f05283-b5de-3681-b9bb-9e172f8b0abb	Savannah State Tigers at Southern Mississippi Golden Eagles	BETNOW.eu	0	-56.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:16.494624-04
+-- 69e60763-d3e2-ad99-1655-ea38cf3ef2d9	SMU Mustangs at Florida State Seminoles	DraftKings	1	3.000000	00000000-0000-0000-0000-000000000000	2026-09-08 00:40:11.061861-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	Westgate	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366107-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	DraftKings	0	-6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:10.366083-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	Caesars Sportsbook	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366108-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	SugarHouse	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366094-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	consensus	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366098-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	CG Technology	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366096-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	teamrankings	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366102-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	Caesars	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.3661-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	numberfire	0	-6.500000	a9bbeea6-85f4-063f-89f5-35255d2c391e	2026-03-13 20:06:10.366105-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	Unibet	0	-6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:10.366104-04
+-- 913f1f72-f667-65da-a938-c86c24821c58	SMU Mustangs at Memphis Tigers	accuscore	0	-6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:10.366103-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	Westgate	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.512368-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	Caesars	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.51237-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	consensus	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.512372-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	DraftKings	0	-17.500000	0f5f3ec5-6b42-9bc6-8895-c70ca987f3d2	2026-03-13 20:05:22.512375-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:22.512366-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	teamrankings	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.51236-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	numberfire	0	-15.500000	082ef0f3-f715-427e-a33e-14f99ddafadc	2026-03-13 20:05:22.512363-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	Caesars Sportsbook	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.512373-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	Unibet	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.512343-04
+-- 164bf3a5-eb31-4fa7-212b-fe4f92250faf	South Alabama Jaguars at Coastal Carolina Chanticleers	accuscore	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:22.512365-04
+-- 35b412bd-2f57-43b5-3c03-c8834391af93	South Florida Bulls at Nevada Wolf Pack	accuscore	0	1.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:27.091028-04
+-- 35b412bd-2f57-43b5-3c03-c8834391af93	South Florida Bulls at Nevada Wolf Pack	teamrankings	0	-1.000000	fadde76a-1dde-5244-feac-9799f493dc42	2026-03-20 14:47:27.091033-04
+-- 35b412bd-2f57-43b5-3c03-c8834391af93	South Florida Bulls at Nevada Wolf Pack	numberfire	0	0.000000	fadde76a-1dde-5244-feac-9799f493dc42	2026-03-20 14:47:27.091035-04
+-- 35b412bd-2f57-43b5-3c03-c8834391af93	South Florida Bulls at Nevada Wolf Pack	consensus	0	0.000000	fadde76a-1dde-5244-feac-9799f493dc42	2026-03-20 14:47:27.091034-04
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	DraftKings	0	-6.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	accuscore	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	MGM	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	ESPN BET	0	-5.000000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	Caesars Sportsbook (Colorado)	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	Caesars Sportsbook (New Jersey)	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	Caesars Sportsbook (Tennessee)	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	SugarHouse	0	-5.000000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	Titanbets	0	-3.500000	NULL	NULL
+-- 7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a	Southeast Missouri State Redhawks at Central Arkansas Bears	Unibet	0	-4.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	Caesars Sportsbook (Colorado)	0	3.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	MGM	0	3.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	Caesars Sportsbook (Tennessee)	0	3.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	ESPN BET	0	4.000000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	PointsBet	0	4.000000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	Titanbets	0	4.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	accuscore	0	4.500000	NULL	NULL
+-- 3528d6ea-3845-af26-1b76-1a7da33b378f	Southeast Missouri State Redhawks at Nicholls Colonels	DraftKings	0	4.000000	NULL	NULL
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	consensus	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287492-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	Caesars Sportsbook (Colorado)	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287505-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	Unibet	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.2875-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	Titanbets	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287498-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	Caesars Sportsbook (New Jersey)	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:01.287494-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	DraftKings	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:01.287489-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	PointsBet	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287483-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	accuscore	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287476-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	Westgate	0	-1.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:01.287445-04
+-- 722a56f6-5e57-2818-c3ea-05ef0d99ff9e	St. Francis (PA) Red Flash at Bryant Bulldogs	MGM	0	-2.500000	30dbd63b-51a4-c45a-d05a-07fd4af5e265	2026-03-13 20:05:01.287503-04
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	Caesars Sportsbook (New Jersey)	0	-3.000000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	Caesars Sportsbook (Colorado)	0	-3.000000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	accuscore	0	-3.500000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	Titanbets	0	-3.500000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	DraftKings	0	-3.000000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	Caesars Sportsbook (Tennessee)	0	-3.000000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	SugarHouse	0	-3.000000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	PointsBet	0	-3.500000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	MGM	0	-3.500000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	Unibet	0	-3.500000	NULL	NULL
+-- 147ef646-bc05-0216-fda9-ce8f8397e602	St. Francis (PA) Red Flash at Duquesne Dukes	ESPN BET	0	-3.000000	NULL	NULL
+-- 0bf62293-9aa7-ca52-72f2-d57bc5061b1f	St. Thomas-Minnesota Tommies at Marist Red Foxes	ESPN Bet - Live Odds	0	7.000000	NULL	NULL
+-- 0bf62293-9aa7-ca52-72f2-d57bc5061b1f	St. Thomas-Minnesota Tommies at Marist Red Foxes	ESPN BET	0	7.000000	NULL	NULL
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	Caesars Sportsbook (Colorado)	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849749-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	Titanbets	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849839-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	PointsBet	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849841-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	MGM	0	6.500000	78a704e1-b93a-59e8-a34c-b22e2c244afe	2026-07-03 02:00:10.849842-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	Caesars Sportsbook (New Jersey)	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849844-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	Caesars Sportsbook (Tennessee)	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849845-04
+-- 2a2aff32-ce72-11bb-aaf3-2d4e1f31b5bb	St. Thomas-Minnesota Tommies at San Diego Toreros	DraftKings	0	6.000000	00000000-0000-0000-0000-000000000000	2026-07-03 02:00:10.849836-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316599-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Wynn	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316569-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316592-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Caesar's	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316598-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Caesars	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.31659-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	numberfire	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316596-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316593-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Westgate	0	7.500000	4455b07e-25fd-e2cf-d1e9-767e2a48ee9e	2026-03-13 20:05:38.316594-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Unibet	0	6.500000	032f241f-47e6-53ef-ce23-38c5ea1df192	2026-03-13 20:05:38.316595-04
+-- cdaf9260-7a26-ec63-86e6-5db917d3f44f	Stanford Cardinal at UCLA Bruins	Caesars Sportsbook	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:38.316598-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	BetUS.COM	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289619-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	teamrankings	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289623-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	numberfire	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289628-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:22.289622-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	Sportsbook.com	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289627-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	Westgate	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289618-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	Opening	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:22.289609-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	SportsBetting.ag	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289615-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	BOVADA.lv	0	-8.000000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289616-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	5Dimes.eu	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289628-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	SportsInteraction.com	0	-9.000000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289625-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	BETNOW.eu	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289624-04
+-- 87d0eedd-b863-9573-f8c8-eb7282741799	Temple Owls at Penn State Nittany Lions	BETONLINE.ag	0	-8.500000	85be0681-1dab-6138-ad09-dad69a2154a6	2026-03-14 05:03:22.289621-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Westgate	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152392-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	numberfire	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152389-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Caesar's	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152388-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	consensus	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152385-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	accuscore	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.152369-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Wynn	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.152391-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Caesars	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152395-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	CG Technology	0	-10.500000	f5bf6cc0-d17b-ac08-2f5c-ad7a4fdb9635	2026-03-13 20:05:33.152391-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Unibet	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152384-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	teamrankings	0	-10.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:33.152387-04
+-- ced07847-f617-9ae8-0c36-2498a0582fab	Texas State Bobcats at South Alabama Jaguars	Caesars Sportsbook	0	-9.500000	d537620d-2305-8348-992e-c5fc4a79e95a	2026-03-13 20:05:33.152394-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	numberfire	0	7.000000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829285-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	DraftKings	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829275-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Caesars Sportsbook	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829287-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Betradar	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829279-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	consensus	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829278-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Unibet	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829282-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	SugarHouse	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829277-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	accuscore	0	6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:02.829286-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Caesars	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829281-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	teamrankings	0	6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:02.829258-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Westgate	0	6.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:02.829282-04
+-- 1660b735-9364-71a8-a15b-7d669d3635f4	Toledo Rockets at Colorado State Rams	Wynn	0	6.500000	4c4fe7a5-6d81-0728-4be9-474dbce27068	2026-03-13 20:06:02.829283-04
+-- b978cac1-f391-c481-a1f9-f4aa34341267	Toledo Rockets at Michigan State Spartans	DraftKings	1	-10.000000	00000000-0000-0000-0000-000000000000	2026-09-06 12:47:06.448978-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	BOVADA.lv	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673872-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	BETONLINE.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673863-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	BETNOW.eu	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673868-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	consensus	0	7.500000	ba73bb2b-1114-4820-ce1b-1413e58795ac	2026-03-14 05:03:23.673873-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	numberfire	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673875-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	SportsBetting.ag	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673876-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	SportsInteraction.com	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673879-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	5Dimes.eu	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.67388-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	BetUS.COM	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673882-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	teamrankings	0	6.000000	de26b5c2-3ad6-c4ea-4e22-9dc1f7974c02	2026-03-14 05:03:23.673883-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	Opening	0	7.500000	ba73bb2b-1114-4820-ce1b-1413e58795ac	2026-03-14 05:03:23.673884-04
+-- d1b29364-4054-92a0-0e07-f48ee8979e06	Toledo Rockets at Northern Illinois Huskies	Westgate	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:23.673887-04
+-- d2545f25-5f66-6586-c306-fed7ea0ecb6e	Troy Trojans at Middle Tennessee Blue Raiders	consensus	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:43.089341-04
+-- d2545f25-5f66-6586-c306-fed7ea0ecb6e	Troy Trojans at Middle Tennessee Blue Raiders	accuscore	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:43.089336-04
+-- d2545f25-5f66-6586-c306-fed7ea0ecb6e	Troy Trojans at Middle Tennessee Blue Raiders	numberfire	0	-3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:43.089342-04
+-- 87c9d551-4f1c-0f5b-e107-971924b65fc1	Tulsa Golden Hurricane at Marshall Thundering Herd	teamrankings	0	3.500000	1161dd6e-b1d9-b0e2-c7a1-f92626296974	2026-03-20 14:47:27.50282-04
+-- 87c9d551-4f1c-0f5b-e107-971924b65fc1	Tulsa Golden Hurricane at Marshall Thundering Herd	consensus	0	5.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:27.502812-04
+-- 87c9d551-4f1c-0f5b-e107-971924b65fc1	Tulsa Golden Hurricane at Marshall Thundering Herd	accuscore	0	4.000000	1161dd6e-b1d9-b0e2-c7a1-f92626296974	2026-03-20 14:47:27.502822-04
+-- 87c9d551-4f1c-0f5b-e107-971924b65fc1	Tulsa Golden Hurricane at Marshall Thundering Herd	numberfire	0	4.000000	1161dd6e-b1d9-b0e2-c7a1-f92626296974	2026-03-20 14:47:27.502818-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	consensus	0	-1.000000	4e09fd07-f660-5019-f30e-dbf83c037a9d	2026-03-14 05:03:21.434112-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	teamrankings	0	-3.000000	6b201564-71c7-e46d-5082-1bce9a4e8d1f	2026-03-14 05:03:21.43411-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	BETNOW.eu	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434107-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	BOVADA.lv	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434109-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	5Dimes.eu	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434082-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	Opening	0	-1.000000	4e09fd07-f660-5019-f30e-dbf83c037a9d	2026-03-14 05:03:21.434101-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	Westgate	0	-2.500000	6b201564-71c7-e46d-5082-1bce9a4e8d1f	2026-03-14 05:03:21.434103-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	numberfire	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434092-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	SportsBetting.ag	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434116-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	Sportsbook.com	0	-2.500000	6b201564-71c7-e46d-5082-1bce9a4e8d1f	2026-03-14 05:03:21.434114-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	SportsInteraction.com	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434111-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	BETONLINE.ag	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434105-04
+-- 6f3cbe74-aa38-f0ea-8afa-f9a7de9c98e0	Tulsa Golden Hurricane at Navy Midshipmen	BetUS.COM	0	-2.000000	00000000-0000-0000-0000-000000000000	2026-03-14 05:03:21.434106-04
+-- 3ad6f83e-dffd-8a69-83ba-bb5b1f364d97	UAlbany Great Danes at Bryant Bulldogs	ESPN Bet - Live Odds	0	7.000000	NULL	NULL
+-- 3ad6f83e-dffd-8a69-83ba-bb5b1f364d97	UAlbany Great Danes at Bryant Bulldogs	ESPN BET	0	7.000000	NULL	NULL
+-- 9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863	UAlbany Great Danes at Delaware Blue Hens	ESPN Bet - Live Odds	0	-14.000000	NULL	NULL
+-- 9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863	UAlbany Great Danes at Delaware Blue Hens	ESPN BET	0	-14.000000	NULL	NULL
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Caesars	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740199-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Caesars Sportsbook	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740198-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Caesar's	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740201-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.7402-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	numberfire	0	-6.000000	1aacaff8-cf55-5fb7-4a67-fdb590febf66	2026-03-13 20:05:59.740206-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	teamrankings	0	-6.000000	1aacaff8-cf55-5fb7-4a67-fdb590febf66	2026-03-13 20:05:59.740196-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Wynn	0	-6.500000	1aacaff8-cf55-5fb7-4a67-fdb590febf66	2026-03-13 20:05:59.740203-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Unibet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740176-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	consensus	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740205-04
+-- 35b87260-3e33-5d8b-a0ab-c71bed49126e	UNLV Rebels at Hawai'i Rainbow Warriors	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:59.740204-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	consensus	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:52.553715-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	5Dimes.eu	0	-17.500000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553712-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	teamrankings	0	-18.500000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553716-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	SportsBetting.ag	0	-18.000000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553711-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	Opening	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 06:57:52.553701-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	BOVADA.lv	0	-18.500000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553716-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	Fantasy911.com	0	-18.000000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553713-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	numberfire	0	-18.000000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.55371-04
+-- ed0f91d4-2630-6dae-aa68-fb68a7d12e98	UNLV Rebels at San Diego State Aztecs	BETONLINE.ag	0	-18.000000	c0d427c8-920d-b352-ab93-b78ac814c56f	2026-03-17 06:57:52.553708-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	teamrankings	0	-16.000000	f054e98c-a5ae-70e4-30df-c2c6352f2a8a	2026-03-13 20:05:13.239108-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	DraftKings	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239106-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Caesars Sportsbook (New Jersey)	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239104-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	numberfire	0	-16.500000	f054e98c-a5ae-70e4-30df-c2c6352f2a8a	2026-03-13 20:05:13.239103-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	consensus	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239102-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Caesars Sportsbook	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.2391-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:13.239097-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Caesars	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239096-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Unibet	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239095-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	Westgate	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239093-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	SugarHouse	0	-15.500000	f054e98c-a5ae-70e4-30df-c2c6352f2a8a	2026-03-13 20:05:13.239091-04
+-- 292e2ec1-8331-9762-2dc3-70aa2f1cf0d7	UNLV Rebels at San José State Spartans	accuscore	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:13.239067-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	accuscore	0	13.500000	53e57a2d-4eda-ecc8-b6e8-523856b53c95	2026-03-24 09:37:18.929601-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	Caesar's	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929606-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	numberfire	0	13.500000	53e57a2d-4eda-ecc8-b6e8-523856b53c95	2026-03-24 09:37:18.929612-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	CG Technology	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929616-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	Caesars Sportsbook	0	13.500000	53e57a2d-4eda-ecc8-b6e8-523856b53c95	2026-03-24 09:37:18.929619-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	Wynn	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929623-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	Unibet	0	14.500000	6cd004ba-6927-9ab3-7d99-12468a43d582	2026-03-24 09:37:18.929627-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	teamrankings	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929631-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	Westgate	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929635-04
+-- 4bcfdde1-720b-213e-f76d-62e1378bbce9	USC Trojans at Colorado Buffaloes	consensus	0	14.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:18.929585-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	Caesars Sportsbook (Colorado)	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124806-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	consensus	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124801-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	Unibet	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124795-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	SugarHouse	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124802-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	accuscore	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124797-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	MGM	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124794-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	ESPN BET	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.12479-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	Caesars Sportsbook (New Jersey)	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124772-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	PointsBet	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124799-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	Titanbets	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124792-04
+-- 2811f842-4341-2a9e-342a-e841f966323e	UT Martin Skyhawks at Houston Christian Huskies	DraftKings	0	24.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:09.124804-04
+-- eb76f774-26b2-9796-0ab5-ea1cdc696375	UT Martin Skyhawks at Southeast Missouri State Redhawks	ESPN BET	0	-3.000000	NULL	NULL
+-- eb76f774-26b2-9796-0ab5-ea1cdc696375	UT Martin Skyhawks at Southeast Missouri State Redhawks	ESPN Bet - Live Odds	0	-3.000000	NULL	NULL
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	Fantasy911.com	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634125-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	SportsBetting.ag	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634138-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	Opening	0	7.000000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:08.634133-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	SportsInsights	0	NULL	NULL	2026-03-17 05:24:08.634137-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	consensus	0	7.000000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:08.634136-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	numberfire	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634142-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	BOVADA.lv	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634139-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634144-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	5Dimes.eu	0	3.500000	7faa5711-fad7-1818-7c30-50f90b3e2084	2026-03-17 05:24:08.634135-04
+-- cf536b9d-a5b1-8278-c8a1-6e2f988101ce	UT San Antonio Roadrunners at Charlotte 49ers	BETONLINE.ag	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:08.634131-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	Opening	0	-35.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:37.070003-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	BETONLINE.ag	0	-31.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.069993-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	5Dimes.eu	0	-31.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.06999-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	teamrankings	0	-32.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.069988-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	consensus	0	-35.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:37.069961-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	BOVADA.lv	0	-33.000000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.069979-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	SportsBetting.ag	0	-31.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.069997-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	Fantasy911.com	0	-32.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.07-04
+-- 1c8d9f76-66ed-3c7c-2c37-2e2ccc7a7bc9	UTEP Miners at Arkansas Razorbacks	numberfire	0	-31.500000	263ce48b-34d8-b91b-24ff-439f16afa022	2026-03-17 05:24:37.069984-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	Caesar's	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.003928-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	teamrankings	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.00394-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	Wynn	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.003943-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	Unibet	0	-20.500000	3efada6c-6562-3e0d-335a-177f3cf7c9fc	2026-03-24 09:37:42.003944-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	CG Technology	0	-21.500000	a78dc03f-9c97-8449-23df-05fd7cb7bb86	2026-03-24 09:37:42.003945-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	Westgate	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.003946-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	numberfire	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.003947-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	accuscore	0	-21.500000	a78dc03f-9c97-8449-23df-05fd7cb7bb86	2026-03-24 09:37:42.003949-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	Caesars Sportsbook	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.00395-04
+-- b0197df5-3c09-ec2b-7cdb-dadcc8aa6add	UTEP Miners at UAB Blazers	consensus	0	-21.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:37:42.003951-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	accuscore	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171074-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	Titanbets	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171034-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	Westgate	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171095-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	MGM	0	-6.500000	4cf1a912-db2c-0a59-4df0-e5bf6d94215a	2026-03-13 20:04:58.17107-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	Unibet	0	-7.500000	a7ea6f60-6d46-216f-6e7c-7c89f101f233	2026-03-13 20:04:58.171092-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	Caesars Sportsbook (Pennsylvania)	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171087-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	Caesars Sportsbook (New Jersey)	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171084-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	PointsBet	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.17108-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	DraftKings	0	-7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:58.171077-04
+-- d2d5add6-4d8b-7fdd-4a84-0465e59291fa	VMI Keydets at East Tennessee State Buccaneers	SugarHouse	0	-7.500000	a7ea6f60-6d46-216f-6e7c-7c89f101f233	2026-03-13 20:04:58.171065-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	teamrankings	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799084-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	Wynn	0	20.500000	689857c8-11c7-41b7-0c44-0528c8542cda	2026-03-13 20:06:12.799085-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	Betradar	0	19.500000	ff56bf26-27e4-b531-0e63-88fa7f8c81d9	2026-03-13 20:06:12.799078-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	Caesars	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799056-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	numberfire	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799077-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	Unibet	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799079-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	DraftKings	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799082-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	consensus	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.799083-04
+-- 65eb6167-246a-f08b-29f2-468e9bc8462e	Wake Forest Demon Deacons at Rice Owls	accuscore	0	20.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:12.79908-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	teamrankings	0	-14.500000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.439571-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	Fantasy911.com	0	-15.000000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.43957-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	BETONLINE.ag	0	-14.500000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.439563-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	consensus	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:15.439564-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	numberfire	0	-14.500000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.439566-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	BOVADA.lv	0	-15.000000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.439568-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	5Dimes.eu	0	-14.500000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.439567-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	SportsBetting.ag	0	-14.500000	6a8c70e8-ae43-f0ae-ea25-def3360c5f31	2026-03-17 05:24:15.43956-04
+-- aef3ed1b-822b-a0ad-488f-52f7d0cc1970	Washington Huskies at Stanford Cardinal	Opening	0	-17.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:15.439553-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Unibet	0	-30.500000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:12.197501-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Westgate	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.1975-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	accuscore	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197503-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	DraftKings	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197502-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Caesars Sportsbook	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197493-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	teamrankings	0	-30.500000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:12.197505-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	consensus	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197494-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Caesars Sportsbook (Pennsylvania)	0	NULL	NULL	2026-03-13 20:05:12.197496-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Caesars	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197481-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	SugarHouse	0	-30.500000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:12.197504-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	numberfire	0	-30.500000	2f256b4b-1f50-7ad2-9db2-b95c651b3dff	2026-03-13 20:05:12.197498-04
+-- 5dc9313b-458c-9c7b-5081-ed4a6724ec24	Western Kentucky Hilltoppers at BYU Cougars	Caesars Sportsbook (New Jersey)	0	-31.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:12.197495-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Caesars Sportsbook	0	15.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:07.308179-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	consensus	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308209-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Caesars	0	-11.000000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308208-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	teamrankings	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.3082-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Caesar's	0	-11.000000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308202-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	numberfire	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308203-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Westgate	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308198-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	accuscore	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308204-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Unibet	0	-11.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308205-04
+-- 6654d4b9-d92b-fe79-894c-3661509be1c8	Western Kentucky Hilltoppers at Louisiana Tech Bulldogs	Wynn	0	-10.500000	399c51f3-5e15-fff0-35e6-4d0f20876b7b	2026-03-13 20:06:07.308206-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	5Dimes.eu	0	1.500000	c72ab42e-43e3-a089-9b10-bedcf9613525	2026-03-17 05:24:44.440689-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	Fantasy911.com	0	2.500000	8b190f3d-d3bd-72b5-54cb-2311af043c30	2026-03-17 05:24:44.440697-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	teamrankings	0	2.500000	8b190f3d-d3bd-72b5-54cb-2311af043c30	2026-03-17 05:24:44.440696-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	BOVADA.lv	0	3.000000	8b190f3d-d3bd-72b5-54cb-2311af043c30	2026-03-17 05:24:44.440695-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	BETONLINE.ag	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:44.440694-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	consensus	0	-17.500000	c72ab42e-43e3-a089-9b10-bedcf9613525	2026-03-17 05:24:44.440692-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	numberfire	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:44.440691-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	Opening	0	-17.500000	c72ab42e-43e3-a089-9b10-bedcf9613525	2026-03-17 05:24:44.440698-04
+-- 47d5c917-972d-0c3d-2d30-d4f94e0c4499	Western Kentucky Hilltoppers at Vanderbilt Commodores	SportsBetting.ag	0	2.000000	00000000-0000-0000-0000-000000000000	2026-03-17 05:24:44.44068-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Caesars Sportsbook (New Jersey)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031608-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	PointsBet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031609-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031605-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	SugarHouse	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.03161-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	MGM	0	6.500000	efd5ed75-05f1-bc89-d8ee-49b4ed0370d0	2026-03-13 20:05:00.031611-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031607-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Caesars Sportsbook	0	6.000000	efd5ed75-05f1-bc89-d8ee-49b4ed0370d0	2026-03-13 20:05:00.031613-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Titanbets	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031606-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Caesars Sportsbook (Colorado)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031615-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Unibet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031613-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031585-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	DraftKings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031602-04
+-- f4b926ac-94ec-aec0-709a-b2783a3a8e1d	Western Michigan Broncos at Buffalo Bulls	Caesars Sportsbook (Pennsylvania)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:00.031604-04
+-- 63ae0559-c0e5-3f9f-cd56-e1f585b233bd	Western Michigan Broncos at Eastern Michigan Eagles	numberfire	0	2.500000	0dbe4416-dd91-6938-56aa-f077f938a0a6	2026-03-20 14:47:18.931772-04
+-- 63ae0559-c0e5-3f9f-cd56-e1f585b233bd	Western Michigan Broncos at Eastern Michigan Eagles	teamrankings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:18.931765-04
+-- 63ae0559-c0e5-3f9f-cd56-e1f585b233bd	Western Michigan Broncos at Eastern Michigan Eagles	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-20 14:47:18.93177-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	teamrankings	0	-10.500000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805004-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	CG Technology	0	-12.000000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805015-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	Unibet	0	-10.500000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805014-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	consensus	0	-12.000000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805012-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	Wynn	0	-11.500000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805011-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	numberfire	0	-10.500000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.80501-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	Caesar's	0	-12.000000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805009-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	Westgate	0	-12.000000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805007-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	accuscore	0	-11.500000	a2d81060-5c68-142c-0333-3b041cdd99a3	2026-03-24 09:36:11.805005-04
+-- e8f9a017-812c-b5f6-36a9-ca9da2ed9633	Western Michigan Broncos at Toledo Rockets	Caesars Sportsbook	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-24 09:36:11.804993-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	MGM	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433014-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	SugarHouse	0	2.500000	a459df16-8dd7-8925-446e-71af427d5f1e	2026-03-13 20:04:59.433015-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	consensus	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433017-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	Caesars Sportsbook (Colorado)	0	2.500000	a459df16-8dd7-8925-446e-71af427d5f1e	2026-03-13 20:04:59.433019-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	DraftKings	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433021-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	Unibet	0	2.500000	a459df16-8dd7-8925-446e-71af427d5f1e	2026-03-13 20:04:59.433023-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	PointsBet	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433003-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	Westgate	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433006-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	Titanbets	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433009-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	accuscore	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.433012-04
+-- dc3ffa20-1f39-b118-3fe3-dcb083e2d3b7	William & Mary Tribe at Elon Phoenix	Caesars Sportsbook (New Jersey)	0	3.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:59.432993-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	accuscore	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446316-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	Caesars Sportsbook (New Jersey)	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446332-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	Caesars Sportsbook (Colorado)	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446329-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	SugarHouse	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446325-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	Unibet	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446328-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	MGM	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.44633-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	DraftKings	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446331-04
+-- 57f1499a-510e-a88c-aa02-15eeaa501fe8	William & Mary Tribe at Stony Brook Seawolves	Titanbets	0	17.000000	00000000-0000-0000-0000-000000000000	2026-03-12 06:16:58.446326-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Caesars	0	-20.000000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116818-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Unibet	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116833-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	numberfire	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116824-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Wynn	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116831-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Caesars Sportsbook	0	-27.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:06:03.116809-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	CG Technology	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116829-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	teamrankings	0	-19.000000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.11683-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Westgate	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116827-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	consensus	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116822-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	Caesar's	0	-20.000000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116821-04
+-- fe856803-2900-2a5c-795e-94bf73b69e61	Wyoming Cowboys at Missouri Tigers	accuscore	0	-19.500000	471aeea0-6c93-90f6-dc88-570c4210119d	2026-03-13 20:06:03.116825-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Unibet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.52071-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	PointsBet	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520709-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Caesars Sportsbook	0	6.500000	4bc7b085-44ce-1a24-0949-46d790dd04f0	2026-03-13 20:05:05.520707-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	teamrankings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520713-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	DraftKings	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520714-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Titanbets	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520715-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Caesars Sportsbook (Colorado)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520716-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	MGM	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520717-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Caesars Sportsbook (New Jersey)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520718-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	SugarHouse	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520719-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	numberfire	0	6.500000	4bc7b085-44ce-1a24-0949-46d790dd04f0	2026-03-13 20:05:05.52072-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	consensus	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520721-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	accuscore	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520712-04
+-- baecfdf4-806b-25f2-aac4-1abe1f8d5f1e	Wyoming Cowboys at Northern Illinois Huskies	Caesars Sportsbook (Pennsylvania)	0	7.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:05:05.520688-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	DraftKings	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.848797-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	Westgate	0	-29.000000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848806-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	SugarHouse	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.848742-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	Unibet	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.848794-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	consensus	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848801-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	Caesars Sportsbook	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848804-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	Caesars Sportsbook (New Jersey)	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848788-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	MGM	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848775-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	PointsBet	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848781-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	Titanbets	0	-28.000000	00000000-0000-0000-0000-000000000000	2026-03-13 20:04:45.848785-04
+-- 19557116-2135-ecb1-56b3-f14abb07c048	Youngstown State Penguins at Michigan State Spartans	accuscore	0	-28.500000	62bd2d92-df7d-2390-664f-3f9273a738e2	2026-03-13 20:04:45.848791-04
+
+-- ═══════════════ PART 2 · API DB — affected picks (1b's 36 contest ids) ═════
+SELECT p."Id", p."PickemGroupId", p."UserId", p."ContestId", p."ConfidencePoints",
+       p."IsCorrect", p."PointsAwarded", p."ScoredAt"
+FROM public."UserPick" p
+WHERE p."ContestId" IN (
+    '13cbffb3-9370-7017-663f-a0f9693fdc46',
+    '1dbda297-0194-dc53-1b68-f1d2e770052e',
+    '9a3f4b2c-6d19-9356-c584-9cec14575330',
+    '0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f',
+    '88fc890b-299c-8f24-beb7-8492672e4b5c',
+    '6b52352d-9fbf-b399-37ec-2bc8660fbd4f',
+    'c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720',
+    '19851f23-9ed2-1bb3-9e80-896a7da16269',
+    '1cffa8c9-b20b-2298-e50b-3abf075301af',
+    '147ef646-bc05-0216-fda9-ce8f8397e602',
+    '3528d6ea-3845-af26-1b76-1a7da33b378f',
+    '4ff0f7d8-62aa-6802-13b2-85d7556c83ab',
+    '7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a',
+    '69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96',
+    '309a3360-7558-c00a-3a0c-b5422361e976',
+    '92f6d67d-7481-0f1c-9a29-04c73bdf612f',
+    '3b0510b7-a6b7-4679-c365-faf608dac192',
+    'f91f5d7d-4946-5353-e974-32000da48276',
+    '8792912a-194c-6119-f468-570078c37a76',
+    '9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863',
+    '3ad6f83e-dffd-8a69-83ba-bb5b1f364d97',
+    '1714be5d-3bae-f7cd-b7ab-5574cf97d290',
+    'ef52f1d0-86bf-87d6-1bb4-da2fbce6be42',
+    '1d56c10b-2add-eef0-fabd-efe4c20a6511',
+    '97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09',
+    '0bf62293-9aa7-ca52-72f2-d57bc5061b1f',
+    '132f1358-aa4e-a1b7-3923-ba705270482b',
+    'eb76f774-26b2-9796-0ab5-ea1cdc696375',
+    'a1d354dd-8193-111b-1fe9-2943e6f4e9cf',
+    '59876a6f-afb4-95d6-4088-fc197e804a93',
+    '2811f842-4341-2a9e-342a-e841f966323e',
+    '657c8632-1f91-fc07-05ff-cd5101c2c6c1',
+    'bd93ee50-4195-c84b-9d96-f5f49eebc436',
+    '69e60763-d3e2-ad99-1655-ea38cf3ef2d9',
+    'b978cac1-f391-c481-a1f9-f4aa34341267',
+    '22c1054c-41ca-5311-f61c-b17c6eea1711')
+  AND p."WasAgainstSpread" = TRUE AND p."IsCorrect" = FALSE;
+
+--   Id	PickemGroupId	UserId	ContestId	ConfidencePoints	IsCorrect	PointsAwarded	ScoredAt
+-- 2555ec34-946a-40d7-9538-8e6e739e95e3	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	6b4d61b8-7abc-43fb-82cc-27753373cf48	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	28	False	0	2026-09-08 00:40:11.306124-04
+-- 87fafec7-9bb1-4030-a551-00f4c879606c	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	e7a81c71-4b0e-4c80-982c-c454add8081c	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	7	False	0	2026-09-08 00:40:11.300864-04
+-- 5986386a-3491-492b-8065-de263bf20f5d	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	49e3ef51-ed54-4fcc-893d-5b0df3f0f720	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	31	False	0	2026-09-08 00:40:11.196512-04
+-- be19fc08-c0d7-4c00-9969-75ccef0cf398	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	1cdb3109-cac2-474f-a8ec-dfbe49a9b1b4	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	False	0	2026-09-08 00:40:11.309108-04
+
+-- ═══════════════ PART 3 · PRODUCER HEALING (prod, post-deploy) ═══════════════
+BEGIN;
+UPDATE public."Contest"
+SET "SpreadWinnerFranchiseSeasonId" = NULL
+WHERE "SpreadWinnerFranchiseSeasonId" = '00000000-0000-0000-0000-000000000000';
+-- CompetitionOdds rows KEEP the Guid.Empty sentinel: on the row, null means
+-- "no spread" and empty means "push" — by design, not leaked.
+COMMIT;
+
+-- ═══════════════ PART 4 · API HEALING — matchup denorm (prod) ════════════════
+-- NO-OP — DO NOT RUN. Written wrong the first time (2026-09-08): it targeted
+-- PickemGroupMatchup."SpreadWinnerFranchiseSeasonId", a column that does not
+-- exist. PickemGroupMatchup is a PRE-GAME snapshot (spreads/ranks/records at
+-- matchup generation) and persists no result columns. The API never stores
+-- the spread winner; every reader (GetMatchupResultByContestId.sql,
+-- GetLeagueMatchupsByContestIds.sql, GetContestResultsByContestIds.sql,
+-- MatchupForPickDtoMapper) pulls Contest."SpreadWinnerFranchiseSeasonId"
+-- from the canonical DB live — which Part 3 already healed. The only
+-- API-side state to fix is the picks: proceed to Part 5.
+
+-- ═══════════════ PART 5 · API HEALING — picks (prod, post-deploy) ════════════
+-- Push grades nobody: IsCorrect null, points already 0, AuditedUtc cleared so
+-- the nightly audit re-verifies each row under the FIXED scoring service
+-- (clone scores null == stored null → confirmed).
+BEGIN;
+UPDATE public."UserPick"
+SET "IsCorrect" = NULL,
+    "PointsAwarded" = 0,
+    "AuditedUtc" = NULL,
+    "ModifiedUtc" = NOW() AT TIME ZONE 'utc'
+WHERE "ContestId" IN (
+    '13cbffb3-9370-7017-663f-a0f9693fdc46',
+    '1dbda297-0194-dc53-1b68-f1d2e770052e',
+    '9a3f4b2c-6d19-9356-c584-9cec14575330',
+    '0f1b47a0-e887-39fb-fc78-8b6dcdb6e40f',
+    '88fc890b-299c-8f24-beb7-8492672e4b5c',
+    '6b52352d-9fbf-b399-37ec-2bc8660fbd4f',
+    'c75b3bfa-a909-5b35-5b3c-a7c1f5a7e720',
+    '19851f23-9ed2-1bb3-9e80-896a7da16269',
+    '1cffa8c9-b20b-2298-e50b-3abf075301af',
+    '147ef646-bc05-0216-fda9-ce8f8397e602',
+    '3528d6ea-3845-af26-1b76-1a7da33b378f',
+    '4ff0f7d8-62aa-6802-13b2-85d7556c83ab',
+    '7ac7c0b5-9ff4-b986-bd3d-b9be0b1cdd6a',
+    '69c4e10c-3792-9c8c-5e8d-d30bbcd1ea96',
+    '309a3360-7558-c00a-3a0c-b5422361e976',
+    '92f6d67d-7481-0f1c-9a29-04c73bdf612f',
+    '3b0510b7-a6b7-4679-c365-faf608dac192',
+    'f91f5d7d-4946-5353-e974-32000da48276',
+    '8792912a-194c-6119-f468-570078c37a76',
+    '9ec0d4dd-0e9d-7a95-c76d-8559c7f2f863',
+    '3ad6f83e-dffd-8a69-83ba-bb5b1f364d97',
+    '1714be5d-3bae-f7cd-b7ab-5574cf97d290',
+    'ef52f1d0-86bf-87d6-1bb4-da2fbce6be42',
+    '1d56c10b-2add-eef0-fabd-efe4c20a6511',
+    '97eb9c89-0433-c2ed-c3b3-d6e01bfd5b09',
+    '0bf62293-9aa7-ca52-72f2-d57bc5061b1f',
+    '132f1358-aa4e-a1b7-3923-ba705270482b',
+    'eb76f774-26b2-9796-0ab5-ea1cdc696375',
+    'a1d354dd-8193-111b-1fe9-2943e6f4e9cf',
+    '59876a6f-afb4-95d6-4088-fc197e804a93',
+    '2811f842-4341-2a9e-342a-e841f966323e',
+    '657c8632-1f91-fc07-05ff-cd5101c2c6c1',
+    'bd93ee50-4195-c84b-9d96-f5f49eebc436',
+    '69e60763-d3e2-ad99-1655-ea38cf3ef2d9',
+    'b978cac1-f391-c481-a1f9-f4aa34341267',
+    '22c1054c-41ca-5311-f61c-b17c6eea1711')
+  AND "WasAgainstSpread" = TRUE AND "IsCorrect" = FALSE;
+COMMIT;

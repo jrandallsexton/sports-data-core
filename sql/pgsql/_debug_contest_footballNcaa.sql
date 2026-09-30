@@ -1,9 +1,34 @@
-select * from public."Contest" where "Id" = 'dab8ad91-3464-583a-527b-667e61ef3e27' -- Wisconsin @ ND
-select * from public."ContestExternalId" where "ContestId" = 'dab8ad91-3464-583a-527b-667e61ef3e27' -- Wisconsin @ ND
+select * from public."Contest" where "Id" = 'cd690ee5-f9f9-ce70-0f69-0fe6bf2fd3b6';
 
-select * from public."Competition" where "ContestId" = 'f34db581-7d43-6ccb-4fb9-18e395107e13';
+select * from public."ContestExternalId" where "ContestId" = '5e6ec64e-3a92-c5a5-5a49-bf345f757def';
 
-select * from public."CompetitionOdds" where "CompetitionId" = '37b87b09-3599-2e50-1f49-790d7d3c69d5';
+select * from public."Competition" where "ContestId" = 'cd690ee5-f9f9-ce70-0f69-0fe6bf2fd3b6';
+
+select * from public."CompetitionOdds" where "CompetitionId" = 'e874d9d9-d184-5d72-44c9-86a1668da805';
+
+select * from public."CompetitionMetric" where "CompetitionId" = 'e874d9d9-d184-5d72-44c9-86a1668da805';
+
+select * from public."CompetitionOdds" where "Spread" is null and "SpreadWinner" is not null;
+select * from public."CompetitionOdds" where "ProviderId"::bigint = 200 and "Spread" is not null;
+
+select * from public."CompetitionPlay" where "CompetitionId" = '0594210f-b83c-ba8b-ac63-c3c8508aae6c' order by "SequenceNumber"::bigint;
+
+select DISTINCT
+    lc."DisplayName" as "LeaderCategory",
+    lc."Abbreviation" as "Abbrev",
+    cls."DisplayValue" as "DisplayValue",
+    cls."Value" as "Value",
+    fs."Slug",
+    aths."LastName",
+    aths."FirstName",
+    aths."DisplayName"
+from public."CompetitionLeader" cl
+inner join public."CompetitionLeaderStat" cls on cls."CompetitionLeaderId" = cl."Id"
+inner join public."lkLeaderCategory" lc on lc."Id" = cl."LeaderCategoryId"
+inner join public."AthleteSeason" aths on aths."Id" = cls."AthleteSeasonId"
+inner join public."FranchiseSeason" fs on fs."Id" = cls."FranchiseSeasonId"
+where cl."CompetitionId" = '0594210f-b83c-ba8b-ac63-c3c8508aae6c'
+order by lc."DisplayName", cls."Value" desc; --  aths."LastName";
 
 select * from public."FranchiseSeason" where "Id" = '06f4ca69-91d8-bbeb-cf41-8fc5440de97c';
 -- FranchiseId: 6237f249-8bad-6eaa-7363-961106eae073 Florida

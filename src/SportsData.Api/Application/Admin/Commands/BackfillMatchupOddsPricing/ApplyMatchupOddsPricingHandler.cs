@@ -66,10 +66,16 @@ public class ApplyMatchupOddsPricingHandler : IApplyMatchupOddsPricing
                 $"Odds pricing fetch failed for contest {command.ContestId} ({command.Sport}): {errors}");
         }
 
-        // Keyed by contest alone, no season predicate, on purpose: a ContestId
-        // is the hash of the ESPN event URL, i.e. ONE game, so every matchup
-        // row carrying it is that same game (max seasons per ContestId across
-        // PickemGroupMatchup: 1, prod copy 2026-09-30). Vortex, #802.
+        // Keyed by contest alone, no season predicate, BY DESIGN (Vortex, #802,
+        // raised twice; settled here). A ContestId is the hash of the ESPN event
+        // URL, whose normalized PATH is .../leagues/{league}/events/{espnEventId}:
+        // the path carries ESPN's event id, so one ContestId is one game. A
+        // rematch, in any season, is a new ESPN event with a new id, hence a new
+        // path and a new ContestId; nothing season-shaped is dropped by the
+        // normalization (it strips only the query string). Verified on prod
+        // copies 2026-09-30: contests = distinct URL hashes = distinct event ids
+        // (NCAA 80,840 / NFL 9,202 / MLB 30,532), 0 event ids spanning more than
+        // one season, and max seasons per ContestId across PickemGroupMatchup = 1.
         var matchups = await _dataContext.PickemGroupMatchups
             .Where(m => m.ContestId == command.ContestId
                      && _dataContext.PickemGroups.Any(g => g.Id == m.GroupId && g.Sport == command.Sport))

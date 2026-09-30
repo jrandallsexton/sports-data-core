@@ -66,6 +66,10 @@ public class ApplyMatchupOddsPricingHandler : IApplyMatchupOddsPricing
                 $"Odds pricing fetch failed for contest {command.ContestId} ({command.Sport}): {errors}");
         }
 
+        // Keyed by contest alone, no season predicate, on purpose: a ContestId
+        // is the hash of the ESPN event URL, i.e. ONE game, so every matchup
+        // row carrying it is that same game (max seasons per ContestId across
+        // PickemGroupMatchup: 1, prod copy 2026-09-30). Vortex, #802.
         var matchups = await _dataContext.PickemGroupMatchups
             .Where(m => m.ContestId == command.ContestId
                      && _dataContext.PickemGroups.Any(g => g.Id == m.GroupId && g.Sport == command.Sport))

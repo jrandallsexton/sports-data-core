@@ -25,7 +25,11 @@ LEFT JOIN LATERAL (
   INNER JOIN public."CompetitionOdds" o ON o."CompetitionId" = comp."Id"
   WHERE comp."ContestId" = c."Id"
     AND o."ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
-  ORDER BY CASE WHEN o."ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
+  -- comp."Id" tie-break: Contest:Competition is 1:1 in practice (0 multi-
+  -- competition contests in any sport DB, re-checked 2026-09-30), but if a
+  -- second competition ever appeared the pick would otherwise be
+  -- plan-dependent, and a re-run could stamp different prices (Vortex, #802).
+  ORDER BY CASE WHEN o."ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END, comp."Id"
   LIMIT 1
 ) co ON TRUE
 LEFT JOIN public."CompetitionTeamOdds" away ON away."CompetitionOddsId" = co."Id" AND away."Side" = 'Away'

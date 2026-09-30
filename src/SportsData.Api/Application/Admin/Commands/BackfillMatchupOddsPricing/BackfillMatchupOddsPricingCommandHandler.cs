@@ -19,6 +19,14 @@ public interface IBackfillMatchupOddsPricingCommandHandler
 /// id, and returns immediately. Each job prices a single contest, so a
 /// Producer failure retries that contest alone. Intended as a one-time run;
 /// re-running is safe (the jobs are idempotent).
+///
+/// Deliberately unscoped (no season filter, no batching), by operator
+/// decision (#802): the whole table is the target, and it is small — 3,187
+/// matchup rows / 1,951 distinct contests on a prod copy (2026-09-30). The
+/// enqueue is sequential inside this request (one short Hangfire storage
+/// insert per contest); concurrency is bounded by the worker count on the
+/// execution side, which is where the 2026-06-15 pool incident occurred
+/// (many jobs EXECUTING at once), not by this loop.
 /// </summary>
 public class BackfillMatchupOddsPricingCommandHandler : IBackfillMatchupOddsPricingCommandHandler
 {

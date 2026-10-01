@@ -30,6 +30,9 @@ import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import { useQuery } from '@tanstack/react-query';
+import { useUserOptions } from '@/src/hooks/useUserOptions';
+import { shouldShowGambling } from '@/src/lib/gamblingContent';
+import { betPointsTone, formatBetPoints } from '@/src/lib/betPoints';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import type { AdvisedPick, League, UserPick } from '@/src/types/models';
 import Toast from 'react-native-toast-message';
@@ -391,6 +394,18 @@ export default function PicksScreen() {
   // other three so the glance always sums to the week's matchup total; clamped
   // defensively so a server miscount can't render a negative. null until the
   // envelope loads.
+  // Week net of a simulated 1-unit bet per pick, shown left of the results
+  // glance / live chip (web parity, #805). Server-summed; null until a pick
+  // carries a value. Odds-derived, so it routes through shouldShowGambling,
+  // gated on the RAW response pickType: while a new league's matchups load
+  // (or if that fetch fails) it is undefined, which falls to the safe
+  // default rather than the 'StraightUp' display fallback above.
+  const { data: userOptions } = useUserOptions();
+  const betPoints =
+    picksResult?.betPoints != null && shouldShowGambling(matchupsResponse?.pickType, userOptions)
+      ? picksResult.betPoints
+      : null;
+
   const resultsGlance = useMemo(() => {
     if (!showGlance || !picksResult) return null;
     const { totalMatchups, correctCount, incorrectCount } = picksResult;
@@ -561,6 +576,20 @@ export default function PicksScreen() {
       navigation.setOptions({ headerRight: undefined });
       return;
     }
+    const betPointsChip =
+      betPoints != null ? (
+        <View
+          style={[headerStyles.betPoints, { borderColor: betPointsColor(betPoints, theme) }]}
+          // A plain View is not focusable, so without this VoiceOver skips
+          // the label and reads the bare "+2.26" child (CodeRabbit, #806).
+          accessible
+          accessibilityLabel={`Net ${formatBetPoints(betPoints)} units on a 1-unit bet per pick`}
+        >
+          <Text style={[headerStyles.betPointsText, { color: betPointsColor(betPoints, theme) }]}>
+            {formatBetPoints(betPoints)}
+          </Text>
+        </View>
+      ) : null;
     navigation.setOptions({
       headerRight: () => (
         <View style={headerStyles.pill}>
@@ -596,6 +625,8 @@ export default function PicksScreen() {
             // along am I?". X muted | correct green | incorrect red. Slot
             // stays empty (badges only) until the picks envelope loads.
             resultsGlance && (
+              <>
+              {betPointsChip}
               <Text
                 style={headerStyles.pillText}
                 accessibilityLabel={`${resultsGlance.noResult} without a result, ${resultsGlance.correct} correct, ${resultsGlance.incorrect} incorrect`}
@@ -612,6 +643,7 @@ export default function PicksScreen() {
                   {resultsGlance.incorrect}
                 </Text>
               </Text>
+              </>
             )
           ) : anyActionable ? (
             // 2. Picks can still be made — progress + Hide Picked. Acting
@@ -645,6 +677,8 @@ export default function PicksScreen() {
             // 3. Nothing actionable, results landing — live ✓/✗ ("am I
             // winning?"). No X: mid-flight it would count in-progress games
             // as no-results; the full glance waits for resolution.
+            <>
+            {betPointsChip}
             <Text
               style={headerStyles.pillText}
               accessibilityLabel={`${picksResult!.correctCount} correct, ${picksResult!.incorrectCount} incorrect so far`}
@@ -657,6 +691,7 @@ export default function PicksScreen() {
                 ✗{picksResult!.incorrectCount}
               </Text>
             </Text>
+            </>
           ) : allPicked ? (
             // 4. Everything picked, nothing scored yet.
             <Text style={[headerStyles.pillText, { color: theme.tint }]}>
@@ -671,7 +706,7 @@ export default function PicksScreen() {
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance, showGlance, anyActionable, anyScored, picksResult, advisorEligible]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance, showGlance, anyActionable, anyScored, picksResult, advisorEligible, betPoints]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;
@@ -968,6 +1003,13 @@ const styles = StyleSheet.create({
   importBannerText: { fontSize: 15, fontWeight: '700' },
 });
 
+function betPointsColor(value: number, theme: ReturnType<typeof getTheme>): string {
+  const tone = betPointsTone(value);
+  if (tone === 'positive') return theme.successText;
+  if (tone === 'negative') return theme.errorText;
+  return theme.textMuted;
+}
+
 const headerStyles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
@@ -995,6 +1037,20 @@ const headerStyles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginRight: 8,
+  },
+  // Week bet net: same chip shape as the mode badge, tone-colored border,
+  // just left of the results glance / live chip.
+  betPoints: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    marginRight: 8,
+  },
+  betPointsText: {
+    fontSize: 12,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   pillText: {
     fontSize: 15,

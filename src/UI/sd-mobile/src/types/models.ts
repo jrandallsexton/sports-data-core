@@ -329,6 +329,12 @@ export interface UserPicksResult {
    * for league deactivation, which lags the end date by ~7 days.
    */
   pendingCount: number;
+  /**
+   * Week net of a simulated 1-unit bet on each pick at the closing price
+   * (moneyline in SU leagues, spread price in ATS). Null until a pick carries
+   * a value. Odds-derived: gate the display with shouldShowGambling.
+   */
+  betPoints: number | null;
 }
 
 /** Matches UserPickDto from GET /ui/picks/{groupId}/week/{week} */

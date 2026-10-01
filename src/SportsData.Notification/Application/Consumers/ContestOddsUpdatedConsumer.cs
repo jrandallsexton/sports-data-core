@@ -34,6 +34,15 @@ namespace SportsData.Notification.Application.Consumers
     /// </para>
     ///
     /// <para>
+    /// Displayed-book gate: the Producer publishes this event once per BOOK
+    /// (ESPN Bet, DraftKings, Caesars, ...), and only the displayed row (ESPN
+    /// Bet, else DraftKings) is the line users see on the card and picked
+    /// against. The event carries <c>DisplayedOdds</c> only when THIS book is
+    /// that row (#803); without it the move is on a book nobody sees, and is
+    /// skipped. When present, Old/New below describe that same displayed book.
+    /// </para>
+    ///
+    /// <para>
     /// Movement gate: only spread or total movement is actionable. The football
     /// path carries Old/New spread &amp; total on the event; the MLB path
     /// replaces a set of per-provider rows and so publishes all-null deltas —
@@ -93,6 +102,14 @@ namespace SportsData.Notification.Application.Consumers
             });
 
             _logger.LogInformation("ContestOddsUpdated received.");
+
+            if (msg.DisplayedOdds is null)
+            {
+                _logger.LogInformation(
+                    "Line change on a non-displayed book (ProviderId={ProviderId}); users never saw this line. Skipping.",
+                    msg.ProviderId);
+                return;
+            }
 
             var spreadMoved = msg.OldSpread != msg.NewSpread;
             var totalMoved = msg.OldOverUnder != msg.NewOverUnder;

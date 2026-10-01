@@ -26,15 +26,18 @@ public class ApplyMatchupOddsPricingHandler : IApplyMatchupOddsPricing
 {
     private readonly AppDataContext _dataContext;
     private readonly IContestClientFactory _contestClientFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<ApplyMatchupOddsPricingHandler> _logger;
 
     public ApplyMatchupOddsPricingHandler(
         AppDataContext dataContext,
         IContestClientFactory contestClientFactory,
+        IDateTimeProvider dateTimeProvider,
         ILogger<ApplyMatchupOddsPricingHandler> logger)
     {
         _dataContext = dataContext;
         _contestClientFactory = contestClientFactory;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -89,6 +92,15 @@ public class ApplyMatchupOddsPricingHandler : IApplyMatchupOddsPricing
             m.HomeSpreadPrice = (double?)pricing.HomeSpreadPrice ?? m.HomeSpreadPrice;
             m.OverOdds = (double?)pricing.OverOdds ?? m.OverOdds;
             m.UnderOdds = (double?)pricing.UnderOdds ?? m.UnderOdds;
+
+            // Stamp only when EF detected a change, as MatchupOddsProcessor and
+            // MatchupScheduleProcessor do: a rewrite must leave a trace, a
+            // no-op (re-run) must not.
+            if (_dataContext.Entry(m).State == EntityState.Modified)
+            {
+                m.ModifiedUtc = _dateTimeProvider.UtcNow();
+                m.ModifiedBy = Guid.Empty;
+            }
         }
 
         await _dataContext.SaveChangesAsync();

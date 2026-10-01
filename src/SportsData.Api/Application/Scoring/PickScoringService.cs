@@ -128,13 +128,25 @@ public class PickScoringService : IPickScoringService
 
                 var spreadPrice = pickedIsHome.Value ? pricing.HomeSpreadPrice : pricing.AwaySpreadPrice;
                 pick.PointsATS = SettleBet(
-                    (decimal?)spreadPrice,
+                    ToPrice(spreadPrice),
                     ResolveSpreadWinner(spread.Value, result),
                     pick.FranchiseSeasonId.Value);
                 break;
             }
         }
     }
+
+    /// <summary>
+    /// The stored spread price is a double. NaN, infinity or a magnitude past
+    /// decimal's range would throw on the cast, and the processors' catch
+    /// would then skip the pick; treat any of them as "no price" (CodeRabbit,
+    /// #805). Real prices arrive from ESPN JSON via a decimal, so this is
+    /// defense only.
+    /// </summary>
+    private static decimal? ToPrice(double? price) =>
+        price is { } value && double.IsFinite(value) && Math.Abs(value) < 1_000_000d
+            ? (decimal)value
+            : null;
 
     /// <param name="winnerId">Null means a tie (SU) or push (ATS): the stake comes back.</param>
     private static decimal? SettleBet(decimal? americanPrice, Guid? winnerId, Guid pickedId)

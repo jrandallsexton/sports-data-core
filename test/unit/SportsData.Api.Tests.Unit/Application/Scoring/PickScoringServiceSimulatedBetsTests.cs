@@ -197,6 +197,22 @@ public class PickScoringServiceSimulatedBetsTests
         pick.PointsATS.Should().BeNull();
     }
 
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(1e30)]
+    public void AgainstTheSpread_NonFiniteOrOutOfRangePrice_IsNull_NotAThrow(double price)
+    {
+        var pick = Pick(HomeId);
+
+        _sut.ScoreSimulatedBets(
+            Group(PickType.AgainstTheSpread), -7.0, pick, Result(home: 27, away: 17),
+            Priced with { HomeSpreadPrice = price });
+
+        pick.PointsATS.Should().BeNull();
+    }
+
     #endregion
 
     #region Common

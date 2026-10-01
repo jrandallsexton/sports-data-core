@@ -395,6 +395,11 @@ function PicksPage() {
     setMatchups([]);
     setUserPicks({});
     setLoadingMatchups(true);
+    // The pick type gates gambling content (shouldShowGambling). Left
+    // standing, an ATS league's type would briefly gate the next league's
+    // bet points, or for good if its matchups fetch fails. Null falls back
+    // to the safe default (hidden unless the user opted in). CodeRabbit, #805.
+    setPickType(null);
   }, [routeLeagueId]);
 
   useEffect(() => {

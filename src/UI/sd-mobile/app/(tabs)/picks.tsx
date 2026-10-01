@@ -580,6 +580,9 @@ export default function PicksScreen() {
       betPoints != null ? (
         <View
           style={[headerStyles.betPoints, { borderColor: betPointsColor(betPoints, theme) }]}
+          // A plain View is not focusable, so without this VoiceOver skips
+          // the label and reads the bare "+2.26" child (CodeRabbit, #806).
+          accessible
           accessibilityLabel={`Net ${formatBetPoints(betPoints)} units on a 1-unit bet per pick`}
         >
           <Text style={[headerStyles.betPointsText, { color: betPointsColor(betPoints, theme) }]}>

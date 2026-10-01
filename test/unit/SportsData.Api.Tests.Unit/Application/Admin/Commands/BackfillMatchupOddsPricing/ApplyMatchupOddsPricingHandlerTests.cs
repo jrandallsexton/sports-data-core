@@ -18,6 +18,7 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.BackfillMatchupOd
 public class ApplyMatchupOddsPricingHandlerTests : ApiTestBase<ApplyMatchupOddsPricingHandler>
 {
     private static readonly DateTime Kickoff = new(2026, 9, 26, 19, 30, 0, DateTimeKind.Utc);
+    private static readonly DateTime Now = new(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc);
 
     private readonly Guid _contestId = Guid.NewGuid();
     private readonly Mock<IProvideContests> _ncaaClient = new();
@@ -25,6 +26,7 @@ public class ApplyMatchupOddsPricingHandlerTests : ApiTestBase<ApplyMatchupOddsP
     public ApplyMatchupOddsPricingHandlerTests()
     {
         Mocker.GetMock<IContestClientFactory>().Setup(x => x.Resolve(Sport.FootballNcaa)).Returns(_ncaaClient.Object);
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
     }
 
     private async Task<Guid> SeedGroupAsync(Sport sport, League league)
@@ -128,5 +130,26 @@ public class ApplyMatchupOddsPricingHandlerTests : ApiTestBase<ApplyMatchupOddsP
 
         Assert.Contains(_contestId.ToString(), ex.Message);
         Assert.Null(Assert.Single(await DataContext.PickemGroupMatchups.ToListAsync()).AwayMoneyLine);
+    }
+
+    [Fact]
+    public async Task StampsModifiedUtc_OnlyWhenAPriceChanged()
+    {
+        await SeedMatchupAsync(await SeedGroupAsync(Sport.FootballNcaa, League.NCAAF), _contestId);
+        ProducerReturns(new Success<OddsPricingDto>(new OddsPricingDto
+        {
+            ContestId = _contestId, AwayMoneyLine = 240, HomeMoneyLine = -300
+        }));
+
+        await RunAsync();
+        var m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(Now, m.ModifiedUtc);
+        Assert.Equal(Guid.Empty, m.ModifiedBy);
+
+        // A re-run with the same prices changes nothing: the stamp must not move.
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now.AddHours(1));
+        await RunAsync();
+        m = Assert.Single(await DataContext.PickemGroupMatchups.AsNoTracking().ToListAsync());
+        Assert.Equal(Now, m.ModifiedUtc);
     }
 }

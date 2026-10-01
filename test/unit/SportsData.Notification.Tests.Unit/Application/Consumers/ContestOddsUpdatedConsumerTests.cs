@@ -45,13 +45,21 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         return ctx.Object;
     }
 
+    /// <param name="displayed">
+    /// True (the default): the event is for the displayed book (ESPN Bet), so it
+    /// carries DisplayedOdds. False: another book moved; no snapshot.
+    /// </param>
     private static ContestOddsUpdated Msg(
         Guid contestId,
         decimal? oldSpread = null, decimal? newSpread = null,
-        decimal? oldTotal = null, decimal? newTotal = null)
-        => new(contestId, "odds updated", "1", "DraftKings",
+        decimal? oldTotal = null, decimal? newTotal = null,
+        bool displayed = true)
+        => new(contestId, "odds updated", "58", "ESPN BET",
             oldSpread, newSpread, oldTotal, newTotal,
-            null, Sport.FootballNcaa, 2026, Guid.NewGuid(), Guid.NewGuid());
+            null, Sport.FootballNcaa, 2026, Guid.NewGuid(), Guid.NewGuid(),
+            DisplayedOdds: displayed
+                ? new DisplayedContestOdds { ProviderId = "58", Spread = newSpread, OverUnder = newTotal }
+                : null);
 
     private async Task SeedPickAsync(Guid userId, Guid contestId, Guid groupId, string pickType)
     {
@@ -207,6 +215,23 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
 
         VerifySendCount(Times.Once());
+    }
+
+    [Fact]
+    public async Task Consume_SpreadMovedOnANonDisplayedBook_DoesNotNotify()
+    {
+        // Same picker and ATS league that DOES notify for the displayed book:
+        // a move on a book nobody sees on the card is noise (#803 snapshot gate).
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.AgainstTheSpread);
+        await SeedDeviceAsync(userId);
+
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
+        var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
+        await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m, displayed: false)));
+
+        VerifySendCount(Times.Never());
     }
 
     [Fact]

@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -163,6 +164,40 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         await _dataContext.CompetitionOdds.AddAsync(incoming);
 
+        // Displayed-row snapshot: attached only when THIS provider's row is the
+        // one the matchup cards read (ESPN Bet, else DraftKings when there is
+        // no ESPN Bet row), so the API never applies another book's line or
+        // prices. OTHER displayed providers are read from the database; this
+        // provider is counted exactly once, from the incoming row. Excluding it
+        // from the query matters: on a hard replace its old row is only marked
+        // Deleted in the tracker and is still in the database until
+        // SaveChanges, so it would otherwise be counted twice (Vortex, #803).
+        //
+        // KNOWN, ACCEPTED (Vortex + operator, #803): this reads committed rows
+        // only, so when two DIFFERENT displayed books' documents for one
+        // competition are processed in parallel (ESPN Bet and DraftKings, each a
+        // separate Hangfire job), neither sees the other and both publish a
+        // snapshot; if DraftKings' event was built later, its line wins in the
+        // API. Mostly when a contest's odds first appear and both books land
+        // together. Self-healing: the next ESPN Bet update (a newer version) or
+        // a MatchupScheduleProcessor refresh (which reads the preferred row
+        // straight from the matchup SQL) restores ESPN Bet; pregame ESPN Bet
+        // lines move often. Display only; scoring is unaffected. A per-competition
+        // pg_advisory_xact_lock spanning this check through commit would close it,
+        // at the cost of an explicit transaction on this high-volume path.
+        var displayedPresent = await _dataContext.CompetitionOdds
+            .AsNoTracking()
+            .Where(o => o.CompetitionId == competition.Id
+                     && o.ProviderId != incoming.ProviderId
+                     && OddsProviderPreference.DisplayedProviderIds.Contains(o.ProviderId))
+            .Select(o => o.ProviderId)
+            .ToListAsync();
+        displayedPresent.Add(incoming.ProviderId);
+
+        var displayedOdds = OddsProviderPreference.SelectDisplayedProviderId(displayedPresent) == incoming.ProviderId
+            ? OddsProviderPreference.ToDisplayedSnapshot(incoming)
+            : null;
+
         if (existing is null)
         {
             await _publishEndpoint.Publish(new ContestOddsCreated(
@@ -171,7 +206,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                command.MessageId));
+                command.MessageId,
+                DisplayedOdds: displayedOdds));
         }
         else
         {
@@ -188,7 +224,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
+                CausationId.Producer.EventDocumentProcessor,
+                DisplayedOdds: displayedOdds));
         }
 
         await _dataContext.SaveChangesAsync();

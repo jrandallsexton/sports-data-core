@@ -42,7 +42,13 @@ SELECT
   co."Spread"         AS "HomeSpread",
   co."OverUnder"      AS "OverUnder",
   co."OverOdds"       AS "OverOdds",
-  co."UnderOdds"      AS "UnderOdds"
+  co."UnderOdds"      AS "UnderOdds",
+  -- Per-team prices from the same displayed row (co), so a new matchup is
+  -- priced from creation; odds events keep them current afterwards.
+  ctoAway."MoneylineCurrent"   AS "AwayMoneyLine",
+  ctoHome."MoneylineCurrent"   AS "HomeMoneyLine",
+  ctoAway."SpreadPriceCurrent" AS "AwaySpreadPrice",
+  ctoHome."SpreadPriceCurrent" AS "HomeSpreadPrice"
 FROM public."Contest" c
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
@@ -54,6 +60,8 @@ LEFT JOIN LATERAL (
   ORDER BY CASE WHEN "ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
   LIMIT 1
 ) co ON TRUE
+LEFT JOIN public."CompetitionTeamOdds" ctoAway ON ctoAway."CompetitionOddsId" = co."Id" AND ctoAway."Side" = 'Away'
+LEFT JOIN public."CompetitionTeamOdds" ctoHome ON ctoHome."CompetitionOddsId" = co."Id" AND ctoHome."Side" = 'Home'
 LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"

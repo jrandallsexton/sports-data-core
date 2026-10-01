@@ -652,6 +652,10 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.HomeWins, 7)
                 .With(x => x.HomeLosses, 3)
                 .With(x => x.Spread, () => "-3.5")
+                .With(x => x.AwayMoneyLine, 150)
+                .With(x => x.HomeMoneyLine, -175)
+                .With(x => x.AwaySpreadPrice, -112d)
+                .With(x => x.HomeSpreadPrice, -108d)
                 .Create();
 
             _contestClientMock
@@ -688,6 +692,11 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             savedMatchup.HomeWins.Should().Be(7);
             savedMatchup.HomeLosses.Should().Be(3);
             savedMatchup.Spread.Should().Be("-3.5");
+            // A new matchup is priced from creation (odds events keep it current).
+            savedMatchup.AwayMoneyLine.Should().Be(150);
+            savedMatchup.HomeMoneyLine.Should().Be(-175);
+            savedMatchup.AwaySpreadPrice.Should().Be(-112d);
+            savedMatchup.HomeSpreadPrice.Should().Be(-108d);
         }
 
         /// <summary>

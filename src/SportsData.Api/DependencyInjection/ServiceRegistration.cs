@@ -354,6 +354,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IAuditMatchupRecords, MatchupRecordAuditProcessor>();
+            services.AddScoped<IApplyMatchupOdds, MatchupOddsProcessor>();
             services.AddScoped<IRefreshWeekMatchupsCommandHandler, RefreshWeekMatchupsCommandHandler>();
             services.AddScoped<IValidator<RefreshWeekMatchupsCommand>, RefreshWeekMatchupsCommandValidator>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();

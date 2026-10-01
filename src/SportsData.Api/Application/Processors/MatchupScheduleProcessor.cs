@@ -312,6 +312,10 @@ namespace SportsData.Api.Application.Processors
                     existing.Spread = groupMatchup.Spread;
                     existing.StartDateUtc = groupMatchup.StartDateUtc;
                     existing.UnderOdds = groupMatchup.UnderOdds;
+                    existing.AwayMoneyLine = groupMatchup.AwayMoneyLine;
+                    existing.HomeMoneyLine = groupMatchup.HomeMoneyLine;
+                    existing.AwaySpreadPrice = groupMatchup.AwaySpreadPrice;
+                    existing.HomeSpreadPrice = groupMatchup.HomeSpreadPrice;
 
                     // Stamp the audit fields when EF actually detected a change.
                     // Nothing on this path did, so a row could be rewritten by
@@ -360,7 +364,11 @@ namespace SportsData.Api.Application.Processors
                         SeasonYear = command.SeasonYear,
                         Spread = groupMatchup.Spread,
                         StartDateUtc = groupMatchup.StartDateUtc,
-                        UnderOdds = groupMatchup.UnderOdds
+                        UnderOdds = groupMatchup.UnderOdds,
+                        AwayMoneyLine = groupMatchup.AwayMoneyLine,
+                        HomeMoneyLine = groupMatchup.HomeMoneyLine,
+                        AwaySpreadPrice = groupMatchup.AwaySpreadPrice,
+                        HomeSpreadPrice = groupMatchup.HomeSpreadPrice
                     });
                     insertedCount++;
                     insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline));

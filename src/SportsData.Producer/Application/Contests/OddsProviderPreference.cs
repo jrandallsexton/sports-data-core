@@ -1,3 +1,4 @@
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Contests.Queries.Matchups;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
@@ -97,6 +98,45 @@ namespace SportsData.Producer.Application.Contests
             var finalized = nonLive.Where(o => o.FinalizedUtc.HasValue).ToList();
             return finalized.FirstOrDefault(o => o.Spread.HasValue)
                    ?? finalized.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Of the providers present for one competition, the one whose row the
+        /// matchup cards read: the first <see cref="DisplayedProviderIds"/>
+        /// entry present (the SQL laterals' 58-first rule). Null when no
+        /// displayed provider is present. Unlike <see cref="SelectPrimary"/>
+        /// there is no finalized requirement: this answers "which row is on the
+        /// card right now", for publishing live odds changes.
+        /// </summary>
+        public static string? SelectDisplayedProviderId(IEnumerable<string> providerIdsPresent)
+        {
+            var present = providerIdsPresent as ICollection<string> ?? providerIdsPresent.ToList();
+            return DisplayedProviderIds.FirstOrDefault(present.Contains);
+        }
+
+        /// <summary>
+        /// The row as a <see cref="DisplayedContestOdds"/> event snapshot. Team
+        /// prices come from the Away/Home <see cref="CompetitionTeamOdds"/>
+        /// sides (written as "Away"/"Home" by CompetitionOddsExtensions).
+        /// </summary>
+        public static DisplayedContestOdds ToDisplayedSnapshot(CompetitionOdds row)
+        {
+            var away = row.Teams.FirstOrDefault(t => t.Side == "Away");
+            var home = row.Teams.FirstOrDefault(t => t.Side == "Home");
+
+            return new DisplayedContestOdds
+            {
+                ProviderId = row.ProviderId,
+                Details = row.Details,
+                Spread = row.Spread,
+                OverUnder = row.OverUnder,
+                OverOdds = row.OverOdds,
+                UnderOdds = row.UnderOdds,
+                AwayMoneyLine = away?.MoneylineCurrent,
+                HomeMoneyLine = home?.MoneylineCurrent,
+                AwaySpreadPrice = away?.SpreadPriceCurrent,
+                HomeSpreadPrice = home?.SpreadPriceCurrent
+            };
         }
     }
 }

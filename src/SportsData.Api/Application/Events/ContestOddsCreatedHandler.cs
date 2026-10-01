@@ -7,41 +7,41 @@ using SportsData.Core.Processing;
 namespace SportsData.Api.Application.Events
 {
     /// <summary>
-    /// A contest's odds changed. When the event carries the DISPLAYED row
-    /// (<see cref="ContestOddsUpdated.DisplayedOdds"/>: the book the matchup
-    /// cards read), enqueue <see cref="IApplyMatchupOdds"/> to write the line and
-    /// prices onto the contest's PickemGroupMatchups. Every other book's
-    /// update, and events from pods on the prior shape, carry no snapshot and
-    /// are ignored.
+    /// A contest's first odds arrived. Same rule as
+    /// <see cref="ContestOddsUpdatedHandler"/>: when the event carries the
+    /// DISPLAYED row (<see cref="ContestOddsCreated.DisplayedOdds"/>), enqueue
+    /// <see cref="IApplyMatchupOdds"/> for the contest's PickemGroupMatchups.
+    /// Covers odds that first appear after a matchup already exists, which the
+    /// matchup schedule processor (reading odds at creation) cannot see.
     ///
-    /// Previously this broadcast the event over SignalR to every client, which
-    /// no web or mobile code listened to, and never updated a matchup.
+    /// Requires the per-sport contest-odds-created shovels to the API broker
+    /// (sports-data-config); without them this consumer receives nothing.
     ///
     /// Thin Hangfire-spawn shim per the ingest-consumer convention: no inline
     /// DB work.
     /// </summary>
-    public class ContestOddsUpdatedHandler : IConsumer<ContestOddsUpdated>
+    public class ContestOddsCreatedHandler : IConsumer<ContestOddsCreated>
     {
-        private readonly ILogger<ContestOddsUpdatedHandler> _logger;
+        private readonly ILogger<ContestOddsCreatedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public ContestOddsUpdatedHandler(
-            ILogger<ContestOddsUpdatedHandler> logger,
+        public ContestOddsCreatedHandler(
+            ILogger<ContestOddsCreatedHandler> logger,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public Task Consume(ConsumeContext<ContestOddsUpdated> context)
+        public Task Consume(ConsumeContext<ContestOddsCreated> context)
         {
             var msg = context.Message;
 
             if (msg.DisplayedOdds is null)
             {
                 _logger.LogDebug(
-                    "ContestOddsUpdated without displayed odds (another book changed); ignored. ContestId={ContestId}, ProviderId={ProviderId}",
-                    msg.ContestId, msg.ProviderId);
+                    "ContestOddsCreated without displayed odds (not the displayed book); ignored. ContestId={ContestId}",
+                    msg.ContestId);
                 return Task.CompletedTask;
             }
 
@@ -50,7 +50,7 @@ namespace SportsData.Api.Application.Events
             _backgroundJobProvider.Enqueue<IApplyMatchupOdds>(p => p.Process(cmd));
 
             _logger.LogInformation(
-                "ContestOddsUpdated: displayed odds applied via job. ContestId={ContestId}, ProviderId={ProviderId}, CorrelationId={CorrelationId}",
+                "ContestOddsCreated: displayed odds applied via job. ContestId={ContestId}, ProviderId={ProviderId}, CorrelationId={CorrelationId}",
                 msg.ContestId, msg.DisplayedOdds.ProviderId, msg.CorrelationId);
 
             return Task.CompletedTask;

@@ -74,6 +74,137 @@ public class PickScoringService : IPickScoringService
         }
     }
 
+    /// <summary>
+    /// Simulated $1 bet on the picked team at the matchup's closing price:
+    /// a win is the net profit (-110 wins 0.9091, +240 wins 2.40), a loss
+    /// is -1, a push (ATS) or tie (SU) is 0. Only the column matching the
+    /// league's pick type is populated; the others are cleared. Null when
+    /// there is nothing to bet: no team picked, no price, or an ATS league
+    /// with no or zero spread (scoring falls back to straight-up there, but
+    /// the spread bet itself never existed).
+    /// </summary>
+    public void ScoreSimulatedBets(
+        PickemGroup group,
+        double? spread,
+        PickemGroupUserPick pick,
+        MatchupResult result,
+        MatchupPricing? pricing)
+    {
+        if (result.FinalizedUtc is null)
+        {
+            return;
+        }
+
+        pick.PointsSU = null;
+        pick.PointsATS = null;
+        // Over/under leagues are not scored yet; PointsOU stays null until they are.
+        pick.PointsOU = null;
+
+        bool? pickedIsHome = pick.FranchiseSeasonId == result.HomeFranchiseSeasonId ? true
+            : pick.FranchiseSeasonId == result.AwayFranchiseSeasonId ? false
+            : null;
+
+        if (!pick.FranchiseSeasonId.HasValue || pickedIsHome is null || pricing is null)
+        {
+            return;
+        }
+
+        switch (group.PickType)
+        {
+            case PickType.None:
+            case PickType.StraightUp:
+            {
+                var moneyLine = pickedIsHome.Value ? pricing.HomeMoneyLine : pricing.AwayMoneyLine;
+                pick.PointsSU = SettleBet(moneyLine, result.WinnerFranchiseSeasonId, pick.FranchiseSeasonId.Value);
+                break;
+            }
+
+            case PickType.AgainstTheSpread:
+            {
+                if (!spread.HasValue || spread.Value == 0)
+                {
+                    break;
+                }
+
+                var spreadPrice = pickedIsHome.Value ? pricing.HomeSpreadPrice : pricing.AwaySpreadPrice;
+                pick.PointsATS = SettleBet(
+                    (decimal?)spreadPrice,
+                    ResolveSpreadWinner(spread.Value, result),
+                    pick.FranchiseSeasonId.Value);
+                break;
+            }
+        }
+    }
+
+    /// <param name="winnerId">Null means a tie (SU) or push (ATS): the stake comes back.</param>
+    private static decimal? SettleBet(decimal? americanPrice, Guid? winnerId, Guid pickedId)
+    {
+        var profit = NetProfitPerDollar(americanPrice);
+
+        if (profit is null)
+        {
+            return null;
+        }
+
+        if (!winnerId.HasValue)
+        {
+            return 0m;
+        }
+
+        return winnerId.Value == pickedId ? profit : -1m;
+    }
+
+    /// <summary>
+    /// Net profit of a winning $1 bet at an American price. Rounded to the
+    /// column's 4 places HERE so a re-score compares equal to what Postgres
+    /// stored; the nightly audit would otherwise "correct" every pick. Null
+    /// for a value that is not an American price (|price| under 100), which
+    /// would otherwise pay absurdly (a stray -5 is a 20x payout).
+    /// </summary>
+    private static decimal? NetProfitPerDollar(decimal? americanPrice)
+    {
+        if (americanPrice is null || Math.Abs(americanPrice.Value) < 100m)
+        {
+            return null;
+        }
+
+        var profit = americanPrice.Value > 0
+            ? americanPrice.Value / 100m
+            : 100m / -americanPrice.Value;
+
+        return Math.Round(profit, 4, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>
+    /// The team that covered the home-relative spread, or null on a push.
+    /// </summary>
+    private static Guid? ResolveSpreadWinner(double spread, MatchupResult result)
+    {
+        var homeScore = result.HomeScore;
+        var awayScore = result.AwayScore;
+
+        if (spread < 0)
+        {
+            // Home team was favored: adjust home score
+            var adjustedHomeScore = homeScore + spread;
+
+            if (adjustedHomeScore > awayScore)
+                return result.HomeFranchiseSeasonId;
+            if (adjustedHomeScore < awayScore)
+                return result.AwayFranchiseSeasonId;
+            return null;
+        }
+
+        // Away team was favored: adjust away score
+        var adjustedAwayScore = awayScore + (-spread);
+
+        if (adjustedAwayScore > homeScore)
+            return result.AwayFranchiseSeasonId;
+        if (adjustedAwayScore < homeScore)
+            return result.HomeFranchiseSeasonId;
+        return null;
+    }
+
     private void ScoreStraightUp(
         PickemGroupUserPick pick,
         MatchupResult result,
@@ -109,33 +240,7 @@ public class PickScoringService : IPickScoringService
             return;
         }
 
-        var homeScore = result.HomeScore;
-        var awayScore = result.AwayScore;
-
-        Guid? spreadWinnerId = null;
-
-        if (spread.Value < 0)
-        {
-            // Home team was favored: adjust home score
-            var adjustedHomeScore = homeScore + spread.Value;
-
-            if (adjustedHomeScore > awayScore)
-                spreadWinnerId = result.HomeFranchiseSeasonId;
-            else if (adjustedHomeScore < awayScore)
-                spreadWinnerId = result.AwayFranchiseSeasonId;
-            // else: it's a push → leave spreadWinnerId as null
-        }
-        else
-        {
-            // Away team was favored: adjust away score
-            var adjustedAwayScore = awayScore + (-spread.Value);
-
-            if (adjustedAwayScore > homeScore)
-                spreadWinnerId = result.AwayFranchiseSeasonId;
-            else if (adjustedAwayScore < homeScore)
-                spreadWinnerId = result.HomeFranchiseSeasonId;
-            // else: it's a push → leave spreadWinnerId as null
-        }
+        var spreadWinnerId = ResolveSpreadWinner(spread.Value, result);
 
         // PUSH: the game landed exactly on the line — the bet never happened.
         // Nobody is graded: IsCorrect stays null (with ScoredAt set, so the

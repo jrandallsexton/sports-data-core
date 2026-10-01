@@ -115,6 +115,16 @@ public class PickScoringProcessorTests : ApiTestBase<PickScoringProcessor>
                     It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
                     result),
                 Times.Once);
+
+            // The simulated bets are priced from this league's matchup.
+            scoring.Verify(s =>
+                s.ScoreSimulatedBets(
+                    It.Is<PickemGroup>(g => g.Id == groupId),
+                    result.Spread,
+                    It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
+                    result,
+                    MatchupPricing.From(matchup)),
+                Times.Once);
         }
 
         // Also ensure the result was fetched

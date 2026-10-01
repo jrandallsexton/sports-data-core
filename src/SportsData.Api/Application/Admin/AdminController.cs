@@ -1047,6 +1047,27 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Computes the simulated $1 bet columns (PointsSU, PointsATS, PointsOU)
+        /// on every already-scored UserPick from its contest's finalized result
+        /// and its league matchup's prices: enqueues one background job per
+        /// distinct contest. IsCorrect and PointsAwarded are not touched.
+        /// Returns 202 with the correlation id and per-sport job counts.
+        /// Idempotent, safe to re-run.
+        /// Example: POST /admin/backfill-user-pick-bet-points
+        /// </summary>
+        [HttpPost]
+        [Route("backfill-user-pick-bet-points")]
+        public async Task<ActionResult<Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsResult>> BackfillUserPickBetPoints(
+            [FromServices] Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(
+                new Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommand(),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
         // ─────────────────────────────────────────────────────────────
         // SignalR debug harness — see docs/signalr-debug-harness-plan.md
         //

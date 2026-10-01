@@ -181,6 +181,15 @@ namespace SportsData.Api.Application.Scoring
                             result.Spread,
                             pick,
                             result);
+
+                        // Priced from the matchup as it stands now: at
+                        // finalization, that is the closing price.
+                        _pickScoringService.ScoreSimulatedBets(
+                            group,
+                            result.Spread,
+                            pick,
+                            result,
+                            MatchupPricing.From(matchup));
                     }
                     catch (Exception ex)
                     {

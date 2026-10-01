@@ -137,6 +137,9 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             pick.PointsAwarded = null;
             pick.ScoredAt = null;
             pick.WasAgainstSpread = null;
+            pick.PointsSU = null;
+            pick.PointsATS = null;
+            pick.PointsOU = null;
             // Back to unscored, so the watermark must clear with it: when the
             // contest finalizes for real and the pick is re-scored, it has to
             // be audited again. A stamp left behind here would make the pick
@@ -166,14 +169,20 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             .Join(_dataContext.PickemGroups,
                 m => m.GroupId,
                 g => g.Id,
-                (m, g) => new { m.GroupId, m.SeasonYear, m.SeasonWeek, g.Sport })
+                (m, g) => new { m.GroupId, m.SeasonYear, m.SeasonWeek, g.Sport, m.AwayMoneyLine, m.HomeMoneyLine, m.AwaySpreadPrice, m.HomeSpreadPrice })
             .Where(x => x.Sport == command.Sport)
-            .Select(x => new { x.GroupId, x.SeasonYear, x.SeasonWeek })
+            .Select(x => new { x.GroupId, x.SeasonYear, x.SeasonWeek, x.AwayMoneyLine, x.HomeMoneyLine, x.AwaySpreadPrice, x.HomeSpreadPrice })
             .ToListAsync();
 
         var keyByGroup = matchupKeys.ToDictionary(
             m => m.GroupId,
             m => (m.SeasonYear, m.SeasonWeek));
+
+        // The matchup's current prices: what PickScoringProcessor priced the
+        // bet columns from at finalization, so a clean pick compares equal.
+        var pricingByGroup = matchupKeys.ToDictionary(
+            m => m.GroupId,
+            m => new MatchupPricing(m.AwayMoneyLine, m.HomeMoneyLine, m.AwaySpreadPrice, m.HomeSpreadPrice));
 
         var now = _dateTimeProvider.UtcNow();
 
@@ -200,6 +209,12 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             try
             {
                 _pickScoringService.ScorePick(pick.Group, result.Spread, clone, result);
+                _pickScoringService.ScoreSimulatedBets(
+                    pick.Group,
+                    result.Spread,
+                    clone,
+                    result,
+                    pricingByGroup.GetValueOrDefault(pick.PickemGroupId));
             }
             catch (Exception ex)
             {
@@ -214,6 +229,16 @@ public class PickScoringAuditProcessor : IPickScoringAudit
                 pick.IsCorrect == clone.IsCorrect
                 && pick.PointsAwarded == clone.PointsAwarded
                 && pick.WasAgainstSpread == clone.WasAgainstSpread;
+
+            // The simulated-bet columns are checked separately: league-week
+            // scoring never reads them, so a bet-only difference is corrected
+            // quietly (no error, no league-week fan-out). Expected for picks
+            // scored before the columns existed or before the matchup was
+            // priced; the price can also move after scoring.
+            var betsMatch =
+                pick.PointsSU == clone.PointsSU
+                && pick.PointsATS == clone.PointsATS
+                && pick.PointsOU == clone.PointsOU;
 
             // Re-scored and compared against current canonical data — that is
             // a completed audit whether or not anything differed, so the
@@ -240,6 +265,18 @@ public class PickScoringAuditProcessor : IPickScoringAudit
 
             if (matches)
             {
+                if (!betsMatch)
+                {
+                    _logger.LogInformation(
+                        "PickScoringAudit bet correction: PickId={PickId} StoredPointsSU={StoredPointsSU} ComputedPointsSU={ComputedPointsSU} StoredPointsATS={StoredPointsATS} ComputedPointsATS={ComputedPointsATS} LeagueId={LeagueId}",
+                        pick.Id,
+                        pick.PointsSU, clone.PointsSU,
+                        pick.PointsATS, clone.PointsATS,
+                        pick.PickemGroupId);
+
+                    CopySimulatedBets(clone, pick, now);
+                }
+
                 continue;
             }
 
@@ -258,6 +295,9 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             pick.IsCorrect = clone.IsCorrect;
             pick.PointsAwarded = clone.PointsAwarded;
             pick.WasAgainstSpread = clone.WasAgainstSpread;
+            pick.PointsSU = clone.PointsSU;
+            pick.PointsATS = clone.PointsATS;
+            pick.PointsOU = clone.PointsOU;
             // Preserve original ScoredAt — it's the audit trail of when
             // scoring first ran. ModifiedUtc records the correction time.
             pick.ModifiedUtc = now;
@@ -268,6 +308,15 @@ public class PickScoringAuditProcessor : IPickScoringAudit
                 affectedLeagueWeeks.Add((pick.PickemGroupId, leagueKey.Item1.Value, leagueKey.Item2.Value));
             }
         }
+    }
+
+    private static void CopySimulatedBets(PickemGroupUserPick from, PickemGroupUserPick to, DateTime now)
+    {
+        to.PointsSU = from.PointsSU;
+        to.PointsATS = from.PointsATS;
+        to.PointsOU = from.PointsOU;
+        to.ModifiedUtc = now;
+        to.ModifiedBy = CausationId.Api.PickScoringAuditProcessor;
     }
 
     private void FanOutLeagueWeekScoring(

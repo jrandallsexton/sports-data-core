@@ -75,7 +75,10 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
                 PickType = p.PickType,
                 TiebreakerGuessTotal = p.TiebreakerGuessTotal,
                 PointsAwarded = p.PointsAwarded,
-                IsSynthetic = p.User.IsSynthetic
+                IsSynthetic = p.User.IsSynthetic,
+                // Scoring fills only the column matching the league's pick
+                // type, so the coalesce picks that one.
+                BetPoints = p.PointsSU ?? p.PointsATS ?? p.PointsOU
             })
             .ToListAsync(cancellationToken);
 
@@ -128,7 +131,10 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
             TotalMatchups = matchups.Count,
             CorrectCount = picks.Count(p => p.IsCorrect == true),
             IncorrectCount = picks.Count(p => p.IsCorrect == false),
-            PendingCount = pendingCount
+            PendingCount = pendingCount,
+            BetPoints = picks.Any(p => p.BetPoints.HasValue)
+                ? picks.Sum(p => p.BetPoints ?? 0m)
+                : null
         });
     }
 }

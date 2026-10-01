@@ -18,6 +18,7 @@ import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import { shouldShowGambling } from "../../utils/gamblingContent";
+import { formatBetPoints, betPointsTone } from "../../utils/betPoints";
 
 function PicksPage() {
   const { userDto, loading: userLoading, refreshUserDto, userOptions } = useUserDto();
@@ -394,6 +395,11 @@ function PicksPage() {
     setMatchups([]);
     setUserPicks({});
     setLoadingMatchups(true);
+    // The pick type gates gambling content (shouldShowGambling). Left
+    // standing, an ATS league's type would briefly gate the next league's
+    // bet points, or for good if its matchups fetch fails. Null falls back
+    // to the safe default (hidden unless the user opted in). CodeRabbit, #805.
+    setPickType(null);
   }, [routeLeagueId]);
 
   useEffect(() => {
@@ -464,8 +470,14 @@ function PicksPage() {
 
         // UserPicksResultDto envelope: picks + server-computed result counts
         // (was a raw array; see docs/features/league-ended-headers.md).
-        const { picks, totalMatchups, correctCount, incorrectCount, pendingCount } =
-          response.data;
+        const {
+          picks,
+          totalMatchups,
+          correctCount,
+          incorrectCount,
+          pendingCount,
+          betPoints,
+        } = response.data;
 
         const picksByContest = {};
         for (const pick of picks) {
@@ -473,7 +485,13 @@ function PicksPage() {
         }
 
         setUserPicks(picksByContest);
-        setPicksSummary({ totalMatchups, correctCount, incorrectCount, pendingCount });
+        setPicksSummary({
+          totalMatchups,
+          correctCount,
+          incorrectCount,
+          pendingCount,
+          betPoints,
+        });
         setPicksLoadedKey(`${routeLeagueId}:${selectedWeek}`);
       } catch (error) {
         if (cancelled) return;
@@ -982,6 +1000,24 @@ function PicksPage() {
               return (
                 <span className="pick-mode-badge" title={label.full}>
                   {label.short}
+                </span>
+              );
+            })()}
+            {(() => {
+              // Week's net from a simulated 1-unit bet on each pick at the
+              // closing price (moneyline in SU leagues, spread price in ATS).
+              // Server-summed; null until a pick carries a value. Odds-derived,
+              // so it routes through the gambling-content predicate.
+              const betPoints = picksSummary?.betPoints;
+              if (betPoints == null || !shouldShowGambling(pickType, userOptions)) {
+                return null;
+              }
+              return (
+                <span
+                  className={`pick-bet-points ${betPointsTone(betPoints)}`}
+                  title="Net result of a 1-unit bet on each pick at the closing line"
+                >
+                  {formatBetPoints(betPoints)}
                 </span>
               );
             })()}

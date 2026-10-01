@@ -164,7 +164,8 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
         var (pick, _, _) = await SeedScoredPickAsync(
             contestId, groupId, winnerId: Guid.NewGuid(),
             storedIsCorrect: false, storedPoints: 0, wasAts: false,
-            franchiseId: Guid.NewGuid());
+            franchiseId: Guid.NewGuid(),
+            storedPointsSU: -1m);
 
         _contestClientMock
             .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
@@ -183,12 +184,71 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
         refreshed.IsCorrect.Should().BeNull();
         refreshed.PointsAwarded.Should().BeNull();
         refreshed.WasAgainstSpread.Should().BeNull();
+        refreshed.PointsSU.Should().BeNull("the simulated bet is unscored along with the pick");
         refreshed.ModifiedBy.Should().Be(CausationId.Api.PickScoringAuditProcessor);
         refreshed.ModifiedUtc.Should().Be(FixedUtcNow, "audit must stamp the reset with the deterministic time provider");
 
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenOnlyBetPointsDiffer_CorrectsThemQuietly_WithoutTouchingScoringOrFanningOut()
+    {
+        // Arrange: a pick scored before the bet columns existed. Scoring is
+        // right (picked the winner), PointsSU is null, the matchup is priced.
+        var contestId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        var homeId = Guid.NewGuid();
+        var awayId = Guid.NewGuid();
+
+        var (pick, _, matchup) = await SeedScoredPickAsync(
+            contestId, groupId, winnerId: homeId,
+            storedIsCorrect: true, storedPoints: 1, wasAts: false,
+            franchiseId: homeId);
+
+        matchup.HomeMoneyLine = -150;
+        matchup.AwayMoneyLine = 130;
+        DataContext.PickemGroupMatchups.Update(matchup);
+        await DataContext.SaveChangesAsync();
+        DataContext.ChangeTracker.Clear();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.ContestId, contestId)
+            .With(r => r.HomeFranchiseSeasonId, homeId)
+            .With(r => r.AwayFranchiseSeasonId, awayId)
+            .With(r => r.WinnerFranchiseSeasonId, (Guid?)homeId)
+            .With(r => r.FinalizedUtc, (DateTime?)FixedUtcNow.AddHours(-2))
+            .Create();
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
+
+        Mocker.Use<IPickScoringService>(new PickScoringService(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PickScoringService>.Instance,
+            Mocker.Get<IDateTimeProvider>()));
+
+        var sut = Mocker.CreateInstance<PickScoringAuditProcessor>();
+
+        // Act
+        await sut.Process(new AuditContestCommand(contestId, Sport.FootballNcaa));
+
+        // Assert: bet filled in (100/150), scoring untouched, no league-week
+        // rescore (week scoring never reads the bet columns).
+        var refreshed = await DataContext.UserPicks.FindAsync(pick.Id);
+        refreshed!.PointsSU.Should().Be(0.6667m);
+        refreshed.PointsATS.Should().BeNull();
+        refreshed.IsCorrect.Should().BeTrue();
+        refreshed.PointsAwarded.Should().Be(1);
+        refreshed.ScoredAt.Should().Be(OriginalScoredAt);
+        refreshed.ModifiedBy.Should().Be(CausationId.Api.PickScoringAuditProcessor);
+        refreshed.AuditedUtc.Should().Be(FixedUtcNow);
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()),
+            Times.Never);
     }
 
     [Fact]
@@ -366,7 +426,8 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
             bool storedIsCorrect,
             int? storedPoints,
             bool wasAts,
-            Guid franchiseId)
+            Guid franchiseId,
+            decimal? storedPointsSU = null)
     {
         var group = Fixture.Build<PickemGroup>()
             .With(g => g.Id, groupId)
@@ -398,6 +459,11 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
             .With(p => p.PointsAwarded, storedPoints)
             .With(p => p.WasAgainstSpread, (bool?)wasAts)
             .With(p => p.ScoredAt, (DateTime?)OriginalScoredAt)
+            // Explicit: AutoFixture would otherwise fill the bet columns with
+            // random values, which the audit then "corrects".
+            .With(p => p.PointsSU, storedPointsSU)
+            .With(p => p.PointsATS, (decimal?)null)
+            .With(p => p.PointsOU, (decimal?)null)
             .Create();
 
         await DataContext.UserPicks.AddAsync(pick);

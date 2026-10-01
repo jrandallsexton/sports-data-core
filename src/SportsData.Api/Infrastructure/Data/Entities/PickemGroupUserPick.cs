@@ -38,6 +38,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public int? PointsAwarded { get; set; }
 
+        // Simulated $1 bet on the pick at the matchup's closing price,
+        // independent of the league's own scoring (PointsAwarded): net profit
+        // on a win, -1 on a loss, 0 on a push/tie, null when there was no
+        // bet to make. Only the column matching the league's PickType is set.
+        // See PickScoringService.ScoreSimulatedBets.
+        public decimal? PointsSU { get; set; } // moneyline
+
+        public decimal? PointsATS { get; set; } // spread price
+
+        public decimal? PointsOU { get; set; } // over/under price; not scored yet
+
         public bool? WasAgainstSpread { get; set; }
 
         public DateTime? ScoredAt { get; set; }
@@ -108,6 +119,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(u => u.SyntheticPickStyle)
                     .HasMaxLength(100);
+
+                // 4 places: the scoring service rounds to this, so a re-score
+                // compares equal to the stored value.
+                builder.Property(x => x.PointsSU).HasPrecision(10, 4);
+                builder.Property(x => x.PointsATS).HasPrecision(10, 4);
+                builder.Property(x => x.PointsOU).HasPrecision(10, 4);
             }
         }
     }

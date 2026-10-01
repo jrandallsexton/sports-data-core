@@ -230,6 +230,13 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<
                 Application.Admin.Commands.BackfillMatchupOddsPricing.IApplyMatchupOddsPricing,
                 Application.Admin.Commands.BackfillMatchupOddsPricing.ApplyMatchupOddsPricingHandler>();
+            services.AddScoped<
+                Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler,
+                Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommandHandler>();
+            // Hangfire resolves the per-contest job by interface.
+            services.AddScoped<
+                Application.Admin.Commands.BackfillUserPickBetPoints.IApplyUserPickBetPoints,
+                Application.Admin.Commands.BackfillUserPickBetPoints.ApplyUserPickBetPointsHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
             services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
             services.AddScoped<IReenrichContestCommandHandler, ReenrichContestCommandHandler>();

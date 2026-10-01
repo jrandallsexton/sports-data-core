@@ -99,6 +99,18 @@ namespace SportsData.Api.Application.Processors
 
             foreach (var m in matchups)
             {
+                // KNOWN, ACCEPTED (CodeRabbit + operator, #803): this check runs in
+                // memory and the save happens later, with no concurrency token, so
+                // two jobs for the SAME contest with DIFFERENT versions running at
+                // the same instant could interleave and let the older save last.
+                // Narrow: displayed-odds events for a contest arrive minutes apart,
+                // so it takes a delayed retry landing within milliseconds of a
+                // fresh job; a duplicate delivery carries the same version and
+                // writes the same values. Self-healing: the next displayed-odds
+                // event (newer version) corrects it. Display only; pick scoring
+                // grades against the Producer's result spread. If it ever matters,
+                // close it with a per-contest pg_advisory_xact_lock around the
+                // read and save (no advisory locks exist in the codebase yet).
                 if (m.OddsAsOfUtc.HasValue && m.OddsAsOfUtc.Value >= asOfUtc)
                 {
                     // An equal-or-newer snapshot is already applied.

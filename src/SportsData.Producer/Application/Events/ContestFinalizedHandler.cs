@@ -32,16 +32,17 @@ namespace SportsData.Producer.Application.Events
     /// of FranchiseSeasonEnrichmentCompleted (see FranchiseSeasonEnrichmentJob).
     ///
     /// Named for the event it handles, by decision (2026-09-27, PR #796).
-    /// Known trade-off: the kebab-case endpoint formatter derives the queue
-    /// name from the class name, and the API also consumes this event as
-    /// ContestFinalizedHandler, so both map to "contest-finalized-handler".
-    /// In production that is harmless: the API's queue is on the API broker
-    /// and this one is on the sport's Producer broker, bridged by
-    /// exchange-level shovels. Where they share ONE broker (the local docker
-    /// stack), the two become competing consumers on a single queue and each
-    /// message reaches only one of them, so local pick scoring and local
-    /// record enrichment each see only some finalizations. Accepted; revisit
-    /// (e.g. a ConsumerDefinition endpoint name) if the broker layout changes.
+    /// The kebab-case endpoint formatter derives the queue name from the class
+    /// name, so this consumer's queue is "contest-finalized-handler". The API
+    /// consumes the same event as ContestFinalizedConsumer, whose queue is
+    /// "contest-finalized" (the formatter strips a "Consumer" suffix), so the
+    /// two no longer share a queue even on the single local docker broker:
+    /// local pick scoring and local record enrichment each see every
+    /// finalization. (Until the API's rename they both mapped to
+    /// "contest-finalized-handler" and competed locally.) Renaming this class
+    /// to ContestFinalizedConsumer would bring that collision back locally;
+    /// production is unaffected either way (separate brokers, exchange-level
+    /// shovels).
     ///
     /// Per the "ingest consumers must be thin Hangfire-spawn shims"
     /// convention, this consumer does no inline DB work. Re-deliveries and

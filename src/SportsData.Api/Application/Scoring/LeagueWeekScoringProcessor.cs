@@ -1,7 +1,7 @@
 using Hangfire;
 
 using Microsoft.EntityFrameworkCore;
-
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Infrastructure.Data;
 
 namespace SportsData.Api.Application.Scoring;

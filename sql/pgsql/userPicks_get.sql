@@ -1,4 +1,4 @@
---SELECT * FROM public."User"
+--SELECT * FROM public."User" order by "CreatedUtc" desc limit 20;
 
 --select * from public."PickemGroupMember" where "UserId" = '5fa4c116-1993-4f2b-9729-c50c62150813';
 

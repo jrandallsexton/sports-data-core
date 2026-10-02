@@ -1,0 +1,145 @@
+﻿using MassTransit;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+using SportsData.Api.Application.Previews;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
+using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Config;
+using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Processing;
+
+namespace SportsData.Api.Application.Matchups.Consumers
+{
+    public class PickemGroupWeekMatchupsGeneratedConsumer : IConsumer<PickemGroupWeekMatchupsGenerated>
+    {
+        private readonly ILogger<PickemGroupWeekMatchupsGeneratedConsumer> _logger;
+        private readonly AppDataContext _dataContext;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
+        private readonly ApiConfig _config;
+
+        public PickemGroupWeekMatchupsGeneratedConsumer(
+            ILogger<PickemGroupWeekMatchupsGeneratedConsumer> logger,
+            AppDataContext dataContext,
+            IProvideBackgroundJobs backgroundJobProvider,
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope,
+            IOptions<ApiConfig> config)
+        {
+            _logger = logger;
+            _dataContext = dataContext;
+            _backgroundJobProvider = backgroundJobProvider;
+            _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
+            _config = config.Value;
+        }
+
+        public async Task Consume(ConsumeContext<PickemGroupWeekMatchupsGenerated> context)
+        {
+            using (_logger.BeginScope(new Dictionary<string, object>
+                   {
+                       ["CorrelationId"] = context.Message.CorrelationId,
+                       ["GroupId"] = context.Message.GroupId,
+                       ["SeasonYear"] = context.Message.SeasonYear ?? 0,
+                       ["WeekNumber"] = context.Message.WeekNumber
+                   }))
+            {
+                _logger.LogInformation("Processing AI Previews. {@Message}", context.Message);
+                await ConsumeInternal(context.Message, context.CancellationToken);
+            }
+        }
+
+        private async Task ConsumeInternal(PickemGroupWeekMatchupsGenerated @event, CancellationToken ct)
+        {
+            // Implement logic to generate AI predictions for matchups in a pick'em group week (if not present)
+            var groupWeekMatchups = await _dataContext.PickemGroupMatchups
+                .Where(x => x.GroupId == @event.GroupId && x.SeasonYear == @event.SeasonYear && x.SeasonWeek == @event.WeekNumber)
+                .ToListAsync(ct);
+
+            if (!groupWeekMatchups.Any())
+            {
+                _logger.LogWarning("No matchups found. Will retry");
+                throw new Exception("No matchups found for group week");
+            }
+
+            // Distinct(): defensive against duplicates that could arise if ESPN
+            // ever returns a contest twice for a week or MatchupScheduleProcessor
+            // is re-run without a unique constraint catching the row. Without
+            // this, ContestRefreshRequested would fire 2+ times for the same
+            // contest, and the preview-enqueue loop would queue duplicate jobs.
+            var groupWeekMatchupsContestIds = groupWeekMatchups
+                .Select(x => x.ContestId)
+                .Distinct()
+                .ToList();
+
+            // Request a refresh for every contest in the week. Contests may have
+            // been added to the group before their ESPN metadata (probable
+            // pitchers, opening spread, broadcasts) was fully populated; this
+            // fans out a per-contest refresh so the UI fills in quickly.
+            // Direct delivery — this consumer does no DbContext writes, so the
+            // outbox isn't involved.
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                foreach (var contestId in groupWeekMatchupsContestIds)
+                {
+                    await _eventBus.Publish(new ContestRefreshRequested(
+                        contestId,
+                        null,
+                        @event.Sport,
+                        @event.SeasonYear,
+                        @event.CorrelationId,
+                        Guid.NewGuid()),
+                        ct);
+                }
+            }
+
+            // Config kill-switch (Local label sets this false): skip the model
+            // spend entirely while still having fanned out the contest
+            // refreshes above — local league-creation testing needs matchup
+            // metadata, not previews.
+            if (!_config.MatchupPreviewGenerationEnabled)
+            {
+                _logger.LogInformation(
+                    "Matchup preview generation disabled by config. Skipping preview enqueue for {Count} contests.",
+                    groupWeekMatchupsContestIds.Count);
+                return;
+            }
+
+            // Sport gate (cheap early-out; MatchupPreviewProcessor enforces the
+            // same policy as the real choke point): no prompts, no enqueue —
+            // an MLB test league must not spend model tokens.
+            if (!MatchupPreviewPolicy.SupportsSport(@event.Sport))
+            {
+                _logger.LogInformation(
+                    "Preview generation not supported for {Sport}; skipping enqueue for {Count} contests.",
+                    @event.Sport, groupWeekMatchupsContestIds.Count);
+                return;
+            }
+
+            var existingPreviews = await _dataContext.MatchupPreviews
+                .Where(p => groupWeekMatchupsContestIds.Contains(p.ContestId))
+                .ToListAsync(ct);
+
+            var existingPreviewsContestIds = existingPreviews.Select(x => x.ContestId).ToList();
+
+            var contestIdsToGenerate = groupWeekMatchupsContestIds.Except(existingPreviewsContestIds);
+
+            foreach (var contestId in contestIdsToGenerate)
+            {
+                var cmd = new GenerateMatchupPreviewsCommand()
+                {
+                    ContestId = contestId,
+                    Sport = @event.Sport
+                };
+
+                _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
+            }
+        }
+    }
+}

@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Microsoft.Extensions.Logging;
+using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
 
 namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 

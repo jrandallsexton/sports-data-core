@@ -1,6 +1,5 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;

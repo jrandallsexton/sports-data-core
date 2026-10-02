@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Previews.Commands;
+using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
+using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 using SportsData.Api.Extensions;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Previews
@@ -11,21 +15,20 @@ namespace SportsData.Api.Application.Previews
     [Route("preview")]
     public class PreviewController : ControllerBase
     {
-        private readonly IPreviewService _previewService;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public PreviewController(
-            IPreviewService previewService,
-            IProvideBackgroundJobs backgroundJobProvider)
+        public PreviewController(IProvideBackgroundJobs backgroundJobProvider)
         {
-            _previewService = previewService;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
         [HttpPost]
         [Authorize]
         [Route("{previewId}/approve")]
-        public async Task<IActionResult> ApproveContestPreview([FromRoute] Guid previewId)
+        public async Task<ActionResult<Guid>> ApproveContestPreview(
+            [FromRoute] Guid previewId,
+            [FromServices] IApproveMatchupPreviewCommandHandler handler,
+            CancellationToken cancellationToken)
         {
             var userId = HttpContext.GetCurrentUserId();
 
@@ -35,30 +38,28 @@ namespace SportsData.Api.Application.Previews
                 ApprovedByUserId = userId
             };
 
-            var approvalResult = await _previewService.ApproveMatchupPreview(cmd);
+            var result = await handler.ExecuteAsync(cmd, cancellationToken);
 
-            if (approvalResult != previewId)
-            {
-                return BadRequest();
-            }
-
-            return Ok(approvalResult);
+            return result.ToActionResult();
         }
 
         [HttpPost]
         [Authorize]
         [Route("{previewId}/reject")]
-        public async Task<IActionResult> RejectContestPreview([FromBody] RejectMatchupPreviewCommand command)
+        public async Task<IActionResult> RejectContestPreview(
+            [FromBody] RejectMatchupPreviewCommand command,
+            [FromServices] IRejectMatchupPreviewCommandHandler handler,
+            CancellationToken cancellationToken)
         {
             var userId = HttpContext.GetCurrentUserId();
 
             command.RejectedByUserId = userId;
 
-            var rejectionResult = await _previewService.RejectMatchupPreview(command);
+            var result = await handler.ExecuteAsync(command, cancellationToken);
 
-            if (rejectionResult != command.PreviewId)
+            if (!result.IsSuccess)
             {
-                return BadRequest();
+                return result.ToActionResult().Result!;
             }
 
             var cmd = new GenerateMatchupPreviewsCommand

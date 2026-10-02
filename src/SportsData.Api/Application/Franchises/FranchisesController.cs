@@ -5,7 +5,6 @@ using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Franchises.Queries.GetFranchises;
 using SportsData.Api.Application.Franchises.Seasons.Commands.EnrichFranchiseSeason;
 using SportsData.Api.Application.Franchises.Seasons.Commands.SourceFranchiseSeason;
-using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;

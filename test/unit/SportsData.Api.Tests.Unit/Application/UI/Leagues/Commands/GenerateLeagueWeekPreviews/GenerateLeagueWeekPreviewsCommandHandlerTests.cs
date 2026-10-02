@@ -3,7 +3,7 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Previews;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;

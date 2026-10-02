@@ -3,11 +3,14 @@ using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
 using SportsData.Api.Infrastructure.Refs;
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
 using FluentValidation.Results;
+
 using Microsoft.Extensions.Logging;
 
 namespace SportsData.Api.Application.Franchises.Queries.GetFranchiseById;

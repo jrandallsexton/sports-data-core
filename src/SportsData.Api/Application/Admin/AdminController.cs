@@ -22,8 +22,10 @@ using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
@@ -42,6 +44,7 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Processing;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 
 namespace SportsData.Api.Application.Admin
 {

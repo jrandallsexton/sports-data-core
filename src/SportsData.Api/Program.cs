@@ -13,7 +13,6 @@ using Npgsql;
 
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.Events;
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Config;
 using SportsData.Api.DependencyInjection;
@@ -33,6 +32,15 @@ using System.Data;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SportsData.Api.Application.Plays.Consumers;
+using SportsData.Api.Application.User.Consumers;
+using SportsData.Api.Application.PickemGroups.Consumers;
+using SportsData.Api.Application.Athletes.Consumers;
+using SportsData.Api.Application.Contests.Consumers;
+using SportsData.Api.Application.FranchiseSeasons.Consumers;
+using SportsData.Api.Application.Matchups.Consumers;
+using SportsData.Api.Application.SeasonPollWeek.Consumers;
+using SportsData.Api.Application.Previews.Consumers;
 
 namespace SportsData.Api
 {
@@ -346,28 +354,28 @@ namespace SportsData.Api
                 // shovel").
                 services.AddMessaging<AppDataContext>(config,
                 [
-                    typeof(AthleteCompetitionStatsUpdatedHandler),
-                    typeof(BaseballPlayCompletedHandler),
-                    typeof(ContestFinalizedHandler),
-                    typeof(ContestOddsCreatedHandler),
-                    typeof(ContestOddsUpdatedHandler),
-                    typeof(ContestRecapArticlePublishedHandler),
-                    typeof(ContestRefreshRequestedHandler),
-                    typeof(ContestScoreChangedHandler),
-                    typeof(ContestStartTimeUpdatedHandler),
-                    typeof(ContestStatusChangedHandler),
-                    typeof(FootballPlayCompletedHandler),
-                    typeof(FranchiseSeasonEnrichmentCompletedHandler),
-                    typeof(PickemGroupCreatedHandler),
-                    typeof(PickemGroupMatchupAddedHandler),
+                    typeof(AthleteCompetitionStatsUpdatedConsumer),
+                    typeof(BaseballPlayCompletedConsumer),
+                    typeof(ContestFinalizedConsumer),
+                    typeof(ContestOddsCreatedConsumer),
+                    typeof(ContestOddsUpdatedConsumer),
+                    typeof(ContestRecapArticlePublishedConsumer),
+                    typeof(ContestRefreshRequestedConsumer),
+                    typeof(ContestScoreChangedConsumer),
+                    typeof(ContestStartTimeUpdatedConsumer),
+                    typeof(ContestStatusChangedConsumer),
+                    typeof(FootballPlayCompletedConsumer),
+                    typeof(FranchiseSeasonEnrichmentCompletedConsumer),
+                    typeof(PickemGroupCreatedConsumer),
+                    typeof(PickemGroupMatchupAddedConsumer),
                     typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
-                    typeof(PickemGroupWeekMatchupsGeneratedHandler),
+                    typeof(PickemGroupWeekMatchupsGeneratedConsumer),
                     typeof(PlayerLineupContestFinalizedHandler),
-                    typeof(MatchupPreviewApprovedHandler),
-                    typeof(PreviewGeneratedHandler),
-                    typeof(PreviewPromptCapturedHandler),
-                    typeof(SeasonPollWeekCreatedHandler),
+                    typeof(MatchupPreviewApprovedConsumer),
+                    typeof(PreviewGeneratedConsumer),
+                    typeof(PreviewPromptCapturedConsumer),
+                    typeof(SeasonPollWeekCreatedConsumer),
                     typeof(UsersRequestedConsumer)
                 ]);
 

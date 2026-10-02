@@ -1,3 +1,4 @@
+using SportsData.Api.Application.Venues.Queries.GetVenueById;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;

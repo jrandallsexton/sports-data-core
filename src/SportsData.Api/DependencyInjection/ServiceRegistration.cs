@@ -109,6 +109,16 @@ using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Matchups.Jobs;
+using SportsData.Api.Application.Scoring.Jobs;
+using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
+using SportsData.Api.Application.Contests.Jobs.ContestRecap;
+using SportsData.Api.Application.Leagues.Jobs;
+using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
+using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
+using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 
 namespace SportsData.Api.DependencyInjection
 {
@@ -470,7 +480,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetRankingsByPollSeasonWeekIdQueryHandler, GetRankingsByPollSeasonWeekIdQueryHandler>();
             services.AddScoped<IGetPollRankingsByWeekQueryHandler, GetPollRankingsByWeekQueryHandler>();
 
-            services.AddScoped<IPreviewService, PreviewService>();
+            // Preview Commands
+            services.AddScoped<IApproveMatchupPreviewCommandHandler, ApproveMatchupPreviewCommandHandler>();
+            services.AddScoped<IRejectMatchupPreviewCommandHandler, RejectMatchupPreviewCommandHandler>();
 
             // Map Queries
             services.AddScoped<IGetMapMatchupsQueryHandler, GetMapMatchupsQueryHandler>();

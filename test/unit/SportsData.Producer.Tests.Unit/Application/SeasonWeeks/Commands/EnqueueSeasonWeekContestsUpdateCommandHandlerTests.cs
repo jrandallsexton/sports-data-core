@@ -9,7 +9,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
 using SportsData.Producer.Infrastructure.Data.Entities;
 

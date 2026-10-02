@@ -11,7 +11,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Consumers;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;

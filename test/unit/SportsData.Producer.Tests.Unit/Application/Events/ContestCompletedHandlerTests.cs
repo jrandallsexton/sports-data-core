@@ -5,7 +5,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Events;
 
 using System.Linq.Expressions;

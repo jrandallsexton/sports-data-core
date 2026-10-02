@@ -4,7 +4,11 @@ trigger:
       - main
   paths:
     include:
-      - 'src/SportsData.Notification/*'
+      # '/**', not '/*': a single '*' matches only files directly in the
+      # folder, so changes in Application/, Infrastructure/, etc. never
+      # triggered a build. Core is a ProjectReference.
+      - 'src/SportsData.Notification/**'
+      - 'src/SportsData.Core/**'
 
 pr:
   branches:
@@ -12,7 +16,11 @@ pr:
       - main
   paths:
     include:
-      - 'src/SportsData.Notification/*'
+      # '/**', not '/*': a single '*' matches only files directly in the
+      # folder, so changes in Application/, Infrastructure/, etc. never
+      # triggered a build. Core is a ProjectReference.
+      - 'src/SportsData.Notification/**'
+      - 'src/SportsData.Core/**'
 
 # Centralized agent and demand config for all stages/jobs
 pool:

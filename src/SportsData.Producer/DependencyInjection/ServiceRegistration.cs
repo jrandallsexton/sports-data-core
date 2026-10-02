@@ -19,7 +19,15 @@ using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDr
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
 using SportsData.Producer.Application.Contests;
-using SportsData.Producer.Application.Contests.Commands;
+using SportsData.Producer.Application.Contests.Commands.FinalizeContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
+using SportsData.Producer.Application.Contests.Commands.RefreshContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReplayBaseballContest;
+using SportsData.Producer.Application.Contests.Commands.ReplayFootballContest;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
+using SportsData.Producer.Application.Contests.Jobs;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichmentAudit;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;

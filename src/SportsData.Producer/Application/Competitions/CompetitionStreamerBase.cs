@@ -819,7 +819,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     /// interceptor wouldn't have a SaveChangesAsync hook to ride. Direct
     /// delivery sidesteps the outbox entirely and hands the message to the
     /// broker immediately. Same pattern as
-    /// <see cref="Application.Contests.BaseballContestReplayService"/>.
+    /// <see cref="Contests.Commands.ReplayBaseballContest.BaseballContestReplayService"/>.
     ///
     /// Idempotency on the consumer side handles at-least-once redelivery and
     /// the three concurrent publish sites in <see cref="ExecuteAsync"/> —

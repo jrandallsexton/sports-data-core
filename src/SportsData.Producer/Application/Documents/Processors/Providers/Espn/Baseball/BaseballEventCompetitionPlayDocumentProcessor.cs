@@ -6,7 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Commands.ReplayBaseballContest;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;

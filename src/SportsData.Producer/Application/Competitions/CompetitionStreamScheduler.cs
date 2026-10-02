@@ -73,7 +73,7 @@ public class CompetitionStreamScheduler
 
     /// <summary>
     /// Event-driven single-contest reschedule path. Invoked from
-    /// <see cref="Consumers.ContestStartTimeUpdatedConsumerHandler"/> after
+    /// <see cref="Contests.Consumers.ContestStartTimeUpdated.ContestStartTimeUpdatedConsumerHandler"/> after
     /// MassTransit delivers <c>ContestStartTimeUpdated</c>. Companion to the
     /// recurring <see cref="ExecuteAsync"/> sweep — that one runs hourly,
     /// which is too sparse to catch mid-day ESPN

@@ -3,7 +3,7 @@ using MassTransit;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
 
-namespace SportsData.Producer.Application.Consumers;
+namespace SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 
 /// <summary>
 /// Thin Ingest-pod consumer for CompetitorScoreUpdated. Enqueues a Hangfire
@@ -12,7 +12,7 @@ namespace SportsData.Producer.Application.Consumers;
 /// messages into background work, in line with the Api/Ingest/Worker role
 /// split (see project_role_split memory).
 /// </summary>
-public class CompetitorScoreUpdatedConsumer : IConsumer<CompetitorScoreUpdated>
+public class CompetitorScoreUpdatedConsumer : IConsumer<Core.Eventing.Events.Contests.CompetitorScoreUpdated>
 {
     private readonly ILogger<CompetitorScoreUpdatedConsumer> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -25,7 +25,7 @@ public class CompetitorScoreUpdatedConsumer : IConsumer<CompetitorScoreUpdated>
         _backgroundJobProvider = backgroundJobProvider;
     }
 
-    public Task Consume(ConsumeContext<CompetitorScoreUpdated> context)
+    public Task Consume(ConsumeContext<Core.Eventing.Events.Contests.CompetitorScoreUpdated> context)
     {
         var message = context.Message;
 

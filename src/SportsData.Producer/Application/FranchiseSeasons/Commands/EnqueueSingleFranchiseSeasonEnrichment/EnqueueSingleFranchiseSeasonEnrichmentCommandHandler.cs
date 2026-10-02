@@ -30,7 +30,7 @@ public interface IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler
 
 /// <summary>
 /// One franchise season, all three legs of "make it current", mirroring
-/// <see cref="Franchises.FranchiseSeasonEnrichmentJob"/> leg for leg:
+/// <see cref="Jobs.FranchiseSeasonEnrichmentJob"/> leg for leg:
 /// <list type="number">
 ///   <item>record enrichment (W/L from finalized contests) — a Hangfire job;</item>
 ///   <item>an ESPN season-statistics refresh — one scoped DocumentRequested

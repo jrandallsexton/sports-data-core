@@ -1,11 +1,10 @@
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Competitions;
 
-namespace SportsData.Producer.Application.Consumers;
+namespace SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 public interface IContestStartTimeUpdatedConsumerHandler
 {
-    Task Process(ContestStartTimeUpdated evt);
+    Task Process(Core.Eventing.Events.Contests.ContestStartTimeUpdated evt);
 }
 
 /// <summary>
@@ -30,7 +29,7 @@ public class ContestStartTimeUpdatedConsumerHandler : IContestStartTimeUpdatedCo
         _scheduler = scheduler;
     }
 
-    public async Task Process(ContestStartTimeUpdated evt)
+    public async Task Process(Core.Eventing.Events.Contests.ContestStartTimeUpdated evt)
     {
         using var _ = _logger.BeginScope(new Dictionary<string, object>
         {

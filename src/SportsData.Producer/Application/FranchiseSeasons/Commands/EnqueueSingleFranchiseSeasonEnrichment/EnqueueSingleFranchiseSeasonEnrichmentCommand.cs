@@ -4,7 +4,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueSingl
 
 /// <summary>
 /// "Make this ONE franchise season current" — the single-team twin of the
-/// weekly <see cref="Franchises.FranchiseSeasonEnrichmentJob"/>. Same three
+/// weekly <see cref="Jobs.FranchiseSeasonEnrichmentJob"/>. Same three
 /// legs (record enrichment, scoped statistics re-source, metrics), scoped to
 /// one FranchiseSeason so an operator can repair a team from its team page.
 /// </summary>

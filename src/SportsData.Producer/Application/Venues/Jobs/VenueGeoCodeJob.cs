@@ -6,7 +6,7 @@ using SportsData.Producer.Application.Venues.Commands.GeocodeVenue;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Application.Venues;
+namespace SportsData.Producer.Application.Venues.Jobs;
 
 public class VenueGeoCodeJob : IAmARecurringJob
 {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SportsData.Producer.Application.GroupSeasons;
+namespace SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlugs;
 
 public class GetConferenceIdsBySlugsRequest
 {

@@ -7,11 +7,11 @@ using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Infrastructure.Data.Common;
 
-namespace SportsData.Producer.Application.Consumers;
+namespace SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 
 public interface ICompetitorScoreUpdatedConsumerHandler
 {
-    Task Process(CompetitorScoreUpdated evt);
+    Task Process(Core.Eventing.Events.Contests.CompetitorScoreUpdated evt);
 }
 
 /// <summary>
@@ -52,7 +52,7 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
         _backgroundJobProvider = backgroundJobProvider;
     }
 
-    public async Task Process(CompetitorScoreUpdated evt)
+    public async Task Process(Core.Eventing.Events.Contests.CompetitorScoreUpdated evt)
     {
         using var _ = _logger.BeginScope(new Dictionary<string, object>
         {

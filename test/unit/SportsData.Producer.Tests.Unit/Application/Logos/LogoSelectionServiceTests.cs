@@ -2,12 +2,12 @@
 using FluentAssertions;
 
 using SportsData.Core.Common;
-using SportsData.Producer.Application.Services;
+using SportsData.Producer.Application.Logos;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Services;
+namespace SportsData.Producer.Tests.Unit.Application.Logos;
 
 /// <summary>
 /// Pins the FAIL-CLOSED contract of the logo selector: it returns ONLY a

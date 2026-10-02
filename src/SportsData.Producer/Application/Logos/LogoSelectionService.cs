@@ -1,7 +1,7 @@
 using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Application.Services;
+namespace SportsData.Producer.Application.Logos;
 
 /// <summary>
 /// Selects team logos for display. FAIL-CLOSED (2026-07-18): only ever returns a

@@ -9,7 +9,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
-using SportsData.Producer.Application.Consumers;
+using SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -17,7 +17,7 @@ using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Consumers;
+namespace SportsData.Producer.Tests.Unit.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 /// <summary>
 /// Worker-side handler is genuinely a thin wrapper around
@@ -189,9 +189,9 @@ public class ContestStartTimeUpdatedConsumerHandlerTests
         await FootballDataContext.SaveChangesAsync();
     }
 
-    private static ContestStartTimeUpdated BuildEvent(Guid contestId, DateTime? newStartTime = null)
+    private static Core.Eventing.Events.Contests.ContestStartTimeUpdated BuildEvent(Guid contestId, DateTime? newStartTime = null)
     {
-        return new ContestStartTimeUpdated(
+        return new Core.Eventing.Events.Contests.ContestStartTimeUpdated(
             ContestId: contestId,
             NewStartTime: newStartTime ?? FixedNow.AddHours(3),
             Ref: null,

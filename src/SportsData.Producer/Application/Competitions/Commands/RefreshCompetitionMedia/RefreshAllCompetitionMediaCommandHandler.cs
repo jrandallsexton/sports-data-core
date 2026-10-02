@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.GroupSeasons;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetFbsGroupSeasonIds;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -19,16 +19,16 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
 {
     private readonly TeamSportDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
-    private readonly IGroupSeasonsService _groupSeasonsService;
+    private readonly IGetFbsGroupSeasonIdsQueryHandler _getFbsGroupSeasonIdsQueryHandler;
 
     public RefreshAllCompetitionMediaCommandHandler(
         TeamSportDataContext dataContext,
         IProvideBackgroundJobs backgroundJobProvider,
-        IGroupSeasonsService groupSeasonsService)
+        IGetFbsGroupSeasonIdsQueryHandler getFbsGroupSeasonIdsQueryHandler)
     {
         _dataContext = dataContext;
         _backgroundJobProvider = backgroundJobProvider;
-        _groupSeasonsService = groupSeasonsService;
+        _getFbsGroupSeasonIdsQueryHandler = getFbsGroupSeasonIdsQueryHandler;
     }
 
     public async Task<Result<RefreshAllCompetitionMediaResult>> ExecuteAsync(
@@ -40,7 +40,17 @@ public class RefreshAllCompetitionMediaCommandHandler : IRefreshAllCompetitionMe
         if (command.Sport == Sport.FootballNcaa)
         {
             // FootballNcaa: Apply FBS filtering
-            var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
+            var fbsResult = await _getFbsGroupSeasonIdsQueryHandler.ExecuteAsync(
+                new GetFbsGroupSeasonIdsQuery(command.SeasonYear),
+                cancellationToken);
+
+            if (fbsResult is not Success<HashSet<Guid>> fbsSuccess)
+            {
+                var failure = (Failure<HashSet<Guid>>)fbsResult;
+                return new Failure<RefreshAllCompetitionMediaResult>(default!, failure.Status, failure.Errors);
+            }
+
+            var fbsGroupIds = fbsSuccess.Value;
 
             competitionIds = await _dataContext.Competitions
                 .AsNoTracking()

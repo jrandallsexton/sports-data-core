@@ -9,11 +9,11 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Consumers;
+using SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Consumers;
+namespace SportsData.Producer.Tests.Unit.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 /// <summary>
 /// Ingest-side consumer is a thin shim: translate the bus message into a
@@ -34,7 +34,7 @@ public class ContestStartTimeUpdatedConsumerTests
     [Fact]
     public async Task Consume_EnqueuesHandlerWithOriginalMessage()
     {
-        var evt = new ContestStartTimeUpdated(
+        var evt = new Core.Eventing.Events.Contests.ContestStartTimeUpdated(
             ContestId: Guid.NewGuid(),
             NewStartTime: new DateTime(2026, 6, 21, 23, 7, 0, DateTimeKind.Utc),
             Ref: null,
@@ -43,7 +43,7 @@ public class ContestStartTimeUpdatedConsumerTests
             CorrelationId: Guid.NewGuid(),
             CausationId: Guid.NewGuid());
 
-        var context = new Mock<ConsumeContext<ContestStartTimeUpdated>>();
+        var context = new Mock<ConsumeContext<Core.Eventing.Events.Contests.ContestStartTimeUpdated>>();
         context.Setup(x => x.Message).Returns(evt);
 
         // Capture the expression so we can compile + invoke it against a stand-in
@@ -61,7 +61,7 @@ public class ContestStartTimeUpdatedConsumerTests
         captured.Should().NotBeNull("consumer must enqueue a handler invocation");
 
         var handler = new Mock<IContestStartTimeUpdatedConsumerHandler>();
-        handler.Setup(x => x.Process(It.IsAny<ContestStartTimeUpdated>())).Returns(Task.CompletedTask);
+        handler.Setup(x => x.Process(It.IsAny<Core.Eventing.Events.Contests.ContestStartTimeUpdated>())).Returns(Task.CompletedTask);
         await captured.Compile().Invoke(handler.Object);
 
         handler.Verify(x => x.Process(evt), Times.Once);
@@ -73,7 +73,7 @@ public class ContestStartTimeUpdatedConsumerTests
         // Ingest consumers must be thin shims (per project convention).
         // Anything that touches the DbContext belongs on the Worker side.
 
-        var evt = new ContestStartTimeUpdated(
+        var evt = new Core.Eventing.Events.Contests.ContestStartTimeUpdated(
             ContestId: Guid.NewGuid(),
             NewStartTime: new DateTime(2026, 6, 21, 23, 7, 0, DateTimeKind.Utc),
             Ref: null,
@@ -82,7 +82,7 @@ public class ContestStartTimeUpdatedConsumerTests
             CorrelationId: Guid.NewGuid(),
             CausationId: Guid.NewGuid());
 
-        var context = new Mock<ConsumeContext<ContestStartTimeUpdated>>();
+        var context = new Mock<ConsumeContext<Core.Eventing.Events.Contests.ContestStartTimeUpdated>>();
         context.Setup(x => x.Message).Returns(evt);
 
         await _sut.Consume(context.Object);

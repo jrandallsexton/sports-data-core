@@ -14,15 +14,15 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 using Xunit;
+using SportsData.Producer.Application.FranchiseSeasons.Jobs;
 
-namespace SportsData.Producer.Tests.Unit.Application.Franchises;
+namespace SportsData.Producer.Tests.Unit.Application.FranchiseSeasons.Jobs;
 
 public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeasonEnrichmentJob>
 {

@@ -4,7 +4,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 
-namespace SportsData.Producer.Controllers;
+namespace SportsData.Producer.Application.DeadLetter;
 
 /// <summary>
 /// Endpoints for managing the dead-letter queue (DLQ).

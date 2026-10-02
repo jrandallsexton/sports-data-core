@@ -10,14 +10,13 @@ using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStat
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteMatchupSummaries;
 using SportsData.Producer.Application.Competitions;
-using SportsData.Producer.Application.Competitions.Reconcile;
-using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Commands.FinalizeContestsBySeasonYear;
 using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
@@ -25,14 +24,15 @@ using SportsData.Producer.Application.Contests.Commands.RefreshContestsBySeasonY
 using SportsData.Producer.Application.Contests.Commands.ReplayBaseballContest;
 using SportsData.Producer.Application.Contests.Commands.ReplayFootballContest;
 using SportsData.Producer.Application.Contests.Commands.UpdateContest;
+using SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 using SportsData.Producer.Application.Contests.Jobs;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichmentAudit;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
-using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
 using SportsData.Producer.Application.Contests.Queries.GetEnteringRecordsByContestIds;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestResults;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetFinalizedContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupByContestId;
@@ -43,7 +43,6 @@ using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForCu
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.Documents.Processors;
-using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Application.Franchises.Commands.UpdateLogoDarkBg;
 using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
@@ -61,6 +60,7 @@ using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchi
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
+using SportsData.Producer.Application.FranchiseSeasons.Jobs;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
@@ -69,7 +69,10 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlugs;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetFbsGroupSeasonIds;
 using SportsData.Producer.Application.Images;
+using SportsData.Producer.Application.Logos;
+using SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeason;
@@ -77,9 +80,8 @@ using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
-using SportsData.Producer.Application.Services;
-using SportsData.Producer.Application.Venues;
 using SportsData.Producer.Application.Venues.Commands.GeocodeVenue;
+using SportsData.Producer.Application.Venues.Jobs;
 using SportsData.Producer.Application.Venues.Queries.GetAllVenues;
 using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 using SportsData.Producer.Config;
@@ -381,7 +383,7 @@ namespace SportsData.Producer.DependencyInjection
                 FluentValidation.IValidator<Application.Contests.Queries.GetGameDates.GetGameDatesQuery>,
                 Application.Contests.Queries.GetGameDates.GetGameDatesQueryValidator>();
 
-            services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
+            services.AddScoped<IGetFbsGroupSeasonIdsQueryHandler, GetFbsGroupSeasonIdsQueryHandler>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)

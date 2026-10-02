@@ -9,7 +9,7 @@ using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Infrastructure.Data.Common;
 
-namespace SportsData.Producer.Application.Franchises
+namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
 {
     /// <summary>
     /// Weekly "make franchise seasons current" job — ALL THREE halves of

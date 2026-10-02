@@ -6,7 +6,7 @@ using SportsData.Core.Eventing.Events;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Jobs;
 
-namespace SportsData.Producer.Application.Consumers;
+namespace SportsData.Producer.Application.LoadTest.Consumers;
 
 /// <summary>
 /// Consumes LoadTestProducerEvent from RabbitMQ and enqueues Hangfire job.

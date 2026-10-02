@@ -10,13 +10,13 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
+using SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Consumers;
+namespace SportsData.Producer.Tests.Unit.Application.Scores.Consumers.CompetitorScoreUpdated;
 
 public class CompetitorScoreUpdatedConsumerHandlerTests
     : ProducerTestBase<CompetitorScoreUpdatedConsumerHandler>
@@ -292,7 +292,7 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
         await FootballDataContext.SaveChangesAsync();
     }
 
-    private static CompetitorScoreUpdated BuildEvent(
+    private static Core.Eventing.Events.Contests.CompetitorScoreUpdated BuildEvent(
         Guid contestId,
         Guid franchiseSeasonId,
         int score,
@@ -300,7 +300,7 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
         Sport sport = Sport.FootballNcaa,
         int? seasonYear = 2026)
     {
-        return new CompetitorScoreUpdated(
+        return new Core.Eventing.Events.Contests.CompetitorScoreUpdated(
             ContestId: contestId,
             FranchiseSeasonId: franchiseSeasonId,
             Score: score,

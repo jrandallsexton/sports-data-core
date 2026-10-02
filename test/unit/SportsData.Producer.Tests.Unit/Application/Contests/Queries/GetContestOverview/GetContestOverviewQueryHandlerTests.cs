@@ -6,7 +6,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
-using SportsData.Producer.Application.Services;
+using SportsData.Producer.Application.Logos;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 

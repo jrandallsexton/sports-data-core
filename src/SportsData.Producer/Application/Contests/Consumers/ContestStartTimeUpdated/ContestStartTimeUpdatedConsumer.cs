@@ -1,9 +1,7 @@
 using MassTransit;
-
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
 
-namespace SportsData.Producer.Application.Consumers;
+namespace SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 /// <summary>
 /// Thin Ingest-pod consumer for ContestStartTimeUpdated. Enqueues a Hangfire
@@ -18,7 +16,7 @@ namespace SportsData.Producer.Application.Consumers;
 /// event-driven reschedule (this consumer chain — near-real-time when ESPN
 /// moves a game time).
 /// </summary>
-public class ContestStartTimeUpdatedConsumer : IConsumer<ContestStartTimeUpdated>
+public class ContestStartTimeUpdatedConsumer : IConsumer<Core.Eventing.Events.Contests.ContestStartTimeUpdated>
 {
     private readonly ILogger<ContestStartTimeUpdatedConsumer> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -31,7 +29,7 @@ public class ContestStartTimeUpdatedConsumer : IConsumer<ContestStartTimeUpdated
         _backgroundJobProvider = backgroundJobProvider;
     }
 
-    public Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
+    public Task Consume(ConsumeContext<Core.Eventing.Events.Contests.ContestStartTimeUpdated> context)
     {
         var message = context.Message;
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;

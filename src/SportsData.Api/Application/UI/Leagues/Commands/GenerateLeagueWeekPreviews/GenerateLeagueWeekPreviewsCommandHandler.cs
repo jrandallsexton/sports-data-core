@@ -2,12 +2,13 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 

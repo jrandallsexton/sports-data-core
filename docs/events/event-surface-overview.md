@@ -89,7 +89,7 @@ Bucket → Event → Publisher(s) → Consumer(s) → Status. `file:line` refere
 | `ContestStartTimeUpdated` | `EventCompetitionDocumentProcessorBase:202` (Producer) | `ContestStartTimeUpdatedHandler` (API) | ✅ wired (updates `PickemGroupMatchup.StartDateUtc`) |
 | `ContestStatusChanged` | `EventCompetitionStatusDocumentProcessor` (FB), `BaseballEventCompetitionStatusDocumentProcessor` (MLB), `FootballContestReplayService` / `BaseballContestReplayService` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast — sport-neutral lifecycle only) |
 | `ContestWinProbabilityChanged` | `EventCompetitionProbabilityDocumentProcessor` (Producer) | — | 📤 emit-only |
-| `FootballPlayCompleted` | `FootballEventCompetitionPlayDocumentProcessor` (Producer), `FootballContestReplayService` (Producer) | `FootballPlayCompletedHandler` (API) | ✅ wired (SignalR broadcast — merged play description + football scoreboard tick) |
+| `FootballPlayCompleted` | `FootballEventCompetitionPlayDocumentProcessor` (Producer), `FootballContestReplayService` (Producer) | `FootballPlayCompletedConsumer` (API) | ✅ wired (SignalR broadcast — merged play description + football scoreboard tick) |
 
 ### Documents
 

@@ -6,6 +6,7 @@ using System.Reflection;
 
 namespace SportsData.Producer
 {
+    // TODO: I think this class is duplicated in other projects. Consider moving it to SportsData.Core.Common.Mapping and referencing that project instead of duplicating the code.
     public class DynamicMappingProfile : Profile
     {
         public DynamicMappingProfile()

@@ -5,7 +5,6 @@ using FluentValidation.Results;
 
 using Moq;
 
-using SportsData.Api.Application.Franchises.Seasons;
 using SportsData.Api.Application.Franchises.Seasons.Commands.EnrichFranchiseSeason;
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;

@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Scoring;
+namespace SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 /// <summary>
 /// Service for calculating weekly league scores and determining winners.

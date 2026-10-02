@@ -3,8 +3,7 @@ using AutoFixture;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Matchups.Jobs;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -15,7 +14,7 @@ using System.Linq.Expressions;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs.MatchupScheduling;
 
 /// <summary>
 /// Tests for the sport-agnostic MatchupScheduler. Validates iteration over

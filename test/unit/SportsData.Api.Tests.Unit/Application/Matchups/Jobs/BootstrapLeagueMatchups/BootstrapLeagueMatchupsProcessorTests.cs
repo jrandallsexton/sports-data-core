@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -18,7 +19,7 @@ using System.Linq.Expressions;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Processors;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs.BootstrapLeagueMatchups;
 
 /// <summary>
 /// Pins the dispatch behavior on the creation-time orchestrator. Each row in

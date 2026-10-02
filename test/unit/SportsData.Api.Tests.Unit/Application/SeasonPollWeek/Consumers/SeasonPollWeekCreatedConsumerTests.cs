@@ -5,7 +5,7 @@ using MassTransit;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Application.SeasonPollWeek.Consumers;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;

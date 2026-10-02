@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.PickemGroups;
-using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -11,7 +9,7 @@ using SportsData.Core.Processing;
 
 using System.Linq.Expressions;
 
-namespace SportsData.Api.Application.Matchups.Jobs
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
 {
     /// <summary>
     /// Generates next-week PickemGroupWeek + matchup-schedule jobs for every

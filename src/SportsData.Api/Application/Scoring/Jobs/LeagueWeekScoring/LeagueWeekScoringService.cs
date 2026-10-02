@@ -5,7 +5,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 
 using SportsData.Api.Application.Common.Enums;
 
-namespace SportsData.Api.Application.Scoring;
+namespace SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 /// <summary>
 /// Service responsible for calculating weekly league scores, determining winners,

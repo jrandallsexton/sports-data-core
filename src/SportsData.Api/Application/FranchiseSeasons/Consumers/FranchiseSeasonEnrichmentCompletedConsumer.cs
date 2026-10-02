@@ -1,6 +1,6 @@
 using MassTransit;
 
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Core.Eventing.Events.Franchise;
 
 namespace SportsData.Api.Application.FranchiseSeasons.Consumers

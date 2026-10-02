@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +13,7 @@ using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Scoring;
+namespace SportsData.Api.Tests.Unit.Application.Scoring.Jobs.LeagueWeekScoring;
 
 /// <summary>
 /// Tests for LeagueWeekScoringService.

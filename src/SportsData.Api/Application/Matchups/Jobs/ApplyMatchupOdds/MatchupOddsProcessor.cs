@@ -5,7 +5,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds
 {
     /// <summary>Apply one contest's displayed odds to every PickemGroupMatchup carrying it.</summary>
     /// <param name="AsOfUtc">

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -11,7 +11,7 @@ using SportsData.Core.Eventing.Events.Contests;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Processors;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs.ApplyMatchupOdds;
 
 public class MatchupOddsProcessorTests : ApiTestBase<MatchupOddsProcessor>
 {

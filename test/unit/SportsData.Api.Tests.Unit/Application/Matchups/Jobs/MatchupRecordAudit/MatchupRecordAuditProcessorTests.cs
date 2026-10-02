@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -14,7 +14,7 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Processors;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs.MatchupRecordAudit;
 
 /// <summary>
 /// The league card reads the PickemGroupMatchup snapshot and never derives

@@ -21,9 +21,7 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Jobs;
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
-using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticleById;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
@@ -109,16 +107,19 @@ using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
-using SportsData.Api.Application.Matchups.Jobs;
-using SportsData.Api.Application.Scoring.Jobs;
 using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.Contests.Jobs.ContestRecap;
 using SportsData.Api.Application.Leagues.Jobs;
 using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
+using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
+using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
 using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 namespace SportsData.Api.DependencyInjection
 {

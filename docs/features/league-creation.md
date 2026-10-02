@@ -108,7 +108,7 @@ created during the season. It mismatches every other case:
 - `src/SportsData.Api/Application/UI/Leagues/Commands/CreateFootballNcaaLeague/CreateFootballNcaaLeagueCommandHandler.cs`
 - `src/SportsData.Api/Application/PickemGroups/PickemGroupCreatedHandler.cs`
 - `src/SportsData.Api/Application/Jobs/MatchupScheduler.cs`
-- `src/SportsData.Api/Application/Processors/MatchupScheduleProcessor.cs`
+- `src/SportsData.Api/Application/Matchups/Jobs/MatchupScheduling/MatchupScheduleProcessor.cs`
 - `src/SportsData.Api/Application/UI/Leagues/Commands/CreateLeagueRequestBase.cs`
 - `src/SportsData.Api/Infrastructure/Data/Entities/PickemGroup.cs`
 

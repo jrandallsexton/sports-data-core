@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
@@ -10,7 +9,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
 {
     public interface IScheduleGroupWeekMatchups
     {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;

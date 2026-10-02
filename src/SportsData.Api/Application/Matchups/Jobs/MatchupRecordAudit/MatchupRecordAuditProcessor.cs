@@ -6,7 +6,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit
 {
     public interface IAuditMatchupRecords
     {

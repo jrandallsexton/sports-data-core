@@ -7,7 +7,8 @@
 | Snapshot test, Bruno secrets, this plan | #755 | merged |
 | Prompts → `PromptsController` | #814 | merged |
 | Models, ModelProviders, Model Lab → three controllers | #815 | merged |
-| MetricBot → `MetricBotController` (+ ingestion, weekly job) | this PR | open |
+| MetricBot → `MetricBotController` (+ ingestion, weekly job) | #816 | merged |
+| Notifications → `NotificationsController` (test push + reminder backfill) | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -149,7 +150,6 @@ allowlist (`producer` → `contests/refresh`). Two doors, one room: apply rule 0
 | POST | `matchups/refresh` | `Admin/Commands/RefreshWeekMatchups` |
 | POST | `matchups/audit-records` | `Matchups/Jobs/MatchupRecordAudit` (enqueue) |
 | POST | `backfill-matchup-odds-pricing` | `Admin/Commands/BackfillMatchupOddsPricing` |
-| POST | `notifications/matchups/backfill` | inline |
 
 ### Scoring / Leagues *(Q4)*
 | Verb | Today | Handler today |
@@ -189,8 +189,16 @@ It gets its own slice together with `ai-refresh`, and retires
 or Previews) is decided in that PR.
 
 ### Notifications → `Notifications/` + `NotificationsController` *(new; all admin)*
-| POST | `notifications/test-push` | `Admin/Commands/SendTestPushNotification` |
-|---|---|---|
+| Verb | Today | New route | Handler today |
+|---|---|---|---|
+| POST | `notifications/test-push` | `api/notifications/test-push` | `Admin/Commands/SendTestPushNotification` |
+| POST | `notifications/matchups/backfill` | `api/notifications/matchups/backfill` | inline (publishes `PickemGroupMatchupsRequested`) |
+
+The backfill was first filed under Matchups, but it is the Notification
+service's reminder backfill: it re-drives the projection that schedules
+pick-deadline and contest-start reminders. Both `notifications/...` routes are
+one resource. The backfill's logic is inline in the action and moves verbatim
+(rule 1). Making it a command slice is a follow-up.
 
 ### Franchises → join `FranchisesController` *(exists, sport-scoped; Q3)*
 | POST | `sourcing/franchise-seasons/{sport}/{seasonYear}` | Producer client proxy |

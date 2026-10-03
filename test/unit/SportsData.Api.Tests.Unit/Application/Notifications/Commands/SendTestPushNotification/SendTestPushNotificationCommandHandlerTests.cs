@@ -3,13 +3,13 @@ using FluentValidation.Results;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
+using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.SendTestPushNotification;
+namespace SportsData.Api.Tests.Unit.Application.Notifications.Commands.SendTestPushNotification;
 
 public class SendTestPushNotificationCommandHandlerTests : ApiTestBase<SendTestPushNotificationCommandHandler>
 {

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
+namespace SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 
 /// <summary>
 /// Response from a test push notification send. The FCM-returned

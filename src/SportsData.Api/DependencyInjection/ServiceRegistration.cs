@@ -11,7 +11,7 @@ using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
-using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
+using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Admin.Queries.GetAiResponse;

@@ -1,0 +1,480 @@
+using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
+using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.PickemGroups;
+
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
+{
+    public interface IScheduleGroupWeekMatchups
+    {
+        Task Process(ScheduleGroupWeekMatchupsCommand command);
+    }
+
+    public class MatchupScheduleProcessor : IScheduleGroupWeekMatchups
+    {
+        private readonly AppDataContext _dataContext;
+        private readonly ILogger<MatchupScheduleProcessor> _logger;
+        private readonly IContestClientFactory _contestClientFactory;
+        private readonly IEventBus _eventBus;
+        private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly ILeagueJoinExpiryCalculator _joinExpiryCalculator;
+        private readonly ILeagueWeekMatchupsCache _matchupsCache;
+
+        public MatchupScheduleProcessor(
+            AppDataContext dataContext,
+            ILogger<MatchupScheduleProcessor> logger,
+            IContestClientFactory contestClientFactory,
+            IEventBus eventBus,
+            IDateTimeProvider dateTimeProvider,
+            ILeagueJoinExpiryCalculator joinExpiryCalculator,
+            ILeagueWeekMatchupsCache matchupsCache)
+        {
+            _dataContext = dataContext;
+            _logger = logger;
+            _contestClientFactory = contestClientFactory;
+            _eventBus = eventBus;
+            _dateTimeProvider = dateTimeProvider;
+            _joinExpiryCalculator = joinExpiryCalculator;
+            _matchupsCache = matchupsCache;
+        }
+
+        public async Task Process(ScheduleGroupWeekMatchupsCommand command)
+        {
+            var group = await _dataContext.PickemGroups
+                .Include(x => x.Conferences)
+                .FirstOrDefaultAsync(x => x.Id == command.GroupId);
+
+            if (group is null)
+            {
+                _logger.LogError("Group not found");
+                return;
+            }
+
+            // at this point, we have a group - but we need to generate matchups for the specified week
+            var groupWeek = await _dataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .Where(x => x.GroupId == command.GroupId && x.SeasonWeekId == command.SeasonWeekId)
+                .FirstOrDefaultAsync();
+
+            if (groupWeek is null)
+            {
+                // Expected on every league's first pass (create or clone) — the
+                // shell is created right here and processing continues. Logged at
+                // Debug because at Error it was the loudest line in a healthy
+                // bootstrap trail and read as the cause of failures it had nothing
+                // to do with.
+                _logger.LogDebug(
+                    "No PickemGroupWeek for group {GroupId} week {SeasonWeekId} yet; creating it.",
+                    command.GroupId,
+                    command.SeasonWeekId);
+
+                groupWeek = new PickemGroupWeek()
+                {
+                    Id = Guid.NewGuid(),
+                    AreMatchupsGenerated = false,
+                    SeasonWeek = command.SeasonWeek,
+                    SeasonWeekId = command.SeasonWeekId,
+                    SeasonYear = command.SeasonYear,
+                    GroupId = command.GroupId,
+                    IsNonStandardWeek = command.IsNonStandardWeek
+                };
+                await _dataContext.PickemGroupWeeks.AddAsync(groupWeek);
+                await _dataContext.SaveChangesAsync();
+            }
+            else
+            {
+                // Refresh callers (e.g. SeasonPollWeekCreatedHandler — a new
+                // AP poll just landed for this week) explicitly want to re-run
+                // the filter to add newly-eligible matchups, so they bypass the
+                // "already generated" short-circuit. The upsert-by-ContestId
+                // loop below makes the second pass safe — existing matchups get
+                // attribute updates, newly-eligible contests get inserted, and
+                // contests that fell OUT of the filter are left in place because
+                // user picks against them must be preserved.
+                if (groupWeek.AreMatchupsGenerated && !command.IsRefresh)
+                {
+                    _logger.LogWarning("Matchups already generated");
+                    return;
+                }
+            }
+
+            // proceed with getting this week's matchups
+
+            // 1. How many AP Ranks to include?
+            var topX = (int)(group.RankingFilter ?? 0);
+
+            // 2. are there conferences to always be included?
+            var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
+
+            // Fetch by SeasonWeekId — the PRECISE week identity the command
+            // already carries. Number-based lookups are phase-ambiguous
+            // (NFL 2026 has a week 4 in preseason, regular season, AND
+            // postseason) and the number endpoint is regular-scoped by
+            // default, which would silently break preseason/postseason
+            // league weeks. The id form syncs any phase correctly.
+            var matchupsResult = await _contestClientFactory
+                .Resolve(group.Sport)
+                .GetMatchupsBySeasonWeekId(command.SeasonWeekId);
+
+            if (!matchupsResult.IsSuccess)
+            {
+                _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week} (SeasonWeekId={SeasonWeekId}). Skipping.", command.SeasonYear, command.SeasonWeek, command.SeasonWeekId);
+                return;
+            }
+            var allMatchups = matchupsResult.Value;
+
+            // Stamp the week's phase from the canonical matchup data — all
+            // matchups of one SeasonWeekId share a phase by construction.
+            var phaseTypeCode = allMatchups.FirstOrDefault()?.SeasonPhaseTypeCode;
+            if (phaseTypeCode is > 0 && groupWeek.SeasonPhaseTypeCode != phaseTypeCode)
+            {
+                groupWeek.SeasonPhaseTypeCode = phaseTypeCode.Value;
+            }
+
+            // PLAYER Pick'em leagues get the WEEK (identity + phase — it
+            // powers seasonWeekDetails and lineup lock anchoring) but no
+            // team-pick slate: no PickemGroupMatchup rows, no
+            // matchup-created notification fan-out. The roster is the game.
+            if (group.GroupType == Application.Common.Enums.GroupType.PlayerPickem)
+            {
+                // Latch AreMatchupsGenerated ONLY once the phase is stamped
+                // (an empty canonical response — transient producer gap —
+                // leaves phaseTypeCode null). Latching early would let the
+                // generated-guard above skip every future pass and strand
+                // the week on the default phase forever.
+                if (phaseTypeCode is > 0)
+                {
+                    groupWeek.AreMatchupsGenerated = true;
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "PlayerPickem group {GroupId}: week {Week} (SeasonWeekId={SeasonWeekId}) had no canonical matchups; leaving week unlatched for the next scheduler pass.",
+                        group.Id, command.SeasonWeek, command.SeasonWeekId);
+                }
+                await _dataContext.SaveChangesAsync();
+                _logger.LogInformation(
+                    "PlayerPickem group {GroupId}: week {Week} (phase {Phase}) materialized without a matchup slate.",
+                    group.Id, command.SeasonWeek, groupWeek.SeasonPhaseTypeCode);
+                return;
+            }
+
+            // League window filter — excludes contests whose kickoff falls outside
+            // [StartsOn, EndsOn]. Null bounds mean "no constraint" (full-season league),
+            // so this is a no-op when neither is set.
+            if (group.StartsOn.HasValue || group.EndsOn.HasValue)
+            {
+                var preCount = allMatchups.Count;
+                allMatchups = allMatchups
+                    .Where(m =>
+                        (!group.StartsOn.HasValue || m.StartDateUtc >= group.StartsOn.Value) &&
+                        (!group.EndsOn.HasValue || m.StartDateUtc <= group.EndsOn.Value))
+                    .ToList();
+                _logger.LogInformation(
+                    "League window {StartsOn}..{EndsOn} filtered {Before} -> {After} matchups for group {GroupId} week {Week}",
+                    group.StartsOn, group.EndsOn, preCount, allMatchups.Count, group.Id, command.SeasonWeek);
+            }
+
+            List<Matchup> groupMatchups;
+
+            if (groupWeek.IsNonStandardWeek && !string.IsNullOrEmpty(group.NonStandardWeekGroupSeasonMapFilter))
+            {
+                var groupFilters = group.NonStandardWeekGroupSeasonMapFilter
+                    .Split('|', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(f => f.Trim())
+                    .ToArray();
+
+                // this could be ["fbs"] or ["fbs", "foo", "bar"], etc.
+                // AwayGroupSeasonMap and HomeGroupSeasonMap look like this: "NCAAF|yy|d3" or "NCAAF|NCAA|fbs|American" (not exclusive examples)
+                groupMatchups = allMatchups
+                    .Where(x =>
+                        (x.AwayRank.HasValue && x.AwayRank <= topX) ||
+                        (x.HomeRank.HasValue && x.HomeRank <= topX) ||
+                        (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
+                        (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug)) ||
+                        (x.AwayGroupSeasonMap != null && groupFilters.Any(filter => x.AwayGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase))) ||
+                        (x.HomeGroupSeasonMap != null && groupFilters.Any(filter => x.HomeGroupSeasonMap.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+                    )
+                    .ToList();
+            }
+            else
+            {
+                groupMatchups = allMatchups
+                    .Where(x =>
+                        (x.AwayRank.HasValue && x.AwayRank <= topX) ||
+                        (x.HomeRank.HasValue && x.HomeRank <= topX) ||
+                        (x.AwayConferenceSlug != null && conferenceSlugs.Contains(x.AwayConferenceSlug)) ||
+                        (x.HomeConferenceSlug != null && conferenceSlugs.Contains(x.HomeConferenceSlug))
+                    )
+                    .ToList();
+            }
+
+            // Inclusion filter is the last place a slate can silently go empty:
+            // a matchup survives only on a rank hit (topX) or a conference/division
+            // slug hit. Sports without ranks (MLB) lean entirely on the slugs, so a
+            // group carrying zero slugs yields zero matchups with no other signal.
+            // Log the inputs alongside the result so an empty slate is attributable
+            // without a repro.
+            _logger.LogInformation(
+                "Inclusion filter kept {After}/{Before} matchups for group {GroupId} week {Week} " +
+                "(topX={TopX}, conferences={ConferenceCount} [{ConferenceSlugs}], nonStandardWeek={IsNonStandardWeek})",
+                groupMatchups.Count,
+                allMatchups.Count,
+                group.Id,
+                command.SeasonWeek,
+                topX,
+                conferenceSlugs.Count,
+                string.Join(",", conferenceSlugs),
+                groupWeek.IsNonStandardWeek);
+
+            // Upsert-by-ContestId. The shape supports both first-pass and
+            // refresh calls:
+            //   • Filter passes a contest already in groupWeek.Matchups →
+            //     update mutable attributes (rank, spread, line, win/loss,
+            //     headline, start time). Lets a post-poll refresh propagate
+            //     newly-published ranks and odds without churning rows.
+            //   • Filter passes a contest NOT yet in groupWeek.Matchups →
+            //     insert. This is how a TOP25+SEC league's "ranked teams"
+            //     get added the first time a poll lands after creation.
+            //   • A contest already in groupWeek.Matchups that the filter
+            //     REJECTS (e.g. Texas fell out of Top 25) is intentionally
+            //     left in place — picks against it must be preserved.
+            var existingByContestId = groupWeek.Matchups
+                .ToDictionary(m => m.ContestId, m => m);
+            var insertedCount = 0;
+            var insertedMatchups = new List<(Guid ContestId, DateTime StartDateUtc, string? Headline)>();
+            var headlineChangedMatchups = new List<(Guid ContestId, DateTime StartDateUtc, string Headline)>();
+
+            foreach (var groupMatchup in groupMatchups)
+            {
+                if (existingByContestId.TryGetValue(groupMatchup.ContestId, out var existing))
+                {
+                    // Headline is the one refreshed field Notification's
+                    // projection mirrors (reminder copy) — a change (e.g. an
+                    // ESPN home/away re-designation flipping "A at B") must
+                    // reach it via the same upsert event new matchups use.
+                    var headlineChanged =
+                        groupMatchup.Headline is not null && existing.Headline != groupMatchup.Headline;
+                    if (headlineChanged)
+                    {
+                        headlineChangedMatchups.Add(
+                            (groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline!));
+                    }
+
+                    // Records are the record each team carried INTO this game,
+                    // so they stop being refreshable the moment it kicks off.
+                    // Refreshing them regardless is what put week-1 NCAA cards
+                    // at 3-0 and 0-3: rows created 2026-08-19 for games played
+                    // 08-29..09-05 kept absorbing later passes, and because
+                    // nothing stamps ModifiedUtc on this path the churn was
+                    // invisible. Ranks, lines and start time stay refreshable —
+                    // only the record is point-in-time.
+                    var isRefreshableRecord = groupMatchup.StartDateUtc > _dateTimeProvider.UtcNow();
+
+                    existing.AwayRank = groupMatchup.AwayRank;
+                    existing.AwaySpread = groupMatchup.AwaySpread;
+                    if (isRefreshableRecord)
+                    {
+                        existing.AwayConferenceLosses = groupMatchup.AwayConferenceLosses;
+                        existing.AwayConferenceWins = groupMatchup.AwayConferenceWins;
+                        existing.AwayLosses = groupMatchup.AwayLosses;
+                        existing.AwayWins = groupMatchup.AwayWins;
+                    }
+                    if (headlineChanged)
+                    {
+                        // Same null-never-clobbers contract as Notification's
+                        // consumers: Headline rides a LEFT JOIN on
+                        // CompetitionNote, so a refresh can transiently lack
+                        // it. Writing that null (while the non-null publish
+                        // gate stays silent) would leave the two projections
+                        // permanently diverged — API null, Notification
+                        // holding the last real value.
+                        existing.Headline = groupMatchup.Headline;
+                    }
+                    existing.HomeRank = groupMatchup.HomeRank;
+                    existing.HomeSpread = groupMatchup.HomeSpread;
+                    if (isRefreshableRecord)
+                    {
+                        existing.HomeConferenceLosses = groupMatchup.HomeConferenceLosses;
+                        existing.HomeConferenceWins = groupMatchup.HomeConferenceWins;
+                        existing.HomeLosses = groupMatchup.HomeLosses;
+                        existing.HomeWins = groupMatchup.HomeWins;
+                    }
+                    existing.OverOdds = groupMatchup.OverOdds;
+                    existing.OverUnder = groupMatchup.OverUnder;
+                    existing.Spread = groupMatchup.Spread;
+                    existing.StartDateUtc = groupMatchup.StartDateUtc;
+                    existing.UnderOdds = groupMatchup.UnderOdds;
+                    existing.AwayMoneyLine = groupMatchup.AwayMoneyLine;
+                    existing.HomeMoneyLine = groupMatchup.HomeMoneyLine;
+                    existing.AwaySpreadPrice = groupMatchup.AwaySpreadPrice;
+                    existing.HomeSpreadPrice = groupMatchup.HomeSpreadPrice;
+
+                    // Stamp the audit fields when EF actually detected a change.
+                    // Nothing on this path did, so a row could be rewritten by
+                    // every refresh pass and still read CreatedUtc-only — which
+                    // is how week-1 NCAA records were silently overwritten with
+                    // later values and left no trace to find it by. There is no
+                    // SaveChanges interceptor in this solution; the ~54 other
+                    // API write sites stamp by hand, and this one did not.
+                    // Asking the change tracker keeps it honest: a no-op
+                    // refresh stays unstamped.
+                    if (_dataContext.Entry(existing).State == EntityState.Modified)
+                    {
+                        existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                        existing.ModifiedBy = Guid.Empty;
+                    }
+                    // Immutable on update: Id, ContestId, GroupId, SeasonWeekId,
+                    // SeasonWeek, SeasonYear, CreatedBy, CreatedUtc.
+                }
+                else
+                {
+                    groupWeek.Matchups.Add(new PickemGroupMatchup()
+                    {
+                        Id = Guid.NewGuid(),
+                        AwayConferenceLosses = groupMatchup.AwayConferenceLosses,
+                        AwayConferenceWins = groupMatchup.AwayConferenceWins,
+                        AwayLosses = groupMatchup.AwayLosses,
+                        AwayRank = groupMatchup.AwayRank,
+                        AwaySpread = groupMatchup.AwaySpread,
+                        AwayWins = groupMatchup.AwayWins,
+                        ContestId = groupMatchup.ContestId,
+                        CreatedBy = Guid.Empty,
+                        CreatedUtc = _dateTimeProvider.UtcNow(),
+                        GroupId = group.Id,
+                        GroupWeek = groupWeek,
+                        Headline = groupMatchup.Headline,
+                        HomeConferenceLosses = groupMatchup.HomeConferenceLosses,
+                        HomeConferenceWins = groupMatchup.HomeConferenceWins,
+                        HomeLosses = groupMatchup.HomeLosses,
+                        HomeRank = groupMatchup.HomeRank,
+                        HomeSpread = groupMatchup.HomeSpread,
+                        HomeWins = groupMatchup.HomeWins,
+                        OverOdds = groupMatchup.OverOdds,
+                        OverUnder = groupMatchup.OverUnder,
+                        SeasonWeek = groupWeek.SeasonWeek,
+                        SeasonWeekId = groupMatchup.SeasonWeekId,
+                        SeasonYear = command.SeasonYear,
+                        Spread = groupMatchup.Spread,
+                        StartDateUtc = groupMatchup.StartDateUtc,
+                        UnderOdds = groupMatchup.UnderOdds,
+                        AwayMoneyLine = groupMatchup.AwayMoneyLine,
+                        HomeMoneyLine = groupMatchup.HomeMoneyLine,
+                        AwaySpreadPrice = groupMatchup.AwaySpreadPrice,
+                        HomeSpreadPrice = groupMatchup.HomeSpreadPrice
+                    });
+                    insertedCount++;
+                    insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline));
+                }
+            }
+
+            // Mark "generated" once a first-pass write succeeds. The flag is
+            // a one-way switch that the daily scheduler reads to skip
+            // already-populated weeks — refresh callers (IsRefresh=true)
+            // explicitly bypass that gate at the top of this method.
+            // Empty results leave the flag false so the daily scheduler
+            // re-fires matchup generation on the next pass — the load-bearing
+            // piece that makes the eager-bootstrap path work for
+            // NCAAFB+RankingFilter shells created pre-poll. See
+            // docs/league-creation-matrix.md "Processor change: AreMatchupsGenerated rule".
+            if (groupMatchups.Count > 0)
+            {
+                groupWeek.AreMatchupsGenerated = true;
+            }
+
+            // Publish BEFORE SaveChanges so MassTransit's bus-outbox interceptor flushes
+            // the captured message into the OutboxMessage table within the same transaction
+            // as the entity write. If the save fails, the captured publish is rolled back
+            // with it — same atomicity guarantee, correct outbox semantics.
+            // Skip publish when nothing was inserted: the downstream consumer
+            // (PickemGroupWeekMatchupsGeneratedHandler) enqueues preview jobs
+            // for contests without existing previews. On a pure-update refresh
+            // (filter returned matchups but they were all already present)
+            // there are no new contests to preview, so re-publishing the event
+            // would just trigger a query that finds nothing to do.
+            var hasNewMatchups = insertedCount > 0;
+            var isWeekCompleted = hasNewMatchups && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
+            if (hasNewMatchups && !isWeekCompleted)
+            {
+                await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
+                        group.Id,
+                        command.SeasonWeek,
+                        null,
+                        group.Sport,
+                        command.SeasonYear,
+                        command.CorrelationId,
+                        Guid.NewGuid()),
+                    CancellationToken.None);
+            }
+            else if (!hasNewMatchups)
+            {
+                _logger.LogInformation(
+                    "Skipping PickemGroupWeekMatchupsGenerated event — no new matchups inserted (filter returned {Count}, all already present). GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}, IsRefresh={IsRefresh}",
+                    groupMatchups.Count, group.Id, command.SeasonYear, command.SeasonWeek, command.IsRefresh);
+            }
+            else
+            {
+                _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
+                    group.Id, command.SeasonYear, command.SeasonWeek);
+            }
+
+            // Per-matchup fan-out for the Notification service. Published BEFORE
+            // SaveChanges so the bus-outbox interceptor commits these together
+            // with the matchup inserts in the same transaction. One event per
+            // newly-inserted matchup, plus one per existing matchup whose
+            // Headline changed on refresh — Notification's consumer is an
+            // idempotent upsert, so the same event doubles as the update
+            // signal. Other refresh-only churn (lines, ranks, records) stays
+            // intentionally silent: the projection doesn't mirror it.
+            foreach (var (contestId, startDateUtc, headline) in
+                     insertedMatchups.Concat(headlineChangedMatchups.Select(
+                         m => (m.ContestId, m.StartDateUtc, (string?)m.Headline))))
+            {
+                await _eventBus.Publish(new PickemGroupMatchupCreated(
+                        group.Id,
+                        contestId,
+                        startDateUtc,
+                        groupWeek.SeasonWeek,
+                        group.Sport,
+                        command.SeasonYear,
+                        command.CorrelationId,
+                        Guid.NewGuid(),
+                        headline),
+                    CancellationToken.None);
+            }
+
+            await _dataContext.SaveChangesAsync();
+
+            // The slate just changed (inserts on a first pass, rank/spread updates on
+            // a refresh). Members must not keep reading the pre-change payload for
+            // the rest of its cache lifetime - on a refresh that is the poll-driven
+            // rank update they are waiting for, and after a wipe-and-regenerate it
+            // was an empty week.
+            await _matchupsCache.RemoveAsync(group.Id, command.SeasonWeek);
+
+            // Slates build progressively (full-season leagues advance weekly),
+            // so each landed week may sharpen the league's join expiry --
+            // e.g. a drop-week expiry refining from the calendar boundary to
+            // the actual first kickoff of week N+1. Log-and-continue: the
+            // matchups are already committed, and a recompute failure must
+            // not fault an otherwise-successful run (the hourly sweep
+            // self-heals).
+            try
+            {
+                await _joinExpiryCalculator.RecomputeAsync(command.GroupId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Join-expiry recompute failed for league {GroupId} after matchup scheduling; hourly sweep will self-heal.",
+                    command.GroupId);
+            }
+        }
+    }
+}

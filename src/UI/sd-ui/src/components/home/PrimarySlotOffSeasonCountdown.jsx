@@ -152,7 +152,7 @@ function PrimarySlotOffSeasonCountdown({ hasLeagues = true }) {
   //     on its own line so both carry equal visual weight and read like a
   //     scoreboard rather than a comma-run-on.
   const headline = allLive
-    ? "NCAAFB and NFL are underway — pick your week"
+    ? "NCAAFB and NFL are underway - pick your week"
     : sportsWithPhrases.map((s) => (
         <span key={s.key} className="home-primary__headline-line">
           {s.phrase.text}

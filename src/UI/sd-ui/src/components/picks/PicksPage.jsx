@@ -8,7 +8,9 @@ import { useLeagueContext } from "../../contexts/LeagueContext";
 import { useContestUpdates } from "../../contexts/ContestUpdatesContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
 import ImportPicksDialog from "./ImportPicksDialog.jsx";
+import StatBotAdvisorDialog from "./StatBotAdvisorDialog.jsx";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Bot } from "lucide-react";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import LeaguesApi from "../../api/leagues/leaguesApi";
@@ -16,6 +18,7 @@ import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import { shouldShowGambling } from "../../utils/gamblingContent";
+import { formatBetPoints, betPointsTone } from "../../utils/betPoints";
 
 function PicksPage() {
   const { userDto, loading: userLoading, refreshUserDto, userOptions } = useUserDto();
@@ -84,6 +87,10 @@ function PicksPage() {
   const [importing, setImporting] = useState(false);
   // Bumped to force a picks refetch after an import commits.
   const [picksReload, setPicksReload] = useState(0);
+  // StatBot advisor (docs/features/statbot-advisor.md). Apply replaces every
+  // unlocked pick through the normal submit path, one call per pick.
+  const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
+  const [applyingAdvice, setApplyingAdvice] = useState(false);
   // "leagueId:week" that the current userPicks belong to. Gates the import
   // availability check so a stale pick set — e.g. the previous league, which
   // shares contest ids on same-day games — can't mis-drive the button.
@@ -388,6 +395,11 @@ function PicksPage() {
     setMatchups([]);
     setUserPicks({});
     setLoadingMatchups(true);
+    // The pick type gates gambling content (shouldShowGambling). Left
+    // standing, an ATS league's type would briefly gate the next league's
+    // bet points, or for good if its matchups fetch fails. Null falls back
+    // to the safe default (hidden unless the user opted in). CodeRabbit, #805.
+    setPickType(null);
   }, [routeLeagueId]);
 
   useEffect(() => {
@@ -458,8 +470,14 @@ function PicksPage() {
 
         // UserPicksResultDto envelope: picks + server-computed result counts
         // (was a raw array; see docs/features/league-ended-headers.md).
-        const { picks, totalMatchups, correctCount, incorrectCount, pendingCount } =
-          response.data;
+        const {
+          picks,
+          totalMatchups,
+          correctCount,
+          incorrectCount,
+          pendingCount,
+          betPoints,
+        } = response.data;
 
         const picksByContest = {};
         for (const pick of picks) {
@@ -467,7 +485,13 @@ function PicksPage() {
         }
 
         setUserPicks(picksByContest);
-        setPicksSummary({ totalMatchups, correctCount, incorrectCount, pendingCount });
+        setPicksSummary({
+          totalMatchups,
+          correctCount,
+          incorrectCount,
+          pendingCount,
+          betPoints,
+        });
         setPicksLoadedKey(`${routeLeagueId}:${selectedWeek}`);
       } catch (error) {
         if (cancelled) return;
@@ -601,6 +625,50 @@ function PicksPage() {
       toast.error("Failed to import picks. Please try again.");
     } finally {
       setImporting(false);
+    }
+  }
+
+  // Writes StatBot's sheet through the same submit path as a hand pick, one
+  // call per pick, so every server-side rule (lock, confidence required,
+  // membership) applies unchanged. The server never enforces uniqueness of
+  // confidence values, so submission order doesn't matter. A failure midway
+  // leaves the earlier picks in place; the refetch shows the true state.
+  async function handleApplyAdvice(picks) {
+    if (isReadOnly) {
+      toast("This league has ended — picks are read-only.", { icon: "🔒" });
+      return;
+    }
+    if (!picks || picks.length === 0) return;
+
+    setApplyingAdvice(true);
+    let applied = 0;
+    try {
+      for (const p of picks) {
+        const payload = {
+          pickemGroupId: routeLeagueId,
+          contestId: p.contestId,
+          pickType: pickType || "StraightUp",
+          franchiseSeasonId: p.franchiseSeasonId,
+          week: selectedWeek,
+        };
+        if (useConfidencePoints && p.confidencePoints != null) {
+          payload.confidencePoints = p.confidencePoints;
+        }
+        await apiWrapper.Picks.submitPick(payload);
+        applied++;
+      }
+      toast.success(`StatBot set ${applied} pick${applied === 1 ? "" : "s"}.`);
+      setIsAdvisorOpen(false);
+    } catch (error) {
+      console.error("Failed to apply StatBot's picks:", error);
+      toast.error(
+        applied === 0
+          ? "Couldn't apply StatBot's picks. Please try again."
+          : `Applied ${applied} of ${picks.length} picks before an error. Check your sheet.`
+      );
+    } finally {
+      setApplyingAdvice(false);
+      setPicksReload((k) => k + 1); // refetch picks → cards + counts update
     }
   }
 
@@ -855,6 +923,13 @@ function PicksPage() {
     const lockTime = new Date(new Date(m.startDateUtc).getTime() - 5 * 60 * 1000);
     return now <= lockTime;
   });
+  // The advisor's entry point gates on an UNLOCKED game, picked or not: a
+  // fully-picked week is exactly when "Replace N picks" matters, and the
+  // dialog itself never touches locked rows.
+  const anyUnlocked = enrichedMatchups.some((m) => {
+    const lockTime = new Date(new Date(m.startDateUtc).getTime() - 5 * 60 * 1000);
+    return now <= lockTime;
+  });
 
   // hidePicked is inert whenever nothing is actionable: the filter keeps only
   // pickable games, so honoring a stale value in a read-only/locked-out week
@@ -896,6 +971,21 @@ function PicksPage() {
                 🔒 Ended
               </span>
             )}
+            {/* The deetsMeter only has SU and ATS numbers; an O/U league would
+                get a dead-end sheet, and the server refuses it anyway. */}
+            {!isReadOnly &&
+              anyUnlocked &&
+              (pickType === "StraightUp" || pickType === "AgainstTheSpread") && (
+              <button
+                type="button"
+                className="advisor-open-button"
+                onClick={() => setIsAdvisorOpen(true)}
+                title="Ask StatBot for pick help"
+                aria-label="Ask StatBot for pick help"
+              >
+                <Bot aria-hidden="true" />
+              </button>
+            )}
             {(() => {
               // Pick-mode badge. PickType enum on the wire serializes as a
               // string ("StraightUp" / "AgainstTheSpread" / "OverUnder").
@@ -910,6 +1000,24 @@ function PicksPage() {
               return (
                 <span className="pick-mode-badge" title={label.full}>
                   {label.short}
+                </span>
+              );
+            })()}
+            {(() => {
+              // Week's net from a simulated 1-unit bet on each pick at the
+              // closing price (moneyline in SU leagues, spread price in ATS).
+              // Server-summed; null until a pick carries a value. Odds-derived,
+              // so it routes through the gambling-content predicate.
+              const betPoints = picksSummary?.betPoints;
+              if (betPoints == null || !shouldShowGambling(pickType, userOptions)) {
+                return null;
+              }
+              return (
+                <span
+                  className={`pick-bet-points ${betPointsTone(betPoints)}`}
+                  title="Net result of a 1-unit bet on each pick at the closing line"
+                >
+                  {formatBetPoints(betPoints)}
                 </span>
               );
             })()}
@@ -1053,6 +1161,20 @@ function PicksPage() {
             importing={importing}
             onClose={() => setIsImportOpen(false)}
             onImport={handleImport}
+          />
+        )}
+
+        {isAdvisorOpen && (
+          <StatBotAdvisorDialog
+            isOpen={isAdvisorOpen}
+            leagueId={routeLeagueId}
+            week={selectedWeek}
+            matchups={matchups}
+            userPicks={userPicks}
+            useConfidencePoints={useConfidencePoints}
+            applying={applyingAdvice}
+            onClose={() => setIsAdvisorOpen(false)}
+            onApply={handleApplyAdvice}
           />
         )}
       </div>

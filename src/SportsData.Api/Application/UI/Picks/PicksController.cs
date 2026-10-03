@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Picks.Advisor.Dtos;
+using SportsData.Api.Application.UI.Picks.Advisor.Planner;
+using SportsData.Api.Application.UI.Picks.Advisor.Queries.GetPickAdvice;
 using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Application.UI.Picks.Queries.GetPickAccuracyByWeek;
@@ -77,6 +80,34 @@ public class PicksController : ApiControllerBase
             UserId = userId,
             GroupId = groupId,
             WeekNumber = week
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// StatBot's advice for the caller in this league-week: standings analysis,
+    /// recommended risk level, and a full suggested sheet for <paramref name="level"/>
+    /// (the recommendation when omitted). Read-only; the client applies picks
+    /// through the normal submit path. See docs/features/statbot-advisor.md.
+    /// </summary>
+    [HttpGet("{groupId}/week/{week}/advice")]
+    [Authorize]
+    public async Task<ActionResult<PickAdviceDto>> GetPickAdvice(
+        Guid groupId,
+        int week,
+        [FromQuery] AdvisorLevel? level,
+        [FromServices] IGetPickAdviceQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetPickAdviceQuery
+        {
+            UserId = HttpContext.GetCurrentUserId(),
+            LeagueId = groupId,
+            Week = week,
+            Level = level
         };
 
         var result = await handler.ExecuteAsync(query, cancellationToken);

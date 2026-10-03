@@ -3,13 +3,9 @@ import { AppState, type AppStateStatus } from 'react-native';
 import * as signalR from '@microsoft/signalr';
 import { getAuth } from 'firebase/auth';
 
+import { SIGNALR_URL } from '@/src/lib/releaseConfig';
 import { createSignalRConnection } from '@/src/services/signalR/connection';
 import { useContestUpdatesStore } from '@/src/stores/contestUpdatesStore';
-
-const SIGNALR_URL =
-  process.env.EXPO_PUBLIC_SIGNALR_URL ??
-  process.env.EXPO_PUBLIC_API_BASE_URL ??
-  'https://api.sportdeets.com';
 
 /**
  * Owns the SignalR connection lifecycle. Auth-gated by convention — the

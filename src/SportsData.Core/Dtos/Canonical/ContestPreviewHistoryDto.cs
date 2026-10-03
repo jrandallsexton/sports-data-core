@@ -124,6 +124,9 @@ namespace SportsData.Core.Dtos.Canonical
 
         public string Opponent { get; set; } = default!;
 
+        /// <summary>Franchise.DisplayNameShort of the opponent; display-only.</summary>
+        public string? OpponentShort { get; set; }
+
         public int TeamScore { get; set; }
 
         public int OpponentScore { get; set; }
@@ -178,6 +181,9 @@ namespace SportsData.Core.Dtos.Canonical
         public int SeasonYear { get; set; }
 
         public string Opponent { get; set; } = default!;
+
+        /// <summary>Franchise.DisplayNameShort of the opponent; display-only.</summary>
+        public string? OpponentShort { get; set; }
 
         public int TeamScore { get; set; }
 
@@ -248,6 +254,17 @@ namespace SportsData.Core.Dtos.Canonical
         public string HomeTeam { get; set; } = default!;
 
         public string AwayTeam { get; set; } = default!;
+
+        /// <summary>
+        /// Franchise.DisplayNameShort for display on narrow surfaces. Display-only:
+        /// <see cref="Winner"/> and <see cref="SpreadWinner"/> stay on the full
+        /// names, which clients compare against the matchup's home/away names
+        /// to identify "our" side. Null when a query does not project it.
+        /// </summary>
+        public string? HomeTeamShort { get; set; }
+
+        /// <inheritdoc cref="HomeTeamShort"/>
+        public string? AwayTeamShort { get; set; }
 
         public int? HomeScore { get; set; }
 

@@ -8,6 +8,8 @@ using SportsData.Api.Infrastructure.Data.Entities;
 
 using SportsData.Api.Application.Common.Enums;
 
+using SportsData.Core.Common;
+
 namespace SportsData.Api.Application.Admin.SyntheticPicks;
 
 /// <summary>
@@ -19,24 +21,27 @@ public class SyntheticPickService : ISyntheticPickService
     private readonly ILogger<SyntheticPickService> _logger;
     private readonly AppDataContext _dataContext;
     private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public SyntheticPickService(
         ISyntheticPickStyleProvider pickStyleProvider,
         ILogger<SyntheticPickService> logger,
         AppDataContext dataContext,
-        IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler)
+        IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler,
+        IDateTimeProvider dateTimeProvider)
     {
         _pickStyleProvider = pickStyleProvider;
         _logger = logger;
         _dataContext = dataContext;
         _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
+        _dateTimeProvider = dateTimeProvider;
     }
 
-    public async Task GenerateMetricBasedPicksForSynthetic(
+    public async Task<IReadOnlySet<Guid>> GenerateMetricBasedPicksForSynthetic(
         Guid pickemGroupId,
         PickType pickemGroupPickType,
         Guid syntheticId,
-        string syntheticPickStyle,
+        string? syntheticPickStyle,
         int seasonWeekNumber,
         CancellationToken cancellationToken = default)
     {
@@ -47,16 +52,33 @@ public class SyntheticPickService : ISyntheticPickService
             LeagueId = pickemGroupId,
             Week = seasonWeekNumber
         };
+        var written = new HashSet<Guid>();
+        var insertedPickIds = new HashSet<Guid>();
         var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query, cancellationToken);
 
         if (!groupMatchupsResult.IsSuccess)
         {
-            _logger.LogWarning("Could not get matchups for group {GroupId}", pickemGroupId);
-            return;
+            _logger.LogWarning(
+                "Metric picks skipped — could not get matchups. GroupId={GroupId}, SyntheticId={SyntheticId}, Week={Week}, Status={Status}",
+                pickemGroupId, syntheticId, seasonWeekNumber, groupMatchupsResult.Status);
+            return written;
         }
 
         var groupMatchups = groupMatchupsResult.Value;
         var picksAdded = 0;
+        var alreadyHad = 0;
+        var noPrediction = 0;
+
+        if (groupMatchups.Matchups.Count == 0)
+        {
+            // Not an error — a league with no slate for this week is normal —
+            // but it is the difference between "nothing to do" and "something
+            // is wrong", which the caller could not previously tell apart.
+            _logger.LogInformation(
+                "Metric picks: no matchups in scope. GroupId={GroupId}, SyntheticId={SyntheticId}, Week={Week}",
+                pickemGroupId, syntheticId, seasonWeekNumber);
+            return written;
+        }
 
         // iterate each group matchup
         foreach (var matchup in groupMatchups.Matchups)
@@ -70,7 +92,10 @@ public class SyntheticPickService : ISyntheticPickService
 
             // do we already have one?
             if (synPick is not null)
+            {
+                alreadyHad++;
                 continue;
+            }
 
             // get the previously-generated ContestPrediction
             var prediction = await _dataContext.ContestPredictions
@@ -80,9 +105,15 @@ public class SyntheticPickService : ISyntheticPickService
                 .OrderByDescending(x => x.CreatedUtc)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            // no prediction? skip it
+            // No ContestPrediction of the LEAGUE's pick type for this contest.
+            // Counted and reported below: this was a bare `continue`, so a run
+            // that produced nothing was indistinguishable from a run with
+            // nothing to do — which is what made the empty 2026 sweep invisible.
             if (prediction is null)
+            {
+                noPrediction++;
                 continue;
+            }
 
             // Apply pick style thresholds to determine final pick
             var finalPickFranchiseId = DeterminePickWithThreshold(
@@ -106,6 +137,8 @@ public class SyntheticPickService : ISyntheticPickService
             };
 
             await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);
+            insertedPickIds.Add(synPick.Id);
+            written.Add(matchup.ContestId);
             picksAdded++;
         }
 
@@ -113,15 +146,162 @@ public class SyntheticPickService : ISyntheticPickService
         if (picksAdded > 0)
         {
             await _dataContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Created {count} metric-based picks for synthetic {syntheticId} in group {groupId}", 
-                picksAdded, syntheticId, pickemGroupId);
+            // Reconciliation failing must not cost the caller the contest ids:
+            // the picks are already committed, and losing `written` means
+            // scoring is never enqueued for them — and a retry skips the
+            // existing picks, returns nothing, and never scores them either.
+            try
+            {
+                await ReconcileConfidenceAsync(
+                    pickemGroupId, pickemGroupPickType, syntheticId, seasonWeekNumber, insertedPickIds, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex,
+                    "Confidence reconciliation failed for {SyntheticId} in group {GroupId} week {Week}; picks are saved and will still be scored.",
+                    syntheticId, pickemGroupId, seasonWeekNumber);
+            }
+        }
+
+        // Always reported, including the zero case. Every branch above is a
+        // silent `continue`, so without this the only evidence of a no-op run
+        // was the absence of a log line.
+        _logger.Log(
+            picksAdded > 0 ? LogLevel.Information : LogLevel.Warning,
+            "Metric picks for {SyntheticId} in group {GroupId} week {Week}: " +
+            "{Created} created, {AlreadyHad} already present, {NoPrediction} without a {PickType} prediction, of {Total} matchup(s). PickStyle={PickStyle}",
+            syntheticId, pickemGroupId, seasonWeekNumber,
+            picksAdded, alreadyHad, noPrediction,
+            pickemGroupPickType, groupMatchups.Matchups.Count,
+            syntheticPickStyle ?? "(none)");
+
+        return written;
+    }
+
+    /// <summary>
+    /// Assigns this synthetic's confidence points across one league-week: most
+    /// points to the prediction it was most sure of.
+    /// </summary>
+    /// <remarks>
+    /// Confidence leagues score a pick by its assigned confidence
+    /// (PickScoringService: <c>ConfidencePoints ?? 0</c>), so a null means the
+    /// bot scores ZERO on every correct pick — last place by construction,
+    /// presented as a real standing.
+    /// <para>
+    /// Ranked by how far <c>WinProbability</c> sits from 0.5, which is the same
+    /// number the threshold logic already reads: 0.9 and 0.1 are both confident
+    /// calls, 0.55 is a coin flip. Deliberately identical across all four bots,
+    /// so they differ only where a style actually flips a pick rather than in
+    /// how the points are spread.
+    /// </para>
+    /// <para>
+    /// Locked picks — already scored, or kicked off and not inserted by THIS
+    /// call — keep their values, which are then reserved so the remaining
+    /// 1..N stay distinct. Renumbering a scored pick would desync the points
+    /// shown from the points awarded.
+    /// </para>
+    /// </remarks>
+    private async Task ReconcileConfidenceAsync(
+        Guid pickemGroupId,
+        PickType pickemGroupPickType,
+        Guid syntheticId,
+        int seasonWeekNumber,
+        IReadOnlySet<Guid> newlyInsertedPickIds,
+        CancellationToken ct)
+    {
+        var usesConfidence = await _dataContext.PickemGroups
+            .AsNoTracking()
+            .Where(g => g.Id == pickemGroupId)
+            .Select(g => g.UseConfidencePoints)
+            .FirstOrDefaultAsync(ct);
+
+        if (!usesConfidence) return;
+
+        var picks = await _dataContext.UserPicks
+            .Where(p => p.UserId == syntheticId
+                        && p.PickemGroupId == pickemGroupId
+                        && p.Week == seasonWeekNumber)
+            .ToListAsync(ct);
+
+        if (picks.Count == 0) return;
+
+        var contestIds = picks.Select(p => p.ContestId).Distinct().ToList();
+
+        var kickoffByContest = await _dataContext.PickemGroupMatchups
+            .AsNoTracking()
+            .Where(m => m.GroupId == pickemGroupId && contestIds.Contains(m.ContestId))
+            .Select(m => new { m.ContestId, m.StartDateUtc })
+            .ToDictionaryAsync(x => x.ContestId, x => x.StartDateUtc, ct);
+
+        // Filtered by the LEAGUE's pick type. A contest carries a prediction
+        // per type, so ordering by CreatedUtc alone can hand back the other
+        // type's WinProbability and rank the week by a number that was never
+        // about this league's picks.
+        var predictions = await _dataContext.ContestPredictions
+            .AsNoTracking()
+            .Where(x => contestIds.Contains(x.ContestId) && x.PredictionType == pickemGroupPickType)
+            .Select(x => new { x.ContestId, x.WinProbability, x.CreatedUtc })
+            .ToListAsync(ct);
+
+        var convictionByContest = predictions
+            .GroupBy(x => x.ContestId)
+            .ToDictionary(
+                g => g.Key,
+                g => Math.Abs((double)g.OrderByDescending(x => x.CreatedUtc).First().WinProbability - 0.5));
+
+        var now = _dateTimeProvider.UtcNow();
+
+        var locked = picks
+            .Where(p => !newlyInsertedPickIds.Contains(p.Id)
+                        && (p.ScoredAt != null
+                            || (kickoffByContest.TryGetValue(p.ContestId, out var k) && k <= now)))
+            .ToList();
+
+        var reserved = locked
+            .Where(p => p.ConfidencePoints.HasValue)
+            .Select(p => p.ConfidencePoints!.Value)
+            .ToHashSet();
+
+        var mutable = picks.Except(locked).ToList();
+        if (mutable.Count == 0) return;
+
+        var available = Enumerable.Range(1, picks.Count)
+            .Where(v => !reserved.Contains(v))
+            .OrderByDescending(v => v)
+            .ToList();
+
+        // A contest with no prediction sorts last rather than dropping out:
+        // every pick in a confidence league must carry a value.
+        var ranked = mutable
+            .OrderByDescending(p => convictionByContest.TryGetValue(p.ContestId, out var c) ? c : -1)
+            .ThenBy(p => kickoffByContest.TryGetValue(p.ContestId, out var k) ? k : DateTime.MaxValue)
+            .ThenBy(p => p.ContestId)
+            .ToList();
+
+        var changed = 0;
+        for (var i = 0; i < ranked.Count && i < available.Count; i++)
+        {
+            if (ranked[i].ConfidencePoints == available[i]) continue;
+
+            ranked[i].ConfidencePoints = available[i];
+            ranked[i].ModifiedUtc = now;
+            ranked[i].ModifiedBy = syntheticId;
+            changed++;
+        }
+
+        if (changed > 0)
+        {
+            await _dataContext.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "Confidence reconciled for {SyntheticId} in group {GroupId} week {Week}: {Picks} pick(s), {Locked} locked, {Changed} changed.",
+                syntheticId, pickemGroupId, seasonWeekNumber, picks.Count, locked.Count, changed);
         }
     }
 
     private Guid DeterminePickWithThreshold(
         ContestPrediction prediction,
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
-        string pickStyle)
+        string? pickStyle)
     {
         if (prediction == null)
             throw new ArgumentNullException(nameof(prediction));
@@ -129,8 +309,11 @@ public class SyntheticPickService : ISyntheticPickService
         if (matchup == null)
             throw new ArgumentNullException(nameof(matchup));
         
+        // A null/blank style is NOT an error: it means "no threshold", i.e.
+        // take the model's prediction unmodified. MetricBot is exactly that,
+        // and treating it as invalid is what kept it pickless.
         if (string.IsNullOrWhiteSpace(pickStyle))
-            throw new ArgumentException("Pick style cannot be null or empty", nameof(pickStyle));
+            return prediction.WinnerFranchiseSeasonId;
 
         // For straight up picks, always use the model's prediction
         if (prediction.PredictionType == PickType.StraightUp)

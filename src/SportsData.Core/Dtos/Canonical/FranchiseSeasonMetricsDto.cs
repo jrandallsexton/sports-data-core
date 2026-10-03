@@ -7,7 +7,8 @@ namespace SportsData.Core.Dtos.Canonical
         public string FranchiseName { get; init; } = null!;
         public string FranchiseSlug { get; init; } = null!;
 
-        public string? Conference { get; init; }
+        public string? Conference { get; init; } // SEC, Big10
+        public string? ConferenceParent { get; init; } // FBS, FCS, DII, DIII, NAIA
 
         public int SeasonYear { get; init; }
         public int GamesPlayed { get; init; }

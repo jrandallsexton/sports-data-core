@@ -1,5 +1,6 @@
 SELECT fssc."Name" AS "Category",
     fss."Name" AS "Statistic",
+    fss."Value",
     fss."DisplayValue",
     fss."PerGameValue",
     fss."PerGameDisplayValue",

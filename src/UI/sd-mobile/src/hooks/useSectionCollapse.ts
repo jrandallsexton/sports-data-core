@@ -9,19 +9,24 @@ import { useSectionCollapseStore } from '@/src/stores/sectionCollapseStore';
  * comparison modal eagerly, so per-instance state went stale the moment one
  * of them toggled.
  *
- * Sections start EXPANDED. Collapsing is an escape valve for readers who
- * find a section noisy, not a gate in front of the content.
+ * Sections start EXPANDED unless defaultCollapsed is set. Collapsing is an
+ * escape valve for readers who find a section noisy, not a gate in front of
+ * the content - except for long indexes (stacked stats categories), which
+ * start collapsed so the tab opens as a scannable list of headers.
  */
-export function useSectionCollapse(sectionKey: string) {
-  const collapsed = useSectionCollapseStore((s) => s.collapsed[sectionKey] ?? false);
+export function useSectionCollapse(sectionKey: string, defaultCollapsed = false) {
+  const collapsed = useSectionCollapseStore((s) => s.collapsed[sectionKey] ?? defaultCollapsed);
   const hydrate = useSectionCollapseStore((s) => s.hydrate);
   const toggleSection = useSectionCollapseStore((s) => s.toggle);
 
   useEffect(() => {
-    hydrate(sectionKey);
-  }, [hydrate, sectionKey]);
+    hydrate(sectionKey, defaultCollapsed);
+  }, [hydrate, sectionKey, defaultCollapsed]);
 
-  const toggle = useCallback(() => toggleSection(sectionKey), [toggleSection, sectionKey]);
+  const toggle = useCallback(
+    () => toggleSection(sectionKey, defaultCollapsed),
+    [toggleSection, sectionKey, defaultCollapsed],
+  );
 
   return { collapsed, toggle };
 }

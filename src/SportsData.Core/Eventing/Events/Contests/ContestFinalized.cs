@@ -32,6 +32,11 @@ namespace SportsData.Core.Eventing.Events.Contests
     ///     before publish, but kept nullable so older Producer pods
     ///     publishing the prior shape don't fail deserialization during a
     ///     rolling deploy.
+    ///   - <see cref="AwayFranchiseSeasonId"/> / <see cref="HomeFranchiseSeasonId"/>
+    ///     identify both participants so a consumer can act per team (the
+    ///     Producer's own consumer re-derives both teams' W/L records).
+    ///     Always populated by enrichment; nullable for the same
+    ///     rolling-deploy reason, so consumers must skip a null.
     /// </summary>
     public record ContestFinalized(
         Guid ContestId,
@@ -45,6 +50,8 @@ namespace SportsData.Core.Eventing.Events.Contests
         Guid? WinnerFranchiseSeasonId = null,
         Guid? SpreadWinnerFranchiseSeasonId = null,
         int? OverUnderResultRaw = null,
-        DateTime? CompletedUtc = null
+        DateTime? CompletedUtc = null,
+        Guid? AwayFranchiseSeasonId = null,
+        Guid? HomeFranchiseSeasonId = null
         ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);
 }

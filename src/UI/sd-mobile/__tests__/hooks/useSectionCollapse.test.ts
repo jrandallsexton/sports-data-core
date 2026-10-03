@@ -122,4 +122,31 @@ describe('useSectionCollapse', () => {
     await waitFor(() => expect(mockedStorage.getItem).toHaveBeenCalled());
     expect(result.current.collapsed).toBe(false);
   });
+  it('starts collapsed when the section opts in and nothing has been stored', async () => {
+    // Stacked stats categories are a long index; they open folded and the
+    // reader drills in. The default holds only until the first toggle.
+    const { result } = renderHook(() => useSectionCollapse('stats.defensive', true));
+
+    await waitFor(() => expect(mockedStorage.getItem).toHaveBeenCalled());
+    expect(result.current.collapsed).toBe(true);
+  });
+
+  it('lets a stored choice override the collapsed default', async () => {
+    mockedStorage.getItem.mockResolvedValue('false');
+
+    const { result } = renderHook(() => useSectionCollapse('stats.defensive', true));
+
+    await waitFor(() => expect(mockedStorage.getItem).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.collapsed).toBe(false));
+  });
+
+  it('toggles a collapsed-by-default section open and persists that', async () => {
+    const { result } = renderHook(() => useSectionCollapse('stats.defensive', true));
+    await waitFor(() => expect(mockedStorage.getItem).toHaveBeenCalled());
+
+    act(() => result.current.toggle());
+
+    expect(result.current.collapsed).toBe(false);
+    expect(mockedStorage.setItem).toHaveBeenCalledWith('section-collapsed:stats.defensive', 'false');
+  });
 });

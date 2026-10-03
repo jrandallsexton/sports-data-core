@@ -6,6 +6,17 @@ trigger:
     include:
       - 'src/SportsData.JobsDashboard/**'
       - 'src/SportsData.Core/**'
+      # The dashboard compiles these services in (ProjectReferences) to
+      # resolve their Hangfire job types. Path filters don't follow
+      # ProjectReferences, so without these a moved/renamed job type in a
+      # service never rebuilds the dashboard and its pages show
+      # "Could not resolve type" (the VSA moves in #807-#809).
+      # Post-merge only: deliberately NOT in the pr: block below, so service
+      # PRs don't queue a full-solution dashboard build on the agent.
+      - 'src/SportsData.Api/**'
+      - 'src/SportsData.Producer/**'
+      - 'src/SportsData.Provider/**'
+      - 'src/SportsData.Notification/**'
       - 'src/DockerfileJobsDashboard'
       - 'sports-data.sln'
 

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 

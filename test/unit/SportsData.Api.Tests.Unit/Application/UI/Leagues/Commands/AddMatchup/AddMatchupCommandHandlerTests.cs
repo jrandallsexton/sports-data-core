@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -312,6 +313,10 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         var createdMatchup = await DataContext.PickemGroupMatchups
             .FirstOrDefaultAsync(m => m.Id == result.Value);
         createdMatchup.Should().NotBeNull();
+
+        // The commissioner is about to look for it; the cached week must not hide it.
+        Mocker.GetMock<ILeagueWeekMatchupsCache>()
+            .Verify(x => x.RemoveAsync(league.Id, createdMatchup!.SeasonWeek), Times.Once);
     }
 
     #region Helper Methods

@@ -28,6 +28,14 @@ public interface ILeagueWeekMatchupsCache
     /// A no-op while any contest in the week is live.
     /// </summary>
     Task SetAsync(Guid leagueId, int week, LeagueWeekMatchupsDto dto);
+
+    /// <summary>
+    /// Drops the entry for a league-week. Call after anything that changes the
+    /// week's slate (matchup generation, refresh, manual add) so the next read
+    /// rebuilds it instead of serving the pre-change payload for the rest of
+    /// its TTL.
+    /// </summary>
+    Task RemoveAsync(Guid leagueId, int week);
 }
 
 /// <inheritdoc />
@@ -131,6 +139,25 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
         }
     }
 
+    public async Task RemoveAsync(Guid leagueId, int week)
+    {
+        try
+        {
+            await _cache.RemoveAsync(BuildKey(leagueId, week));
+        }
+        catch (Exception ex)
+        {
+            // Same fail-open stance as the read and write sides: the slate change that
+            // triggered this eviction is already committed, and a Redis hiccup must not
+            // fault it. Worst case the old entry lives out its TTL.
+            _logger.LogWarning(
+                ex,
+                "League week matchups cache eviction failed; the entry will expire on its own. leagueId={LeagueId}, week={Week}",
+                leagueId,
+                week);
+        }
+    }
+
     /// <summary>
     /// Key is league + week only.
     /// </summary>
@@ -177,8 +204,12 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
     /// </remarks>
     private TimeSpan? ResolveTtl(LeagueWeekMatchupsDto dto)
     {
+        // An empty slate is the one payload that is about to change: the week has
+        // just been created, wiped for regeneration, or not generated yet. Caching
+        // it pinned "no matchups" for five minutes after a regeneration on
+        // 2026-09-14. Empty is also the cheapest response to rebuild.
         if (dto.Matchups.Count == 0)
-            return PregameTtl;
+            return null;
 
         var statuses = dto.Matchups.Select(m => m.Status).ToList();
 

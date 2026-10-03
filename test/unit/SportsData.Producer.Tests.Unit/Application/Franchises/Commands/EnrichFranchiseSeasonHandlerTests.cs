@@ -442,6 +442,46 @@ public class EnrichFranchiseSeasonHandlerTests :
     }
 
     [Fact]
+    public async Task Process_PublishedEvent_NamesEveryContestForTheTeam_PlayedOrNot()
+    {
+        // The API's league cards show this team's record on games NOT yet
+        // played; the event must name those too, or the consumer cannot find
+        // the rows to correct. Finalized-only would miss exactly the cards
+        // that matter this week.
+        var eventBus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2024;
+        var franchise = CreateFranchise();
+        var franchiseSeason = CreateFranchiseSeason(franchise.Id, seasonYear);
+        var opponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear);
+        await FootballDataContext.Franchises.AddAsync(franchise);
+        await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        await FootballDataContext.FranchiseSeasons.AddAsync(opponent);
+
+        var played = CreateContest(franchiseSeason.Id, opponent.Id, seasonYear, 21, 14, franchiseSeason.Id);
+        var upcoming = CreateContest(opponent.Id, franchiseSeason.Id, seasonYear, 0, 0, null);
+        upcoming.FinalizedUtc = null;
+        var unrelated = CreateContest(opponent.Id, Guid.NewGuid(), seasonYear, 0, 0, null);
+        unrelated.FinalizedUtc = null;
+        await FootballDataContext.Contests.AddRangeAsync(played, upcoming, unrelated);
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(franchiseSeason.Id, seasonYear, Guid.NewGuid()));
+
+        eventBus.Verify(
+            x => x.Publish(
+                It.Is<FranchiseSeasonEnrichmentCompleted>(e =>
+                    e.ContestIds != null &&
+                    e.ContestIds.Count == 2 &&
+                    e.ContestIds.Contains(played.Id) &&
+                    e.ContestIds.Contains(upcoming.Id) &&
+                    !e.ContestIds.Contains(unrelated.Id)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task Process_WhenNoContests_SetsRecordToZero()
     {
         // Arrange

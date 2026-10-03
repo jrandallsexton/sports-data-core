@@ -18,11 +18,16 @@ public interface ISyntheticPickService
     /// <param name="syntheticPickStyle">The pick style to apply (e.g., "moderate", "conservative", "aggressive")</param>
     /// <param name="seasonWeekNumber">The week number to generate picks for</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task GenerateMetricBasedPicksForSynthetic(
+    /// <summary>
+    /// Returns the contest ids this call actually wrote a pick for, so the
+    /// caller can enqueue scoring once per contest rather than once per
+    /// (bot x league).
+    /// </summary>
+    Task<IReadOnlySet<Guid>> GenerateMetricBasedPicksForSynthetic(
         Guid pickemGroupId,
         PickType pickemGroupPickType,
         Guid syntheticId,
-        string syntheticPickStyle,
+        string? syntheticPickStyle,
         int seasonWeekNumber,
         CancellationToken cancellationToken = default);
 }

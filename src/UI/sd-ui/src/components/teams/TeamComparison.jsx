@@ -230,7 +230,7 @@ export default function TeamComparison({
                     </span>
                   )}
                   <span>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:
+                    {statisticsA[cat]?.[0]?.categoryDisplayName ?? cat.charAt(0).toUpperCase() + cat.slice(1)} ({favoredA}:
                     {favoredB})
                   </span>
                 </div>

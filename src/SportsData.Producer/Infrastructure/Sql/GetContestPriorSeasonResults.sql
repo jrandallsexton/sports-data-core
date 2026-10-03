@@ -31,6 +31,9 @@ CROSS JOIN LATERAL (
         c."EventNote" AS "Note",
         fHome."DisplayName" AS "HomeTeam",
         fAway."DisplayName" AS "AwayTeam",
+        -- Display-only short names; Winner/SpreadWinner stay on DisplayName (identity).
+        fHome."DisplayNameShort" AS "HomeTeamShort",
+        fAway."DisplayNameShort" AS "AwayTeamShort",
         c."HomeScore",
         c."AwayScore",
         CASE

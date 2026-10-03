@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
@@ -29,6 +30,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public Guid? MatchupPreviewId { get; set; }
 
         public MatchupPreview? MatchupPreview { get; set; }
+
+        /// <summary>
+        /// Column width for <see cref="PromptVersion"/>, which records the
+        /// generating Prompt's Name on every capture. It therefore bounds
+        /// Prompt names too: CreatePromptCommandValidator enforces it, since
+        /// a longer name would be accepted at creation and then fail every
+        /// capture write.
+        /// </summary>
+        public const int PromptVersionMaxLength = 50;
 
         public required string PromptVersion { get; set; }
 
@@ -89,6 +99,23 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// <summary>Parsed ATS pick (FranchiseSeasonId); null when absent or unparsed.</summary>
         public Guid? PredictedSpreadWinnerId { get; set; }
 
+        // Same names as the MatchupPreview columns they mirror.
+
+        /// <summary>The model's predicted away score (as MatchupPreview.AwayScore); null when the response did not parse.</summary>
+        public int? AwayScore { get; set; }
+
+        /// <summary>The model's predicted home score (as MatchupPreview.HomeScore); null when the response did not parse.</summary>
+        public int? HomeScore { get; set; }
+
+        /// <summary>
+        /// The model's over/under pick, mapped the same way as
+        /// MatchupPreview.OverUnderPrediction: 0 = None (no line; prompt rule
+        /// 18), 1 = Over, 2 = Under. Null here when the response did not parse
+        /// or carried a value outside that set (the preview column, which is
+        /// non-nullable, stores None in that case).
+        /// </summary>
+        public OverUnderPrediction? OverUnderPrediction { get; set; }
+
         /// <summary>Actual prompt tokens reported by the transport (EstTokens is the pre-call estimate).</summary>
         public int? PromptTokens { get; set; }
 
@@ -114,7 +141,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasConversion<int>()
                     .IsRequired();
 
-                builder.Property(x => x.PromptVersion).HasMaxLength(50);
+                builder.Property(x => x.PromptVersion).HasMaxLength(PromptVersionMaxLength);
+
+                // Stored as int, same as MatchupPreview.OverUnderPrediction.
+                builder.Property(x => x.OverUnderPrediction)
+                    .HasConversion<int?>();
 
                 builder.Property(x => x.PayloadJson)
                     .HasColumnType("jsonb")

@@ -128,7 +128,7 @@ awareness anywhere in that path. Scoping the poller does not scope the cascade.
 
 ## Defect D — SignalR broadcasts every play to every client
 
-`SportsData.Api/Application/Events/FootballPlayCompletedHandler.cs:38`:
+`SportsData.Api/Application/Plays/Consumers/FootballPlayCompletedConsumer.cs:38`:
 
 ```csharp
 await _hubContext.Clients

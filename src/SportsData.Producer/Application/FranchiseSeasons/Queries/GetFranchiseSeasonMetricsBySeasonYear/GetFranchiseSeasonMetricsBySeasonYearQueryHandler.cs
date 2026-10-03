@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
 
@@ -46,7 +45,8 @@ public class GetFranchiseSeasonMetricsBySeasonYearQueryHandler : IGetFranchiseSe
 
         var dtos = metrics.Select(fsm => new FranchiseSeasonMetricsDto()
         {
-            Conference = fsm.FranchiseSeason.GroupSeason?.Slug,
+            Conference = fsm.FranchiseSeason.GroupSeason?.ShortName,
+            ConferenceParent = DeriveConferenceParentFromGroupSeasonMap(fsm.FranchiseSeason.GroupSeasonMap),
             ExplosiveRate = fsm.ExplosiveRate,
             FgPctShrunk = fsm.FgPctShrunk,
             FieldPosDiff = fsm.FieldPosDiff,
@@ -95,5 +95,41 @@ public class GetFranchiseSeasonMetricsBySeasonYearQueryHandler : IGetFranchiseSe
             dtos.Count);
 
         return new Success<List<FranchiseSeasonMetricsDto>>(dtos);
+    }
+
+    private static string DeriveConferenceParentFromGroupSeasonMap(string? groupSeasonMap)
+    {
+        if (string.IsNullOrEmpty(groupSeasonMap))
+        {
+            return string.Empty;
+        }
+
+        if (groupSeasonMap.Contains("fbs"))
+        {
+            return "FBS";
+        }
+
+        if (groupSeasonMap.Contains("fcs"))
+        {
+            return "FCS";
+        }
+
+        // "diii" before "dii": every DIII map also contains "dii"
+        if (groupSeasonMap.Contains("diii"))
+        {
+            return "DIII";
+        }
+
+        if (groupSeasonMap.Contains("dii"))
+        {
+            return "DII";
+        }
+
+        if (groupSeasonMap.Contains("naia"))
+        {
+            return "NAIA";
+        }
+
+        return string.Empty;
     }
 }

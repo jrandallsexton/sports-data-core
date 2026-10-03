@@ -506,72 +506,148 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
 
     #region Error Handling Tests
 
+    /// <summary>
+    /// A startup fetch that never succeeds must THROW, so Hangfire re-queues the
+    /// job onto a healthier window.
+    /// </summary>
+    /// <remarks>
+    /// The two tests replaced here asserted the opposite - "should not throw" -
+    /// and that encoded the 2026-09-13 outage. A 15-minute internet cut killed a
+    /// healthy stream's RETRY rather than the stream: run 1 exhausted its ten
+    /// status polls and threw, and was correctly re-queued; run 2 landed inside
+    /// the same outage, failed its very first fetch, marked the stream Failed and
+    /// RETURNED - which Hangfire reads as a successful job. The stream stayed
+    /// dead for the rest of the game and the matchup card sat on the first
+    /// quarter long after the network came back.
+    /// </remarks>
     [Fact]
-    public async Task ExecuteAsync_HandlesNullStatusGracefully()
+    public async Task ExecuteAsync_Throws_WhenInitialStatusFetchNeverSucceeds()
     {
-        // Arrange
-        var (contest, competition, stream) = await CreateTestGameAsync();
+        var (contest, competition, _) = await CreateTestGameAsync();
 
         var httpFactory = CreateMockHttpClientFactory(
+            ("401628380/competitions/401628380", HttpStatusCode.OK, COMPETITION_JSON),
             ("status", HttpStatusCode.InternalServerError, null)
         );
         Mocker.Use(httpFactory.Object);
 
-        var command = new StreamCompetitionCommand
-        {
-            CompetitionId = competition.Id,
-            ContestId = contest.Id,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2025,
-            DataProvider = SourceDataProvider.Espn,
-            CorrelationId = Guid.NewGuid()
-        };
+        var command = BuildCommand(contest, competition);
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        var sut = Mocker.CreateInstance<FootballCompetitionStreamer>();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-
-        // Act & Assert - should not throw
         var act = async () => await sut.ExecuteAsync(command, cts.Token);
-        await act.Should().NotThrowAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>(
+            "a job that returns silently is a job Hangfire will never retry");
+
+        var updated = await FootballDataContext.CompetitionStreams
+            .FirstAsync(x => x.CompetitionId == competition.Id);
+        updated.Status.Should().Be(CompetitionStreamStatus.Failed,
+            "the outer catch records why before rethrowing");
     }
 
     [Fact]
-    public async Task ExecuteAsync_HandlesHttpExceptions_WithoutCrashing()
+    public async Task ExecuteAsync_Throws_WhenEveryHttpCallFails()
     {
-        // Arrange
-        var (contest, competition, stream) = await CreateTestGameAsync();
+        var (contest, competition, _) = await CreateTestGameAsync();
 
+        // The exact shape of the outage: every connect attempt fails.
         var handlerMock = new Mock<HttpMessageHandler>();
         handlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Network error"));
+            .ThrowsAsync(new HttpRequestException("Resource temporarily unavailable"));
 
         var httpClient = new HttpClient(handlerMock.Object);
         var factory = new Mock<IHttpClientFactory>();
         factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
-
         Mocker.Use(factory.Object);
 
-        var command = new StreamCompetitionCommand
-        {
-            CompetitionId = competition.Id,
-            ContestId = contest.Id,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2025,
-            DataProvider = SourceDataProvider.Espn,
-            CorrelationId = Guid.NewGuid()
-        };
+        var command = BuildCommand(contest, competition);
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        var sut = Mocker.CreateInstance<FootballCompetitionStreamer>();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-
-        // Act & Assert - should not throw
         var act = async () => await sut.ExecuteAsync(command, cts.Token);
-        await act.Should().NotThrowAsync();
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
+
+    [Fact]
+    public async Task ExecuteAsync_Recovers_WhenAStartupFetchFailsThenSucceeds()
+    {
+        var (contest, competition, _) = await CreateTestGameAsync();
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.RequestUri!.ToString().Contains("401628380/competitions/401628380")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(COMPETITION_JSON)
+            });
+
+        // First status call fails - the transient blip - then it recovers.
+        var statusCalls = 0;
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.RequestUri!.ToString().Contains("status")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                statusCalls++;
+                return statusCalls == 1
+                    ? new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, Content = new StringContent(string.Empty) }
+                    : new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(FINAL_STATUS_JSON) };
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        var factory = new Mock<IHttpClientFactory>();
+        factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        Mocker.Use(factory.Object);
+
+        var command = BuildCommand(contest, competition);
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+        var act = async () => await sut.ExecuteAsync(command, cts.Token);
+
+        await act.Should().NotThrowAsync(
+            "one transient failure must not cost a stream its whole game");
+
+        // Pins that the STATUS retry is what saved it. Without this the test
+        // could pass on some other path and still go green if the status retry
+        // were removed. (The competition matcher cannot absorb these: the
+        // competition URL does not contain "status" — verified — so only the
+        // status URI matches both setups, and Moq takes the last.)
+        statusCalls.Should().Be(2, "the first status call failed and the retry succeeded");
+
+        var updated = await FootballDataContext.CompetitionStreams
+            .FirstAsync(x => x.CompetitionId == competition.Id);
+        updated.Status.Should().Be(CompetitionStreamStatus.Completed,
+            "the retry read STATUS_FINAL, so the stream closes out normally");
+    }
+
+    private const string COMPETITION_JSON = "{ \"$ref\": \"http://test.com/competition\" }";
+
+    private const string FINAL_STATUS_JSON =
+        "{ \"type\": { \"name\": \"STATUS_FINAL\" }, \"period\": 4, \"displayClock\": \"0:00\" }";
+
+    private static StreamCompetitionCommand BuildCommand(ContestBase contest, CompetitionBase competition) => new()
+    {
+        CompetitionId = competition.Id,
+        ContestId = contest.Id,
+        Sport = Sport.FootballNcaa,
+        SeasonYear = 2025,
+        DataProvider = SourceDataProvider.Espn,
+        CorrelationId = Guid.NewGuid()
+    };
 
     #endregion
 
@@ -839,6 +915,10 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         public IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds, bool RequiresParentId)>
             InvokeGetPollingTargets(EspnFootballEventCompetitionDto dto)
             => GetPollingTargets(dto);
+
+        /// Near-zero so the startup-retry tests exercise all ten attempts in
+        /// milliseconds rather than the production 20s cadence.
+        protected override TimeSpan StartupFetchRetryDelay => TimeSpan.FromMilliseconds(1);
     }
 
     private static EspnFootballEventCompetitionDto BuildFullyLinkedDto() => new()

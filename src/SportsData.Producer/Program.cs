@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Consumers;
+using SportsData.Producer.Application.Contests.Consumers;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Events;
 using SportsData.Producer.Application.Images.Handlers;
+using SportsData.Producer.Application.LoadTest.Consumers;
+using SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 using SportsData.Producer.Config;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Baseball;
@@ -20,6 +22,7 @@ using SportsData.Producer.Infrastructure.Data.Golf;
 using SportsData.Producer.Mapping;
 
 using System.Reflection;
+using SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
 
 namespace SportsData.Producer;
 
@@ -179,6 +182,7 @@ public class Program
             {
                 typeof(CompetitorScoreUpdatedConsumer),
                 typeof(ContestCompletedHandler),
+                typeof(ContestFinalizedHandler),
                 typeof(ContestStartTimeUpdatedConsumer),
                 typeof(DocumentCreatedHandler),
                 // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay

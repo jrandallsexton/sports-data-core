@@ -1,0 +1,30 @@
+info:
+  name: picks-advice
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  # StatBot advisor — docs/features/statbot-advisor.md
+  # level: Prevent | GoalLine | QbDraw | HailMary (or 1..4); omit for StatBot's recommendation.
+  url: "{{baseUrlApi}}/ui/picks/{{leagueId}}/week/{{week}}/advice?level="
+  headers:
+    - name: Authorization
+      value: "Bearer {{firebaseToken}}"
+      disabled: true
+  auth:
+    type: bearer
+    token: "{{firebaseToken}}"
+
+vars:
+  pre-request:
+    - name: leagueId
+      value: ""
+    - name: week
+      value: "4"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

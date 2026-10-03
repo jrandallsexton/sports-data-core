@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
 
 namespace SportsData.Api.Application.Franchises.Queries.GetFranchises;
 

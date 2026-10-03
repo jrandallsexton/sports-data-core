@@ -3,13 +3,17 @@ select * from public."Franchise" where "Slug" = 'lsu-tigers';
 
 select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc; -- c13b7c74-6892-3efa-2492-36ebf5220464 2025
 
+select * from public."FranchiseSeason" where "DisplayName" = 'Texas Tech Red Raiders';
+
 select * from public."FranchiseSeason"
 where "Id" not in (select distinct "FranchiseSeasonId" from public."FranchiseSeasonRecord")
 and "SeasonYear" != 2026
 and ("GroupSeasonMap" like '%fbs%' or "GroupSeasonMap" like '%fcs%')
 order by "SeasonYear" desc;
 
-select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = 'eb08cd51-dee2-b457-6df0-9b4c36cdef85'; -- LSU 2009
+select * from public."FranchiseSeason" where "Id" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17';
+select * from public."FranchiseSeasonExternalId" where "FranchiseSeasonId" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17';
+select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = 'eadf98a6-6fa3-5045-4dfe-34f931ce2b17'; -- LSU 2009
 
 select count(*) from public."FranchiseSeasonRecord" -- 34,250, 36,598
 
@@ -49,6 +53,9 @@ order by fs."SeasonYear" desc;
 
 
 select * from public."FranchiseSeasonMetric" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464';
+
+select * from public."FranchiseSeasonStatisticCategory" limit 10;
+
 select * from public."FranchiseSeason" where "Id" = 'c13b7c74-6892-3efa-2492-36ebf5220464';
 
 select * from public."FranchiseSeasonRecord" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7';

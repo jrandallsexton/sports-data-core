@@ -1,0 +1,27 @@
+info:
+  name: notifications-backfill-matchups
+  type: http
+  seq: 38
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/athletes/seasonYear/2025/statistics/source"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "seasonType": 3
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

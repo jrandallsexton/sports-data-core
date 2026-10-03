@@ -37,7 +37,9 @@ blocks fetched by the processor:
   PenaltyYardsPerPlay, PtsScored/Allowed Min/Max/Avg, GamesPlayed.
   **Both-or-nothing rule:** if either team's metrics are missing, both are
   nulled (asymmetric analytics would bias the model toward the covered
-  team).
+  team). "Missing" includes a row with GamesPlayed > 0 and every core rate
+  at zero, the shape the calculator writes when the CompetitionMetric rows
+  hold no play data (297 of 580 NCAA 2026 rows on 2026-09-24).
 - **CompetitionResults** (`FranchiseSeasonCompetitionResultDto[]`): the
   team's games this season — date, opponents (short/slug/rank), spread,
   O/U, final scores, winner, spread-winner, O/U result.

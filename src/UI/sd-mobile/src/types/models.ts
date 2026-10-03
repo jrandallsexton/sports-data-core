@@ -51,7 +51,8 @@ export interface Matchup {
 
   // Away team
   away: string;                 // full name
-  awayShort: string;            // abbreviation
+  awayShort: string;            // abbreviation ("MIA")
+  awayShortName?: string | null; // Franchise.DisplayNameShort ("Miami")
   awaySlug: string;
   awayFranchiseSeasonId: string;
   awayLogoUri?: string | null;
@@ -66,7 +67,8 @@ export interface Matchup {
 
   // Home team
   home: string;                 // full name
-  homeShort: string;            // abbreviation
+  homeShort: string;            // abbreviation ("WAKE")
+  homeShortName?: string | null; // Franchise.DisplayNameShort ("Wake Forest")
   homeSlug: string;
   homeFranchiseSeasonId: string;
   homeLogoUri?: string | null;
@@ -197,6 +199,73 @@ export interface ContestPrediction {
   modelVersion: string;
 }
 
+// ─── StatBot advisor (docs/features/statbot-advisor.md) ─────────────────────
+
+/** Risk level. Working names; the count is the contract. Serialized as strings. */
+export type AdvisorLevel = 'Prevent' | 'GoalLine' | 'QbDraw' | 'HailMary';
+
+export type AdvisedPickKind = 'Lock' | 'Lean' | 'Flip' | 'Locked' | 'NoPrediction';
+
+/** Matches AdvisedPickDto on the API. */
+export interface AdvisedPick {
+  contestId: string;
+  headline?: string | null;
+  kind: AdvisedPickKind;
+  franchiseSeasonId?: string | null;
+  confidencePoints?: number | null;
+  /** deetsMeter probability for the ADVISED side (a flip reads below 0.5). */
+  modelProbability?: number | null;
+  /** Whether StatBot's preview named the deetsMeter's side. Null without a preview. */
+  previewAgrees?: boolean | null;
+  isCoinFlip: boolean;
+  differsFromExisting: boolean;
+}
+
+/** Matches PickAdviceAnalysisDto. Standings and performance only — never other members' picks. */
+export interface PickAdviceAnalysis {
+  rank?: number | null;
+  lastWeekRank?: number | null;
+  memberCount: number;
+  totalPoints: number;
+  weeklyAverage: number;
+  pointsPerGame: number;
+  pickAccuracy: number;
+  leaderName?: string | null;
+  leaderTotalPoints: number;
+  leaderWeeklyAverage: number;
+  leaderPointsPerGame: number;
+  deficit: number;
+  /** From the season calendar; null when it couldn't be read (copy omits it). */
+  regularSeasonWeeksLeft?: number | null;
+  /** The only game count that is a fact; future slates are never forecast. */
+  gamesThisWeek: number;
+  maxPointsThisWeek: number;
+  leaderExpectedThisWeek: number;
+  canCloseGapThisWeek: boolean;
+  bestCaseRankThisWeek?: number | null;
+  nextAheadName?: string | null;
+  nextAheadRank?: number | null;
+  pointsBehindNextAhead?: number | null;
+  nextAheadExpectedThisWeek?: number | null;
+  statBot?: { rank: number; totalPoints: number; weeklyAverage: number; pointsPerGame: number } | null;
+}
+
+/** Matches PickAdviceDto. Read-only; the client applies through POST /ui/picks. */
+export interface PickAdvice {
+  leagueId: string;
+  week: number;
+  pickType: PickType;
+  useConfidencePoints: boolean;
+  recommendedLevel: AdvisorLevel;
+  level: AdvisorLevel;
+  analysis: PickAdviceAnalysis;
+  picks: AdvisedPick[];
+  flipCount: number;
+  coinFlipCount: number;
+  lockedCount: number;
+  noPredictionCount: number;
+}
+
 // Response shape from GET /ui/leagues/{id}/matchups/{week}
 export interface LeagueMatchupsResponse {
   seasonYear: number;
@@ -260,6 +329,12 @@ export interface UserPicksResult {
    * for league deactivation, which lags the end date by ~7 days.
    */
   pendingCount: number;
+  /**
+   * Week net of a simulated 1-unit bet on each pick at the closing price
+   * (moneyline in SU leagues, spread price in ATS). Null until a pick carries
+   * a value. Odds-derived: gate the display with shouldShowGambling.
+   */
+  betPoints: number | null;
 }
 
 /** Matches UserPickDto from GET /ui/picks/{groupId}/week/{week} */
@@ -372,6 +447,32 @@ export interface PickWidgetResponse {
   items: PickWidgetItem[];
 }
 
+// ─── Pick accuracy chart ────────────────────────────────────────────────────
+
+/** One graded week for one league (API: PickAccuracyByWeekDto.WeeklyAccuracyDto). */
+export interface WeeklyAccuracy {
+  week: number;
+  correctPicks: number;
+  totalPicks: number;
+  /** Percent, 0-100, already rounded to one decimal by the API. */
+  accuracyPercent: number;
+}
+
+/**
+ * One league's accuracy-by-week for the current user. Response element of
+ * GET /ui/picks/chart. The endpoint has NO season filter: it returns every
+ * league the user has ever belonged to, and `week` is ambiguous across
+ * seasons, so callers intersect with the active leagues from /user/me.
+ */
+export interface PickAccuracyByWeek {
+  userId: string;
+  userName: string;
+  leagueId: string;
+  leagueName: string;
+  weeklyAccuracy: WeeklyAccuracy[];
+  overallAccuracyPercent: number;
+}
+
 // ─── AI Preview ─────────────────────────────────────────────────────────────
 
 /** Response from GET /ui/matchup/{contestId}/preview */
@@ -398,6 +499,8 @@ export interface TeamStatEntry {
   statisticKey?: string | null;
   /** Human display name (e.g. "Assisted Tackles") — what the web renders. */
   statisticValue?: string | null;
+  /** Human label for the entry's category ("Defensive"); the dictionary key stays the slug. */
+  categoryDisplayName?: string | null;
   /** National rank for this stat; only meaningful when > 1. */
   rank?: number | null;
   /** Lower-is-better stats (turnovers, sacks allowed, ...) invert "favored". */
@@ -423,6 +526,9 @@ export interface ContestHistoryGame {
   note?: string | null;
   homeTeam: string;
   awayTeam: string;
+  /** Display-only short names; identity checks stay on homeTeam/awayTeam. */
+  homeTeamShort?: string | null;
+  awayTeamShort?: string | null;
   homeScore?: number | null;
   awayScore?: number | null;
   winner?: string | null;
@@ -461,6 +567,8 @@ export interface ContestMarginInstance {
   gameDate: string;
   seasonYear: number;
   opponent: string;
+  /** Display-only short name for the opponent; null when unsourced. */
+  opponentShort?: string | null;
   teamScore: number;
   opponentScore: number;
   /** Opponent's overall W-L that season ("7-5"); null when unsourced. */
@@ -484,6 +592,8 @@ export interface ContestAtsBucketInstance {
   gameDate: string;
   seasonYear: number;
   opponent: string;
+  /** Display-only short name for the opponent; null when unsourced. */
+  opponentShort?: string | null;
   teamScore: number;
   opponentScore: number;
   /** Closing spread, TEAM-relative (negative = this team was favored). */

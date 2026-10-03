@@ -10,6 +10,7 @@ using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -20,9 +21,7 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Jobs;
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
-using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticleById;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
@@ -30,7 +29,6 @@ using SportsData.Api.Application.Franchises.Queries.GetFranchises;
 using SportsData.Api.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
-using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Contests.Queries.GetContestById;
 using SportsData.Api.Application.Contests.Queries.GetContestHistory;
 using SportsData.Api.Application.Venues.Queries.GetVenues;
@@ -108,6 +106,20 @@ using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
+using SportsData.Api.Application.Contests.Jobs.ContestRecap;
+using SportsData.Api.Application.Franchises.Seasons.Queries.GetSeasonContests;
+using SportsData.Api.Application.Leagues.Jobs;
+using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
+using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
+using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
+using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
+using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
+using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 namespace SportsData.Api.DependencyInjection
 {
@@ -182,9 +194,21 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetLeagueScoresByWeekQueryHandler, GetLeagueScoresByWeekQueryHandler>();
             services.AddScoped<IGetLeagueWeekMatchupsQueryHandler, GetLeagueWeekMatchupsQueryHandler>();
             services.AddScoped<ILeagueWeekMatchupsCache, LeagueWeekMatchupsCache>();
+            services.AddScoped<ILeagueWeekMatchupsCacheInvalidator, LeagueWeekMatchupsCacheInvalidator>();
             services.AddScoped<IGetLeagueWeekOverviewQueryHandler, GetLeagueWeekOverviewQueryHandler>();
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
+
+            // StatBot Advisor (docs/features/statbot-advisor.md)
+            services.AddScoped<
+                Application.UI.Picks.Advisor.Planner.IPickAdvisorPlanner,
+                Application.UI.Picks.Advisor.Planner.PickAdvisorPlanner>();
+            services.AddScoped<
+                Application.UI.Picks.Advisor.IPickAdviceService,
+                Application.UI.Picks.Advisor.PickAdviceService>();
+            services.AddScoped<
+                Application.UI.Picks.Advisor.Queries.GetPickAdvice.IGetPickAdviceQueryHandler,
+                Application.UI.Picks.Advisor.Queries.GetPickAdvice.GetPickAdviceQueryHandler>();
 
             // Pick Import (cross-league)
             services.AddScoped<
@@ -210,6 +234,20 @@ namespace SportsData.Api.DependencyInjection
 
             // Admin Commands
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
+            services.AddScoped<
+                Application.Admin.Commands.BackfillMatchupOddsPricing.IBackfillMatchupOddsPricingCommandHandler,
+                Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingCommandHandler>();
+            // Hangfire resolves the per-contest job by interface.
+            services.AddScoped<
+                Application.Admin.Commands.BackfillMatchupOddsPricing.IApplyMatchupOddsPricing,
+                Application.Admin.Commands.BackfillMatchupOddsPricing.ApplyMatchupOddsPricingHandler>();
+            services.AddScoped<
+                Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler,
+                Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommandHandler>();
+            // Hangfire resolves the per-contest job by interface.
+            services.AddScoped<
+                Application.Admin.Commands.BackfillUserPickBetPoints.IApplyUserPickBetPoints,
+                Application.Admin.Commands.BackfillUserPickBetPoints.ApplyUserPickBetPointsHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
             services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
             services.AddScoped<IReenrichContestCommandHandler, ReenrichContestCommandHandler>();
@@ -260,6 +298,18 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetFranchiseByIdQueryHandler, GetFranchiseByIdQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonsQueryHandler, GetFranchiseSeasonsQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonByIdQueryHandler, GetFranchiseSeasonByIdQueryHandler>();
+            services.AddScoped<
+                Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.IEnrichFranchiseSeasonCommandHandler,
+                Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.EnrichFranchiseSeasonCommandHandler>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.EnrichFranchiseSeasonCommand>,
+                Application.Franchises.Seasons.Commands.EnrichFranchiseSeason.EnrichFranchiseSeasonCommandValidator>();
+            services.AddScoped<
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.ISourceFranchiseSeasonCommandHandler,
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommandHandler>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommand>,
+                Application.Franchises.Seasons.Commands.SourceFranchiseSeason.SourceFranchiseSeasonCommandValidator>();
             services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
             services.AddScoped<IGetContestHistoryQueryHandler, GetContestHistoryQueryHandler>();
@@ -321,6 +371,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IProvideCanonicalAdminData, CanonicalAdminDataProvider>();
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
+            services.AddScoped<IAuditMatchupRecords, MatchupRecordAuditProcessor>();
+            services.AddScoped<IApplyMatchupOdds, MatchupOddsProcessor>();
+            services.AddScoped<IRefreshWeekMatchupsCommandHandler, RefreshWeekMatchupsCommandHandler>();
+            services.AddScoped<IValidator<RefreshWeekMatchupsCommand>, RefreshWeekMatchupsCommandValidator>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
             services.AddScoped<IScorePicks, PickScoringProcessor>();
             services.AddScoped<IInvalidatePickAudits, PickAuditInvalidator>();
@@ -418,6 +472,8 @@ namespace SportsData.Api.DependencyInjection
             // Synthetic pick services (required by other services)
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
             services.AddScoped<ISyntheticPickService, SyntheticPickService>();
+            services.AddScoped<IStatBotPickWriter, StatBotPickWriter>();
+            services.AddScoped<IValidator<RefreshAiExistenceCommand>, RefreshAiExistenceCommandValidator>();
 
             // Rankings Queries
             services.AddScoped<IGetRankingsBySeasonYearQueryHandler, GetRankingsBySeasonYearQueryHandler>();
@@ -425,7 +481,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetRankingsByPollSeasonWeekIdQueryHandler, GetRankingsByPollSeasonWeekIdQueryHandler>();
             services.AddScoped<IGetPollRankingsByWeekQueryHandler, GetPollRankingsByWeekQueryHandler>();
 
-            services.AddScoped<IPreviewService, PreviewService>();
+            // Preview Commands
+            services.AddScoped<IApproveMatchupPreviewCommandHandler, ApproveMatchupPreviewCommandHandler>();
+            services.AddScoped<IRejectMatchupPreviewCommandHandler, RejectMatchupPreviewCommandHandler>();
 
             // Map Queries
             services.AddScoped<IGetMapMatchupsQueryHandler, GetMapMatchupsQueryHandler>();
@@ -503,13 +561,43 @@ namespace SportsData.Api.DependencyInjection
                 job => job.ExecuteAsync(Sport.FootballNfl),
                 "0 3 * * 3");
 
-            // Daily primary trigger. Can't be event-driven — matchups must
-            // be generated BEFORE games happen. Daily is sufficient since
-            // week boundaries move at most once per week per sport.
+            // Per-sport, and TIME ZONE AWARE — the rest of this file is bare
+            // UTC by convention, but both of these are anchored to a US
+            // broadcast clock and the NCAA season crosses the November DST
+            // boundary. A fixed UTC cron would land an hour off exactly when
+            // the season is still running.
+            //
+            // NCAA: Sunday 14:30 Eastern, just after the AP poll is released at
+            // 14:00. Running before the poll builds the slate from LAST week's
+            // rankings, and that is sticky: the refresh path adds newly-eligible
+            // matchups but never removes ones that fell out, because picks
+            // against them must survive. Week 3 of 2026 was generated that way
+            // and had to be deleted by hand (matchups, picks and previews).
+            //
+            // NFL: Tuesday 06:00 Eastern, which gives Monday Night Football
+            // time to finish, finalize and enrich before the next slate is cut.
+            //
+            // Neither is the only path to a slate. Mid-week league creation
+            // goes through PickemGroupCreated -> BootstrapLeagueMatchups, and a
+            // late poll re-triggers via SeasonPollWeekCreated.
+            var easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
             recurringJobManager.AddOrUpdate<MatchupScheduler>(
-                nameof(MatchupScheduler),
-                job => job.ExecuteAsync(),
-                Cron.Daily(6));
+                $"{nameof(MatchupScheduler)}-{Sport.FootballNcaa}",
+                job => job.ExecuteAsync(Sport.FootballNcaa),
+                "30 14 * * 0",
+                new RecurringJobOptions { TimeZone = easternTimeZone });
+
+            recurringJobManager.AddOrUpdate<MatchupScheduler>(
+                $"{nameof(MatchupScheduler)}-{Sport.FootballNfl}",
+                job => job.ExecuteAsync(Sport.FootballNfl),
+                "0 6 * * 2",
+                new RecurringJobOptions { TimeZone = easternTimeZone });
+
+            // The old sport-agnostic daily registration is gone. Hangfire keeps
+            // recurring jobs until they are explicitly removed, so the previous
+            // id would otherwise keep firing daily alongside the two above.
+            recurringJobManager.RemoveIfExists(nameof(MatchupScheduler));
 
             // Per-sport historical audit of previously-scored picks. Catches
             // (a) picks scored against a contest that later finalized to a

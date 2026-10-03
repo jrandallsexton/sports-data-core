@@ -8,6 +8,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -151,6 +152,7 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
         var listingUri = command.SourceUri;
 
         var addedAny = false;
+        var staged = new List<CompetitionOdds>();
         foreach (var item in wrapper.Items)
         {
             if (item.Provider?.Id is null)
@@ -221,6 +223,7 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
             }
 
             await _dataContext.CompetitionOdds.AddAsync(entity);
+            staged.Add(entity);
             addedAny = true;
 
             _logger.LogInformation(
@@ -235,6 +238,18 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 competition.Id);
             return;
         }
+
+        // Displayed-row snapshot, from the staged set: the wrapper replaces
+        // EVERY provider's row, so what was staged is the contest's full odds
+        // state. The first displayed provider present (ESPN Bet, else
+        // DraftKings) is the row the matchup cards read; none present, no
+        // snapshot. Old*/New* stay null here (see below): the snapshot is a
+        // separate field precisely so Notification's line-move check is not
+        // fed a spread with no prior value to compare against.
+        var displayedProviderId = OddsProviderPreference.SelectDisplayedProviderId(staged.Select(e => e.ProviderId));
+        var displayedOdds = displayedProviderId is null
+            ? null
+            : OddsProviderPreference.ToDisplayedSnapshot(staged.First(e => e.ProviderId == displayedProviderId));
 
         // --- Publish event ---
         // One event per wrapper-document arrival (analogous to one event per
@@ -260,7 +275,8 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                CausationId.Producer.EventDocumentProcessor));
+                CausationId.Producer.EventDocumentProcessor,
+                DisplayedOdds: displayedOdds));
         }
         else
         {
@@ -270,7 +286,8 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,
-                command.MessageId));
+                command.MessageId,
+                DisplayedOdds: displayedOdds));
         }
 
         try

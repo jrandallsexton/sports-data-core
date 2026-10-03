@@ -564,6 +564,9 @@ namespace SportsData.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("AwayScore")
+                        .HasColumnType("integer");
+
                     b.Property<int>("CharCount")
                         .HasColumnType("integer");
 
@@ -584,6 +587,9 @@ namespace SportsData.Api.Migrations
                         .HasColumnType("character varying(512)");
 
                     b.Property<int>("EstTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("HomeScore")
                         .HasColumnType("integer");
 
                     b.Property<long?>("LatencyMs")
@@ -607,6 +613,9 @@ namespace SportsData.Api.Migrations
 
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("OverUnderPrediction")
+                        .HasColumnType("integer");
 
                     b.Property<string>("PayloadJson")
                         .IsRequired()
@@ -1188,11 +1197,17 @@ namespace SportsData.Api.Migrations
                     b.Property<int>("AwayLosses")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("AwayMoneyLine")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("AwayRank")
                         .HasColumnType("integer");
 
                     b.Property<double?>("AwaySpread")
                         .HasPrecision(10, 2)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("AwaySpreadPrice")
                         .HasColumnType("double precision");
 
                     b.Property<int>("AwayTies")
@@ -1223,11 +1238,17 @@ namespace SportsData.Api.Migrations
                     b.Property<int>("HomeLosses")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("HomeMoneyLine")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("HomeRank")
                         .HasColumnType("integer");
 
                     b.Property<double?>("HomeSpread")
                         .HasPrecision(10, 2)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("HomeSpreadPrice")
                         .HasColumnType("double precision");
 
                     b.Property<int>("HomeTies")
@@ -1243,6 +1264,9 @@ namespace SportsData.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("OddsAsOfUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<double?>("OverOdds")
@@ -1359,8 +1383,20 @@ namespace SportsData.Api.Migrations
                     b.Property<Guid>("PickemGroupId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("PointsATS")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)");
+
                     b.Property<int?>("PointsAwarded")
                         .HasColumnType("integer");
+
+                    b.Property<decimal?>("PointsOU")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)");
+
+                    b.Property<decimal?>("PointsSU")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)");
 
                     b.Property<DateTime?>("ScoredAt")
                         .HasColumnType("timestamp with time zone");

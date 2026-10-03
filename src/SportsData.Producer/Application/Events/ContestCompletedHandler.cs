@@ -2,7 +2,7 @@ using MassTransit;
 
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
-using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 
 namespace SportsData.Producer.Application.Events
 {

@@ -9,6 +9,12 @@ import '@/src/lib/silenceKnownWarnings';
 // kept on its own line, above all other imports, for that reason.
 import '@/src/lib/sentry';
 
+// Release config guard. Throws at boot in a release bundle whose API base
+// points at localhost or a LAN address (the 2026-09-17 OTA outage). Must
+// come AFTER sentry so the throw is reported, and BEFORE anything that
+// makes a request. See src/lib/releaseConfig.ts.
+import '@/src/lib/releaseConfig';
+
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';

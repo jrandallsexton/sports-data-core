@@ -24,6 +24,9 @@ SELECT
          THEN fAway."DisplayName" ELSE fHome."DisplayName"
     END AS "Opponent",
     CASE WHEN fsHome."FranchiseId" = @FranchiseId
+         THEN fAway."DisplayNameShort" ELSE fHome."DisplayNameShort"
+    END AS "OpponentShort",
+    CASE WHEN fsHome."FranchiseId" = @FranchiseId
          THEN c."HomeScore" ELSE c."AwayScore"
     END AS "TeamScore",
     CASE WHEN fsHome."FranchiseId" = @FranchiseId

@@ -136,6 +136,9 @@ namespace SportsData.Provider.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("CronTimeZoneId")
+                        .HasColumnType("text");
+
                     b.Property<int>("DocumentType")
                         .HasColumnType("integer");
 

@@ -11,7 +11,13 @@ using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
-using SportsData.Producer.Application.Contests.Commands;
+using SportsData.Producer.Application.Contests.Commands.FinalizeContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
+using SportsData.Producer.Application.Contests.Commands.RefreshContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReplayBaseballContest;
+using SportsData.Producer.Application.Contests.Commands.ReplayFootballContest;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
@@ -503,6 +509,44 @@ namespace SportsData.Producer.Application.Contests
                 new Queries.Matchups.GetMatchupsByContestIds.GetMatchupsByContestIdsQuery(
                     request.ContestIds,
                     request.Direction),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Entering records for a batch of contests: the record each team
+        /// carried INTO the game, derived from prior finalized outcomes.
+        /// Serves the API's matchup-record audit, which cannot read this
+        /// database directly.
+        /// </summary>
+        [HttpPost("entering-records/by-ids")]
+        public async Task<ActionResult<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(
+            [FromBody] GetEnteringRecordsByContestIdsRequest request,
+            [FromServices] Queries.GetEnteringRecordsByContestIds.IGetEnteringRecordsByContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new Queries.GetEnteringRecordsByContestIds.GetEnteringRecordsByContestIdsQuery(
+                    request.ContestIds),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Current odds pricing for one contest: both teams' moneyline and
+        /// spread price, plus the over/under prices, from the same provider row
+        /// as the league matchup queries. Serves the API's PickemGroupMatchup
+        /// pricing backfill. 404 for an unknown contest; prices null when the
+        /// contest has no odds.
+        /// </summary>
+        [HttpGet("{contestId}/odds-pricing")]
+        public async Task<ActionResult<OddsPricingDto>> GetOddsPricingByContestId(
+            [FromRoute] Guid contestId,
+            [FromServices] Queries.GetOddsPricingByContestId.IGetOddsPricingByContestIdQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new Queries.GetOddsPricingByContestId.GetOddsPricingByContestIdQuery(contestId),
                 cancellationToken);
             return result.ToActionResult();
         }

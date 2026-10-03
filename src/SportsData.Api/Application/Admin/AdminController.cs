@@ -4,6 +4,7 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -18,10 +19,13 @@ using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Api.Application.Previews;
 using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Application.Scoring;
+using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
@@ -40,6 +44,7 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Processing;
+using SportsData.Api.Application.Previews.Jobs.Generation;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -698,12 +703,18 @@ namespace SportsData.Api.Application.Admin
                 Accepted(new { correlationId, sport = mode.ToString(), seasonYear }));
         }
 
+        /// <summary>
+        /// Ensure every synthetic is in every league and has picks for a week.
+        /// StatBot's picks are written as previews land (event handlers); this
+        /// is the catch-all sweep. <paramref name="week"/> defaults to the
+        /// current week; name a past week to backfill it.
+        /// </summary>
         [HttpPost]
         [Route("ai-refresh")]
-        public IActionResult RefreshAiExistence()
+        public IActionResult RefreshAiExistence([FromQuery] int? week = null)
         {
             var correlationId = Guid.NewGuid();
-            var command = new RefreshAiExistenceCommand { CorrelationId = correlationId };
+            var command = new RefreshAiExistenceCommand { CorrelationId = correlationId, Week = week };
             _backgroundJobProvider.Enqueue<IRefreshAiExistenceCommandHandler>(p => p.ExecuteAsync(command, CancellationToken.None));
             return Accepted(correlationId);
         }
@@ -1019,6 +1030,47 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Populates odds pricing (per-team moneyline and spread price, over/under
+        /// prices) on every PickemGroupMatchup: enqueues one background job per
+        /// distinct contest, each priced from its sport's Producer. Returns 202
+        /// with the correlation id and per-sport job counts. Writes only values
+        /// the Producer supplies (never erases); idempotent, safe to re-run.
+        /// Example: POST /admin/backfill-matchup-odds-pricing
+        /// </summary>
+        [HttpPost]
+        [Route("backfill-matchup-odds-pricing")]
+        public async Task<ActionResult<Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingResult>> BackfillMatchupOddsPricing(
+            [FromServices] Application.Admin.Commands.BackfillMatchupOddsPricing.IBackfillMatchupOddsPricingCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(
+                new Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingCommand(),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Computes the simulated $1 bet columns (PointsSU, PointsATS, PointsOU)
+        /// on every already-scored UserPick from its contest's finalized result
+        /// and its league matchup's prices: enqueues one background job per
+        /// distinct contest. IsCorrect and PointsAwarded are not touched.
+        /// Returns 202 with the correlation id and per-sport job counts.
+        /// Idempotent, safe to re-run.
+        /// Example: POST /admin/backfill-user-pick-bet-points
+        /// </summary>
+        [HttpPost]
+        [Route("backfill-user-pick-bet-points")]
+        public async Task<ActionResult<Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsResult>> BackfillUserPickBetPoints(
+            [FromServices] Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(
+                new Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommand(),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
         // ─────────────────────────────────────────────────────────────
         // SignalR debug harness — see docs/signalr-debug-harness-plan.md
         //
@@ -1209,6 +1261,82 @@ namespace SportsData.Api.Application.Admin
             CancellationToken cancellationToken)
         {
             var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Recomputes the record snapshots on PickemGroupMatchup from prior
+        /// finalized outcomes, correcting only rows that differ.
+        /// </summary>
+        /// <remarks>
+        /// The league card reads the snapshot and never derives (#769), so a
+        /// wrong snapshot stays wrong until something rewrites it. #771 stopped
+        /// new damage but repaired none, and rows predating the
+        /// MatchupRecordSnapshots migration were never backfilled at all.
+        /// <para>
+        /// Safe and worth re-running: the derivation counts only finalized
+        /// contests, so anything still cycling through the enrichment audit
+        /// leaves its teams a game light until that settles.
+        /// </para>
+        /// </remarks>
+        [HttpPost]
+        [Route("matchups/audit-records")]
+        public async Task<IActionResult> AuditMatchupRecords(
+            [FromServices] IAuditMatchupRecords processor,
+            [FromQuery] int seasonYear,
+            // Omit to audit every week of the season year.
+            [FromQuery] int? seasonWeek = null,
+            [FromQuery] Sport sport = Sport.FootballNcaa)
+        {
+            var result = await processor.Process(
+                new MatchupRecordAuditCommand(sport, seasonYear, seasonWeek));
+
+            return Ok(new
+            {
+                sport = sport.ToString(),
+                seasonYear,
+                seasonWeek,
+                examined = result.Examined,
+                corrected = result.Corrected,
+                unresolved = result.Unresolved
+            });
+        }
+
+        /// <remarks>
+        /// Those records are a COPY taken when the week was generated, not a
+        /// live read — the league-week query never asks Producer for them. So
+        /// anything that corrects a FranchiseSeason after generation (a late
+        /// enrichment pass, a re-finalized contest) leaves the cards showing
+        /// the values frozen at generation time, and no amount of cache
+        /// <summary>
+        /// Re-runs the matchup scheduler over an already-generated week so the
+        /// record snapshots on PickemGroupMatchup are rewritten from canonical
+        /// data. See RefreshWeekMatchupsCommandHandler for why that is needed
+        /// and why it is safe to re-run.
+        /// </summary>
+        [HttpPost]
+        [Route("matchups/refresh")]
+        public async Task<ActionResult<RefreshWeekMatchupsResponse>> RefreshWeekMatchups(
+            [FromServices] IRefreshWeekMatchupsCommandHandler handler,
+            // Precise week identity, and preferred: week NUMBERS are ambiguous
+            // across phase AND sport.
+            [FromQuery] Guid? seasonWeekId = null,
+            [FromQuery] int? seasonYear = null,
+            [FromQuery] int? seasonWeek = null,
+            // Narrows the year/week form; ignored when seasonWeekId is given.
+            [FromQuery] Sport? sport = null,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new RefreshWeekMatchupsCommand
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = seasonYear,
+                    SeasonWeek = seasonWeek,
+                    Sport = sport
+                },
+                cancellationToken);
+
             return result.ToActionResult();
         }
     }

@@ -129,6 +129,9 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
                 WeeklyAverage = x.WeeksPlayed > 0
                     ? Math.Round((decimal)x.TotalPoints / x.WeeksPlayed, 1)
                     : 0,
+                PointsPerGame = x.TotalPicks > 0
+                    ? Math.Round((decimal)x.TotalPoints / x.TotalPicks, 2)
+                    : 0,
                 Rank = rank,
                 TotalPicks = x.TotalPicks,
                 TotalCorrect = x.TotalCorrect,

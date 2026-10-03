@@ -1,0 +1,346 @@
+/* The header-row entry: a robot next to the pick-mode badge. */
+.advisor-open-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background-color: var(--active-bg);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.advisor-open-button:hover {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.advisor-open-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Dialog — mirrors ImportPicksDialog. */
+.advisor-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.advisor-dialog {
+  background-color: var(--bg-modal);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 560px;
+  width: 92%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.advisor-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  margin: 0 0 12px 0;
+  font-size: 1.4rem;
+}
+
+.advisor-dialog-title-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.advisor-dialog-message,
+.advisor-dialog-note {
+  color: var(--text-muted);
+  margin: 8px 0;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.advisor-dialog-error {
+  color: var(--warning-text);
+  margin: 0 0 12px 0;
+}
+
+/* Analysis card */
+.advisor-analysis {
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.advisor-analysis-headline {
+  color: var(--text-primary);
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.advisor-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.advisor-analysis-grid dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.advisor-analysis-grid dd {
+  color: var(--text-primary);
+  margin: 2px 0 0 0;
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.advisor-analysis-sub {
+  display: block;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
+.advisor-analysis-vs {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85em;
+}
+
+.advisor-analysis-statbot {
+  color: var(--text-muted);
+  margin: 10px 0 0 0;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Level picker */
+.advisor-levels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.advisor-level {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background-color: var(--active-bg);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.advisor-level:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.advisor-level.selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.advisor-level:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.advisor-level-name {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.advisor-level-call {
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.advisor-level-tagline {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.advisor-level-detail {
+  color: var(--text-muted);
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+}
+
+/* Sheet */
+.advisor-sheet {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.advisor-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  border-left: 3px solid transparent;
+  transition: opacity 0.2s;
+}
+
+.advisor-row:last-child {
+  border-bottom: none;
+}
+
+.advisor-row.stale {
+  opacity: 0.5;
+}
+
+.advisor-row.kind-lock {
+  border-left-color: var(--accent);
+}
+
+.advisor-row.kind-flip {
+  border-left-color: var(--warning);
+}
+
+.advisor-row.kind-lean {
+  border-left-color: var(--border-strong);
+}
+
+.advisor-row.kind-locked,
+.advisor-row.kind-noprediction {
+  opacity: 0.7;
+}
+
+.advisor-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.advisor-row-matchup {
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.advisor-row-team {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.advisor-row-points {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.advisor-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.advisor-row-kind {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+}
+
+.advisor-row-reason {
+  flex: 1;
+  min-width: 0;
+}
+
+.advisor-row-change {
+  color: var(--warning-text);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+/* Buttons */
+.advisor-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.advisor-dialog-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.advisor-dialog-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.advisor-dialog-button.cancel {
+  background-color: var(--border-strong);
+  color: var(--text-primary);
+  border: 1px solid var(--text-muted);
+}
+
+.advisor-dialog-button.cancel:hover:not(:disabled) {
+  background-color: var(--active-bg);
+}
+
+.advisor-dialog-button.confirm {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+
+.advisor-dialog-button.confirm:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+@media (max-width: 600px) {
+  .advisor-analysis-grid,
+  .advisor-levels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

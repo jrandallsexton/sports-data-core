@@ -1,0 +1,31 @@
+info:
+  name: notifications-backfill-user
+  type: http
+  seq: 39
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/notifications/matchups/backfill?sport=FootballNcaa"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: sport
+      value: FootballNcaa
+      type: query
+  body:
+    type: json
+    data: |
+      {
+        "seasonType": 3
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

@@ -32,4 +32,11 @@ public record UserPickDto
     public DateTime? ScoredAt { get; init; }
 
     public int? PointsAwarded { get; init; }
+
+    /// <summary>
+    /// Simulated 1-unit bet result for this pick at the closing price: the
+    /// league's own column (PointsSU or PointsATS). Null when not scored or
+    /// unpriced.
+    /// </summary>
+    public decimal? BetPoints { get; init; }
 }

@@ -65,4 +65,6 @@ When both land:
 
 ## The General Rule
 
-Every new `EXPO_PUBLIC_*` env var added during dev needs a matching entry in `eas.json` (or an EAS dashboard secret) or it'll silently become `undefined` in production builds. Metro reads `.env*`; EAS doesn't.
+Every new `EXPO_PUBLIC_*` env var added during dev needs a matching entry in `eas.json` **and** in the EAS server-side environment (`eas env:push`, see `write-eas-env-files.ps1`), or it'll silently become `undefined` in production. Metro reads `.env*`; EAS builds don't.
+
+**That rule is inverted for `eas update`.** OTA updates bundle on your machine, where Metro *does* read `.env.local` and the `eas.json` env block is ignored. Publishing without `--environment` shipped `localhost:5262` to production on 2026-09-17. Always publish with `--environment <env> --clear-cache`; see [`ota-pipeline-hardening.md`](./ota-pipeline-hardening.md).

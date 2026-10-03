@@ -4,6 +4,7 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
@@ -247,6 +248,55 @@ public class ContestClientTests
         posted!.Sport.Should().Be(Sport.BaseballMlb);
         posted.SeasonYear.Should().Be(2026);
         posted.CorrelationId.Should().Be(correlationId);
+    }
+
+    [Fact]
+    public async Task GetOddsPricingByContestId_GetsTheContestsOddsPricingRoute_AndParsesTheDto()
+    {
+        var contestId = Guid.NewGuid();
+        var pricing = new OddsPricingDto
+        {
+            ContestId = contestId,
+            AwayMoneyLine = 240, HomeMoneyLine = -300,
+            AwaySpreadPrice = -112m, HomeSpreadPrice = -108m,
+            OverOdds = -115m, UnderOdds = -105m
+        };
+        _handler.SetResponse(HttpStatusCode.OK, pricing.ToJson());
+
+        var result = await _sut.GetOddsPricingByContestId(contestId);
+
+        result.Should().BeOfType<Success<OddsPricingDto>>();
+        var dto = ((Success<OddsPricingDto>)result).Value;
+        dto.ContestId.Should().Be(contestId);
+        dto.AwayMoneyLine.Should().Be(240);
+        dto.HomeMoneyLine.Should().Be(-300);
+        dto.HomeSpreadPrice.Should().Be(-108m);
+        dto.UnderOdds.Should().Be(-105m);
+        _handler.LastRequestUri.Should().EndWith($"/contests/{contestId}/odds-pricing");
+    }
+
+    [Fact]
+    public async Task GetOddsPricingByContestId_On404_ReturnsNotFound()
+    {
+        // The backfill job skips NotFound (retrying cannot help).
+        _handler.SetResponse(HttpStatusCode.NotFound, "{\"errors\":[]}");
+
+        var result = await _sut.GetOddsPricingByContestId(Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task GetOddsPricingByContestId_OnServerError_ReturnsError_NotNotFound()
+    {
+        // A Producer 5xx must not read as "no such contest": the backfill job
+        // throws on it so Hangfire retries, where NotFound would be skipped.
+        _handler.SetResponse(HttpStatusCode.InternalServerError, "boom");
+
+        var result = await _sut.GetOddsPricingByContestId(Guid.NewGuid());
+
+        result.Should().BeOfType<Failure<OddsPricingDto>>();
+        result.Status.Should().Be(ResultStatus.Error);
     }
 
     [Fact]

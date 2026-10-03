@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiWrapper from '../../api/apiWrapper';
+import useCurrentSeasonYear from '../../hooks/useCurrentSeasonYear';
 import './AiRecordWidget.css';
 
 const AiRecordWidget = () => {
   const [aiRecordData, setAiRecordData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Season from /seasons/current - never a literal (the 2025 hardcode froze
+  // this widget to a finished season at rollover).
+  const { seasonYear, loading: seasonLoading } = useCurrentSeasonYear();
 
   useEffect(() => {
+    if (seasonLoading || seasonYear == null) return;
     const fetchAiRecordWidget = async () => {
       try {
         setLoading(true);
-        const response = await apiWrapper.Picks.getWidgetForSynthetic();
+        const response = await apiWrapper.Picks.getWidgetForSynthetic(seasonYear);
         setAiRecordData(response.data);
         setError(null);
       } catch (err) {
@@ -24,7 +29,7 @@ const AiRecordWidget = () => {
     };
 
     fetchAiRecordWidget();
-  }, []);
+  }, [seasonYear, seasonLoading]);
 
   // Calculate totals across all leagues
   const calculateTotals = (items) => {

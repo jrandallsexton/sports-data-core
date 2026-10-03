@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
@@ -100,6 +101,9 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                 x.ModelId,
                 x.PredictedStraightUpWinnerId,
                 x.PredictedSpreadWinnerId,
+                x.AwayScore,
+                x.HomeScore,
+                x.OverUnderPrediction,
                 x.ResponseValidationErrors,
                 x.CreatedUtc
             })
@@ -135,6 +139,9 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                         ModelId = c.ModelId!.Value,
                         PredictedStraightUpWinnerId = c.PredictedStraightUpWinnerId,
                         PredictedSpreadWinnerId = c.PredictedSpreadWinnerId,
+                        AwayScore = c.AwayScore,
+                        HomeScore = c.HomeScore,
+                        OverUnderPrediction = c.OverUnderPrediction,
                         Problems = c.ResponseValidationErrors,
                         CaptureId = c.Id,
                         CreatedUtc = c.CreatedUtc

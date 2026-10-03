@@ -101,5 +101,15 @@ using System;
         public double? OverOdds { get; set; }
 
         public double? UnderOdds { get; set; }
+
+        /// <summary>Per-team current moneyline from the displayed odds row (not derivable from the other side).</summary>
+        public int? AwayMoneyLine { get; set; }
+
+        public int? HomeMoneyLine { get; set; }
+
+        /// <summary>Per-team current spread price from the displayed odds row.</summary>
+        public double? AwaySpreadPrice { get; set; }
+
+        public double? HomeSpreadPrice { get; set; }
     }
 }

@@ -329,6 +329,15 @@ PPD ≈ 6.16 as fact), (c) any DeetsMeter/metric surface.
   whose stored (InputsHash, FormulaVersion) both match — the
   cheap-idempotency path. Until populated, recompute treats every row
   as stale (correct, slower).
+- **Null InputsHash means "computed from zero plays"** (the calculator
+  writes null, not a hash of nothing). `FootballCompetitionMetricsAuditJob`
+  (daily 07:00 UTC since 2026-09-24, was Sunday only) recomputes any
+  competition ≥3h old whose rows carry a null hash and which now has
+  plays, then schedules the season aggregate for both teams ten minutes
+  later. Found on 2026-09-24: 139 games this season were computed by the
+  Sunday 07:00 run hours before their play-by-play landed in a
+  Sunday-afternoon batch and never revisited; their teams' season rows
+  were all zeros and reached the preview model that way.
 
 ## Recommended sequence (with gates)
 

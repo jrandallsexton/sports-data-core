@@ -2,17 +2,17 @@ select * from public."Franchise";
 
 select * from public."FranchiseSeason" where "FranchiseId" = '64a1c51c-41c0-25a8-140c-256e5c307fa9' order by "SeasonYear" desc;
 
--- 819e11f7-daca-d405-cc29-b4ed67b02543 Miami 2025
--- dc8b24e0-2912-6fdb-93a0-a7524c46176f Tampa 2025
+-- 76133cfa-ccc3-462a-62c8-fa1f40e38edf Florida A&M 2026
+-- 167032d8-ec21-9807-2ef6-305b883e00f5 Miami 2026
 
 select * from public."CompetitionMetric" cm
-where cm."FranchiseSeasonId" = '819e11f7-daca-d405-cc29-b4ed67b02543';
+where cm."FranchiseSeasonId" = '3671e3bb-588e-ac45-c8b1-8caae44af21f';
 
-select * from public."FranchiseSeasonMetric"
+select * from public."FranchiseSeasonMetric" where "Season" = 2026
 
 select * from public."FranchiseSeasonStatisticCategory" fssc
 inner join public."FranchiseSeasonStatistic" fss on fss."FranchiseSeasonStatisticCategoryId" = fssc."Id"
-where fssc."FranchiseSeasonId" = '819e11f7-daca-d405-cc29-b4ed67b02543';
+where fssc."FranchiseSeasonId" = '3671e3bb-588e-ac45-c8b1-8caae44af21f';
 
 -- b415e367-c65e-121f-619a-f9314264bbca ContestId: Tampa @ Miami 28 Dec 2025
 select * from public."Contest" c where c."Id" = 'b415e367-c65e-121f-619a-f9314264bbca';
@@ -109,3 +109,14 @@ ORDER BY c."SeasonYear";
 -- 2024	920	920	920	901	920
 -- 2025	934	934	934	933	934
 -- 2026	783	783	783	0	0
+
+  -- stale zero rows that now have plays: expect 0 after the run
+  select count(distinct cm."CompetitionId")
+  from public."CompetitionMetric" cm
+  where cm."InputsHash" is null
+    and exists (select 1 from public."CompetitionPlay" p where p."CompetitionId" = cm."CompetitionId");
+
+  -- Northwestern 2026: expect GamesPlayed 2 and non-zero rates
+  select "GamesPlayed", "Ypp", "SuccessRate", "PointsPerDrive", "ComputedUtc"
+  from public."FranchiseSeasonMetric"
+  where "FranchiseSeasonId" = '3671e3bb-588e-ac45-c8b1-8caae44af21f';

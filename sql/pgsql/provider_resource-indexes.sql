@@ -4,6 +4,9 @@ select * from public."ResourceIndex" where "IsRecurring" is false and "LastCompl
 select * from public."ResourceIndex" where "IsRecurring" is true order by "Ordinal"
 select * from public."ResourceIndex" where "IsSeasonSpecific" is true order by "Ordinal"
 select * from public."ResourceIndex" where "SeasonYear" = 2024 order by "Ordinal"
+
+select * from public."ResourceIndex" where "Name" = 'espn.v2.sports.football.leagues.college-football.seasons.rankings' order by "CreatedUtc" desc;
+
 --update public."ResourceIndex" set "ProcessingInstanceId" = null, "ProcessingStartedUtc" = null, "IsQueued" = false, "LastCompletedUtc" = null where "Id" = '472115da-a571-4016-afb4-df9cb20ef777'
 --update public."ResourceIndex" set "IsQueued" = false, "LastCompletedUtc" = '2026-02-08 13:17:16.719226+00' where "Id" = 'b7e2e1d7-0182-4eb4-8ba2-cea6a0f53bb4'
 select * from public."ResourceIndex" where "IsRecurring" is false order by "Ordinal"

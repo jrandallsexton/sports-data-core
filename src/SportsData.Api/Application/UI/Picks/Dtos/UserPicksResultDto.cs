@@ -35,4 +35,13 @@ public record UserPicksResultDto
     /// deactivation (which lags the league's end date by ~7 days).
     /// </summary>
     public int PendingCount { get; init; }
+
+    /// <summary>
+    /// Net result of a simulated 1-unit bet on each of this user's picks at
+    /// the closing price (the league's own column: PointsSU or PointsATS),
+    /// summed over the week. Null when no pick carries a value yet (nothing
+    /// scored, unpriced matchups, or an over/under league), so clients can
+    /// omit it rather than show a misleading 0.
+    /// </summary>
+    public decimal? BetPoints { get; init; }
 }

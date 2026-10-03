@@ -46,12 +46,18 @@ public class AthleteController : ControllerBase
     /// data is game-agnostic athlete/matchup data.
     /// Example: GET /api/athletes/matchup-summaries?position=QB&amp;seasonYear=2026&amp;week=1
     /// </summary>
+    /// <param name="position"></param>
+    /// <param name="seasonYear"></param>
+    /// <param name="week"></param>
+    /// <param name="phaseTypeCode">Nullable so an omitted param cannot bind to 0 and match no phase.</param>
+    /// <param name="handler"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     [HttpGet("matchup-summaries")]
     public async Task<ActionResult<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(
         [FromQuery] string position,
         [FromQuery] int seasonYear,
         [FromQuery] int week,
-        // Nullable so an omitted param cannot bind to 0 and match no phase.
         [FromQuery] int? phaseTypeCode,
         [FromServices] IGetAthleteMatchupSummariesQueryHandler handler,
         CancellationToken cancellationToken)

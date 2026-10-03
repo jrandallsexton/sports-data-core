@@ -48,4 +48,53 @@ public class ProducerSqlQueryProviderTests
         sql.Should().Contain("sw_contest.\"EndDate\" AS \"SeasonWeekEndDate\"");
         sql.Should().Contain("public.\"SeasonWeek\" sw_contest");
     }
+
+    /// <summary>
+    /// The odds-pricing query must pick the SAME provider row as the matchup
+    /// queries (so prices pair with the matchup's spread/total), join BOTH
+    /// team sides, and project every OddsPricingDto property by name (Dapper
+    /// maps by alias, so a dropped or renamed alias silently yields nulls).
+    /// </summary>
+    [Fact]
+    public void GetOddsPricingByContestId_UsesTheMatchupProviderRow_AndProjectsEveryDtoField()
+    {
+        var sut = new ProducerSqlQueryProvider();
+
+        var sql = sut.GetOddsPricingByContestId();
+
+        sql.Should().NotBeNullOrWhiteSpace();
+        // Placeholders resolved to the same preferred/fallback pair as the matchups SQL.
+        sql.Should().Contain("\"ProviderId\" IN ('58', '100')");
+        sql.Should().Contain("WHEN o.\"ProviderId\" = '58' THEN 1");
+        sut.GetMatchupsByContestIds().Should().Contain("\"ProviderId\" IN ('58', '100')");
+
+        sql.Should().Contain("away.\"Side\" = 'Away'");
+        sql.Should().Contain("home.\"Side\" = 'Home'");
+        sql.Should().Contain("WHERE c.\"Id\" = @ContestId");
+
+        foreach (var property in typeof(SportsData.Core.Dtos.Canonical.OddsPricingDto).GetProperties())
+        {
+            sql.Should().Contain($"AS \"{property.Name}\"", $"Dapper maps {property.Name} by column alias");
+        }
+    }
+
+    /// <summary>
+    /// The matchup schedule processor prices a NEW PickemGroupMatchup from this
+    /// query: both teams' prices must come from the displayed odds row (co) and
+    /// be aliased to the Matchup DTO's names, or Dapper silently leaves them null.
+    /// </summary>
+    [Fact]
+    public void GetMatchupsBySeasonWeekId_ProjectsBothTeamsPrices_FromTheDisplayedRow()
+    {
+        var sut = new ProducerSqlQueryProvider();
+
+        var sql = sut.GetMatchupsBySeasonWeekId();
+
+        sql.Should().Contain("ctoAway.\"MoneylineCurrent\"   AS \"AwayMoneyLine\"");
+        sql.Should().Contain("ctoHome.\"MoneylineCurrent\"   AS \"HomeMoneyLine\"");
+        sql.Should().Contain("ctoAway.\"SpreadPriceCurrent\" AS \"AwaySpreadPrice\"");
+        sql.Should().Contain("ctoHome.\"SpreadPriceCurrent\" AS \"HomeSpreadPrice\"");
+        sql.Should().Contain("ctoAway.\"CompetitionOddsId\" = co.\"Id\" AND ctoAway.\"Side\" = 'Away'");
+        sql.Should().Contain("ctoHome.\"CompetitionOddsId\" = co.\"Id\" AND ctoHome.\"Side\" = 'Home'");
+    }
 }

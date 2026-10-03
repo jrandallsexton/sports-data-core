@@ -64,6 +64,9 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             // Teams
             public string Away { get; set; } = default!;
             public string AwayShort { get; set; } = default!;
+
+            /// <summary>Franchise.DisplayNameShort ("Miami"); the abbreviation above is "MIA".</summary>
+            public string? AwayShortName { get; set; }
             public Guid AwayFranchiseSeasonId { get; set; }
             public string AwayLogoUri { get; set; } = null!;
             public string? AwayLogoUriDark { get; set; }
@@ -77,6 +80,9 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
             public string Home { get; set; } = default!;
             public string HomeShort { get; set; } = default!;
+
+            /// <inheritdoc cref="AwayShortName"/>
+            public string? HomeShortName { get; set; }
             public Guid HomeFranchiseSeasonId { get; set; }
             public string HomeLogoUri { get; set; } = null!;
             public string? HomeLogoUriDark { get; set; }

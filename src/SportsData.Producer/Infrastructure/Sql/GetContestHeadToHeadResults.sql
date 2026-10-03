@@ -25,6 +25,10 @@ SELECT
     c."EventNote" AS "Note",
     fHome."DisplayName" AS "HomeTeam",
     fAway."DisplayName" AS "AwayTeam",
+    -- Short names are DISPLAY-ONLY. Winner/SpreadWinner stay on DisplayName,
+    -- which is what clients compare against Matchup.home/away to find "our" side.
+    fHome."DisplayNameShort" AS "HomeTeamShort",
+    fAway."DisplayNameShort" AS "AwayTeamShort",
     c."HomeScore",
     c."AwayScore",
     CASE

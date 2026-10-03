@@ -3,6 +3,8 @@ using AutoFixture;
 
 using FluentAssertions;
 
+using FluentValidation.Results;
+
 using Microsoft.EntityFrameworkCore;
 
 using Moq;
@@ -10,7 +12,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
-using SportsData.Producer.Application.GroupSeasons;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetFbsGroupSeasonIds;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
 using Xunit;
@@ -34,12 +36,12 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         var homeFranchiseSeasonId2 = Guid.NewGuid();
         var awayFranchiseSeasonId2 = Guid.NewGuid();
 
-        // Mock group seasons service
-        var groupSeasonsService = new Mock<IGroupSeasonsService>();
-        groupSeasonsService
-            .Setup(x => x.GetFbsGroupSeasonIds(seasonYear))
-            .ReturnsAsync(new HashSet<Guid> { fbsGroupSeasonId });
-        Mocker.Use(groupSeasonsService.Object);
+        // Mock FBS group-season resolution
+        Mocker.GetMock<IGetFbsGroupSeasonIdsQueryHandler>()
+            .Setup(x => x.ExecuteAsync(
+                It.Is<GetFbsGroupSeasonIdsQuery>(q => q.SeasonYear == seasonYear),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<HashSet<Guid>>(new HashSet<Guid> { fbsGroupSeasonId }));
 
         // Create franchise seasons
         var homeFranchiseSeason1 = Fixture.Build<FranchiseSeason>()
@@ -165,11 +167,11 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         var homeFranchiseSeasonId = Guid.NewGuid();
         var awayFranchiseSeasonId = Guid.NewGuid();
 
-        var groupSeasonsService = new Mock<IGroupSeasonsService>();
-        groupSeasonsService
-            .Setup(x => x.GetFbsGroupSeasonIds(seasonYear))
-            .ReturnsAsync(new HashSet<Guid> { fbsGroupSeasonId });
-        Mocker.Use(groupSeasonsService.Object);
+        Mocker.GetMock<IGetFbsGroupSeasonIdsQueryHandler>()
+            .Setup(x => x.ExecuteAsync(
+                It.Is<GetFbsGroupSeasonIdsQuery>(q => q.SeasonYear == seasonYear),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<HashSet<Guid>>(new HashSet<Guid> { fbsGroupSeasonId }));
 
         var homeFranchiseSeason = Fixture.Build<FranchiseSeason>()
             .With(x => x.Id, homeFranchiseSeasonId)
@@ -241,5 +243,31 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         result.Value.EnqueuedJobs.Should().Be(0);
 
         // Verify no enqueueing by checking result shows 0 jobs
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FbsRootNotFound_ReturnsFailureWithoutEnqueueing()
+    {
+        // Arrange
+        var seasonYear = 2025;
+        var errors = new List<ValidationFailure> { new("SeasonYear", "FBS group root(s) not found.") };
+
+        Mocker.GetMock<IGetFbsGroupSeasonIdsQueryHandler>()
+            .Setup(x => x.ExecuteAsync(It.IsAny<GetFbsGroupSeasonIdsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<HashSet<Guid>>(default!, ResultStatus.NotFound, errors));
+
+        var backgroundJobProvider = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        var command = new RefreshAllCompetitionMediaCommand(Sport.FootballNcaa, seasonYear);
+        var sut = Mocker.CreateInstance<RefreshAllCompetitionMediaCommandHandler>();
+
+        // Act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<Failure<RefreshAllCompetitionMediaResult>>();
+        result.Status.Should().Be(ResultStatus.NotFound);
+        ((Failure<RefreshAllCompetitionMediaResult>)result).Errors.Should().BeEquivalentTo(errors);
+        backgroundJobProvider.Invocations.Should().BeEmpty();
     }
 }

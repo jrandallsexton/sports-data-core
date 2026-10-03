@@ -138,6 +138,34 @@
   color: var(--error-text);
 }
 
+/* Week net of a simulated 1-unit bet per pick (numbers only, no currency
+   sign). Same pill chrome as the glance it sits beside; tone follows the sign. */
+.pick-bet-points {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background-color: var(--active-bg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.pick-bet-points.positive {
+  color: var(--success-text);
+}
+
+.pick-bet-points.negative {
+  color: var(--error-text);
+}
+
+.pick-bet-points.even {
+  color: var(--text-secondary);
+}
+
 /* Mid-flight variant: ✓Y ✗Z only (no X — it would count in-progress games as
    no-results). Rendered beside the progress badge until the week resolves. */
 .pick-live-chip {

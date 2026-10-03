@@ -10,19 +10,28 @@ using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStat
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteMatchupSummaries;
 using SportsData.Producer.Application.Competitions;
-using SportsData.Producer.Application.Competitions.Reconcile;
-using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Contests;
-using SportsData.Producer.Application.Contests.Commands;
+using SportsData.Producer.Application.Contests.Commands.FinalizeContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
+using SportsData.Producer.Application.Contests.Commands.RefreshContestsBySeasonYear;
+using SportsData.Producer.Application.Contests.Commands.ReplayBaseballContest;
+using SportsData.Producer.Application.Contests.Commands.ReplayFootballContest;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
+using SportsData.Producer.Application.Contests.Consumers.ContestStartTimeUpdated;
+using SportsData.Producer.Application.Contests.Jobs;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichmentAudit;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
+using SportsData.Producer.Application.Contests.Queries.GetEnteringRecordsByContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestResults;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetFinalizedContestIds;
@@ -34,7 +43,6 @@ using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForCu
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.Documents.Processors;
-using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Application.Franchises.Commands.UpdateLogoDarkBg;
 using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
@@ -52,6 +60,7 @@ using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchi
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
+using SportsData.Producer.Application.FranchiseSeasons.Jobs;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
@@ -60,7 +69,10 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlugs;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetFbsGroupSeasonIds;
 using SportsData.Producer.Application.Images;
+using SportsData.Producer.Application.Logos;
+using SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeason;
@@ -68,9 +80,8 @@ using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
-using SportsData.Producer.Application.Services;
-using SportsData.Producer.Application.Venues;
 using SportsData.Producer.Application.Venues.Commands.GeocodeVenue;
+using SportsData.Producer.Application.Venues.Jobs;
 using SportsData.Producer.Application.Venues.Queries.GetAllVenues;
 using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 using SportsData.Producer.Config;
@@ -226,7 +237,18 @@ namespace SportsData.Producer.DependencyInjection
                     break;
             }
 
-            services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
+            // Closed over the CONCRETE context, never TeamSportDataContext. The
+            // abstract registration is a second DbContext instance per scope
+            // (AddScoped<TAbstract, TConcrete> is not a forward); the EF outbox
+            // captures publishes into the AddDbContext instance, so a handler that
+            // saves the abstract one silently loses every message. This handler
+            // publishes FranchiseSeasonEnrichmentCompleted through the outbox and
+            // had never delivered it (2026-09-23). Narrow by design: the abstract
+            // registrations stay as they are for everything else.
+            if (mode is Sport.BaseballMlb)
+                services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<BaseballDataContext>>();
+            else
+                services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<FootballDataContext>>();
             services.AddScoped<FranchiseSeasonEnrichmentJob>();
 
             // ContestUpdate is team-sport-only (uses SeasonWeeks/Contests on TeamSportDataContext).
@@ -298,7 +320,16 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
             services.AddScoped<IRequestFranchiseSeasonSourcingCommandHandler, RequestFranchiseSeasonSourcingCommandHandler>();
             services.AddScoped<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>, RequestFranchiseSeasonSourcingCommandValidator>();
+            services.AddScoped<
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.IRequestSingleFranchiseSeasonSourcingCommandHandler,
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommandHandler>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommand>,
+                Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommandValidator>();
             services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
+            services.AddScoped<
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.IEnqueueSingleFranchiseSeasonEnrichmentCommandHandler,
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommandHandler>();
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
                 // CalculateFranchiseSeasonMetricsCommandHandler depends on FootballDataContext.
@@ -307,6 +338,9 @@ namespace SportsData.Producer.DependencyInjection
 
             // FranchiseSeason Command Validators
             services.AddScoped<FluentValidation.IValidator<EnqueueFranchiseSeasonEnrichmentCommand>, EnqueueFranchiseSeasonEnrichmentCommandValidator>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommand>,
+                Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment.EnqueueSingleFranchiseSeasonEnrichmentCommandValidator>();
 
             // Franchise Queries
             services.AddScoped<IGetAllFranchisesQueryHandler, GetAllFranchisesQueryHandler>();
@@ -349,7 +383,7 @@ namespace SportsData.Producer.DependencyInjection
                 FluentValidation.IValidator<Application.Contests.Queries.GetGameDates.GetGameDatesQuery>,
                 Application.Contests.Queries.GetGameDates.GetGameDatesQueryValidator>();
 
-            services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
+            services.AddScoped<IGetFbsGroupSeasonIdsQueryHandler, GetFbsGroupSeasonIdsQueryHandler>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
@@ -359,6 +393,7 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<ICompetitionBroadcastingJob, FootballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
                 services.AddScoped<IContestStartTimeUpdatedConsumerHandler, ContestStartTimeUpdatedConsumerHandler>();
+                services.AddScoped<FootballCompetitionMetricsAuditJob>();
             }
 
             if (mode is Sport.BaseballMlb)
@@ -392,6 +427,14 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Contests.Queries.GetGameDates.IGetGameDatesQueryHandler,
                 Application.Contests.Queries.GetGameDates.GetGameDatesQueryHandler>();
             services.AddScoped<IGetMatchupsByContestIdsQueryHandler, GetMatchupsByContestIdsQueryHandler>();
+            services.AddScoped<IGetEnteringRecordsByContestIdsQueryHandler, GetEnteringRecordsByContestIdsQueryHandler>();
+            services.AddScoped<IValidator<GetEnteringRecordsByContestIdsQuery>, GetEnteringRecordsByContestIdsQueryValidator>();
+            services.AddScoped<
+                Application.Contests.Queries.GetOddsPricingByContestId.IGetOddsPricingByContestIdQueryHandler,
+                Application.Contests.Queries.GetOddsPricingByContestId.GetOddsPricingByContestIdQueryHandler>();
+            services.AddScoped<
+                IValidator<Application.Contests.Queries.GetOddsPricingByContestId.GetOddsPricingByContestIdQuery>,
+                Application.Contests.Queries.GetOddsPricingByContestId.GetOddsPricingByContestIdQueryValidator>();
             services.AddScoped<IGetMatchupForPreviewQueryHandler, GetMatchupForPreviewQueryHandler>();
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IGetContestPreviewHistoryQueryHandler,
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryHandler>();
@@ -436,8 +479,6 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
 
-            services.AddScoped<FootballCompetitionMetricsAuditJob>();
-
             return services;
         }
 
@@ -480,10 +521,14 @@ namespace SportsData.Producer.DependencyInjection
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
+                // Daily (was Sunday only): the audit now also recomputes games
+                // whose rows were written before their plays arrived, and those
+                // plays land Sunday afternoon for Saturday games - a weekly run
+                // left them at zero for the whole week, past preview generation.
                 recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
                     nameof(FootballCompetitionMetricsAuditJob),
                     job => job.ExecuteAsync(),
-                    "0 7 * * 0"); // Sunday at 07:00 UTC
+                    "0 7 * * *"); // daily at 07:00 UTC
 
                 // Hourly (was weekly): with the league-contest filter the
                 // sweep is cheap and idempotent, and hourly runs mean a

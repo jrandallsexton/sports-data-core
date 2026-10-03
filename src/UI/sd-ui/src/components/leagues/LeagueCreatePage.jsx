@@ -106,6 +106,12 @@ function formatDateShort(iso) {
 // the time the user reaches it every input is set and the tag is complete; that
 // placement also primes the writer. `windowLabel` is a pre-formatted
 // span/day/week string, or null for full season.
+// The conferences endpoint labels FBS conferences' division "FBS". This page
+// used to match "FBS (I-A)", which matched nothing, so "FBS Only" showed an
+// empty conference list. startsWith covers either label.
+const isFbsDivision = (division) =>
+  typeof division === "string" && division.startsWith("FBS");
+
 function buildSuggestedDescription(sport, pickType, useConfidencePoints, windowLabel) {
   const sportPhrase = SPORT_DESC_PHRASE[sport];
   if (!sportPhrase) return null;
@@ -351,6 +357,27 @@ const LeagueCreatePage = () => {
     ? description
     : suggestedDescription ?? "";
 
+  // "FBS Only" with no ranking filter and no conferences picked means every
+  // FBS game: the league is created with ALL FBS conference slugs (FBS
+  // Independents included). The matchup processor keeps a game when either
+  // team is in one of the league's conferences, so that is every game with
+  // an FBS team, FBS-vs-FCS included. Expressed as conferences so the
+  // server's "ranking or conference" rule (no empty slates) still holds.
+  const fbsConferenceSlugs = allConferences
+    .filter((c) => isFbsDivision(c.division))
+    .map((c) => c.slug);
+  // The selection that counts is the VISIBLE one: with "FBS Only" on, only
+  // FBS conferences are listed, so a non-FBS slug still in teamFilter
+  // (however it got there) must neither be submitted nor decide the scope.
+  // Derived rather than relying on every handler to prune (Vortex, #797).
+  const visibleTeamFilter =
+    isNcaa && fbsOnly
+      ? teamFilter.filter((slug) => fbsConferenceSlugs.includes(slug))
+      : teamFilter;
+  const includesAllFbs =
+    isNcaa && fbsOnly && !rankingFilter && visibleTeamFilter.length === 0;
+  const effectiveTeamFilter = includesAllFbs ? fbsConferenceSlugs : visibleTeamFilter;
+
   useEffect(() => {
     if (!isNcaa) return;
     const fetchConferences = async () => {
@@ -462,9 +489,19 @@ const LeagueCreatePage = () => {
     // The matchup slate is built from rank hits and conference hits only —
     // Rankings "None" with no conferences would create a league with no
     // games. Server validator enforces the same rule; this guard just gives
-    // a clear message before the confirm dialog.
-    if (sport === SPORT_NCAA && !rankingFilter && teamFilter.length === 0) {
+    // a clear message before the confirm dialog. With "FBS Only" checked,
+    // no ranking and no conferences means all FBS conferences (see
+    // includesAllFbs), so only the unchecked case, which would mean every
+    // division, is refused.
+    if (sport === SPORT_NCAA && !rankingFilter && teamFilter.length === 0 && !fbsOnly) {
       toast.error("Choose a ranking filter or at least one conference.");
+      return;
+    }
+
+    // All-FBS needs the conference list; if it failed to load, the request
+    // would carry no conferences and the server would refuse it.
+    if (includesAllFbs && fbsConferenceSlugs.length === 0) {
+      toast.error("Conferences haven't loaded yet. Try again in a moment.");
       return;
     }
 
@@ -479,7 +516,7 @@ const LeagueCreatePage = () => {
       tiebreaker,
       useConfidencePoints,
       rankingFilter,
-      teamFilter,
+      teamFilter: effectiveTeamFilter,
       isPublic,
       joinPolicy,
       dropLowWeeksCount,
@@ -527,7 +564,7 @@ const LeagueCreatePage = () => {
   const teamGroups = useMemo(() => {
     if (sport === SPORT_NCAA) {
       return fbsOnly
-        ? allConferences.filter((c) => c.division === "FBS (I-A)")
+        ? allConferences.filter((c) => isFbsDivision(c.division))
         : allConferences;
     }
     if (sport === SPORT_NFL) return NFL_DIVISIONS;
@@ -841,7 +878,18 @@ const LeagueCreatePage = () => {
                     <input
                       type="checkbox"
                       checked={fbsOnly}
-                      onChange={(e) => setFbsOnly(e.target.checked)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFbsOnly(checked);
+                        // Re-checking hides non-FBS conferences; drop them
+                        // from the selection too, or they'd be submitted
+                        // invisibly.
+                        if (checked) {
+                          setTeamFilter((prev) =>
+                            prev.filter((slug) => fbsConferenceSlugs.includes(slug))
+                          );
+                        }
+                      }}
                     />{" "}
                     FBS Only (I-A)
                   </label>
@@ -869,6 +917,12 @@ const LeagueCreatePage = () => {
                   ))}
                 </tbody>
               </table>
+              {includesAllFbs && (
+                <p className="conference-scope-note">
+                  No conferences selected: this league will include every game
+                  with an FBS team.
+                </p>
+              )}
 
               <h4>🌐 Other</h4>
               <div className="inline-options">
@@ -962,8 +1016,10 @@ const LeagueCreatePage = () => {
               </li>
               <li>
                 <strong>{copy.groupLabel}:</strong>{" "}
-                {teamFilter.length
-                  ? teamFilter
+                {includesAllFbs
+                  ? "All FBS conferences (every game with an FBS team)"
+                  : visibleTeamFilter.length
+                  ? visibleTeamFilter
                       .map((slug) => {
                         const group = teamGroups.find((g) => g.slug === slug);
                         return group?.shortName || slug;

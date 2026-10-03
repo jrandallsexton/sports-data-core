@@ -78,26 +78,49 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
         if (dto.Season.Type.Week is not null)
         {
-            // Note: ESPN publishes the poll at the end of the week
-            // Example: Week 9 poll is published on the Sunday after Week 9 games
-            // therefore we use it for Week 10
-            // TODO:  At the end of the season, correct this data and adjust for next season
+            // The poll's week is dto.Occurrence.Number, which equals the /weeks/{n}/
+            // segment of its own $ref. ESPN already names a poll for the week it governs:
+            // the "Week 3" poll is released after the week 2 games and is FOR week 3, so
+            // there is no offset to apply.
+            //
+            // dto.Season.Type.Week is NOT the poll's week. It is ESPN's "current week"
+            // pointer at fetch time, identical in every ranking doc fetched at the same
+            // moment, and it rolls Monday 07:00Z while polls release Sunday evening.
+            // Resolving from it (+1) made the slot depend on WHEN the doc was fetched: a
+            // Sunday fetch happened to land in the right week, a Tuesday fetch landed one
+            // week late, and on 2026-09-13 the Week 3 AP poll collided with the
+            // late-fetched Week 2 poll on IX_SeasonPollWeek_SeasonPollId_SeasonWeekId.
+            //
+            // Week numbers repeat across phases (preseason 1, regular-season 1, ...), so
+            // the phase must be part of the key or a preseason poll picks arbitrarily.
+            if (dto.Occurrence is null)
+            {
+                _logger.LogError("Rankings document has a season week but no occurrence; cannot resolve SeasonWeek. {@Command}", command);
+                return;
+            }
+
             seasonWeek = await _dataContext.SeasonWeeks
                 .Include(x => x.Season)
                 .Include(x => x.ExternalIds)
                 .Include(x => x.Rankings)
                 .ThenInclude(r => r.ExternalIds)
-                .Where(x => x.Season!.Year == command.SeasonYear!.Value && x.Number == dto.Season.Type.Week.Number + 1)
+                .Where(x => x.Season!.Year == command.SeasonYear!.Value
+                         && x.SeasonPhase.TypeCode == dto.Season.Type.Type
+                         && x.Number == dto.Occurrence.Number)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             if (seasonWeek == null)
             {
+                // Request the week the lookup above actually needs - the poll's own
+                // week from its ref - not dto.Season.Type.Week, which is the pointer
+                // and would source a different week's document forever.
                 var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
+                var weekLinkDto = new EspnLinkDto { Ref = EspnUriMapper.SeasonPollWeekRefToSeasonTypeWeekRef(dto.Ref) };
 
                 await PublishDependencyRequest(
                     command,
-                    dto.Season.Type.Week,
+                    weekLinkDto,
                     seasonPhaseIdentity.CanonicalId,
                     DocumentType.SeasonTypeWeek);
 

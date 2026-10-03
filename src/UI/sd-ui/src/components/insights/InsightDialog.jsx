@@ -4,6 +4,10 @@ import { useUserDto } from "../../contexts/UserContext";
 import { formatToUserTime } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 
+// The API serializes OverUnderPrediction by name. None = the model made no
+// over/under pick (no line); null/unknown renders as "—".
+const OVER_UNDER_LABELS = { Over: "Over", Under: "Under", None: "No pick" };
+
 /**
  * The AI matchup-preview dialog ("model predicts, LLM explains") — the
  * flagship insight surface, so it gets a real layout: a matchup header
@@ -198,6 +202,17 @@ function InsightDialog({
                       : "—"}
                   </div>
                 </div>
+                {/* Only when the caller supplies the key (the Model Lab does,
+                    null included); the user-facing preview DTO carries no
+                    over/under, so this tile is absent there. */}
+                {matchup.overUnderPrediction !== undefined && (
+                  <div className="insight-stat">
+                    <div className="insight-stat__label">Over/Under</div>
+                    <div className="insight-stat__value">
+                      {OVER_UNDER_LABELS[matchup.overUnderPrediction] ?? "—"}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="insight-section__prose">

@@ -4680,6 +4680,12 @@ namespace SportsData.Producer.Migrations.Football
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AuditAttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("AuditFlaggedUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("AuditedUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -4774,7 +4780,7 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.HasIndex("FinalizedUtc")
                         .HasDatabaseName("IX_Contest_AuditedUtc_Pending")
-                        .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL");
+                        .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL AND \"AuditFlaggedUtc\" IS NULL");
 
                     b.HasIndex("HomeTeamFranchiseSeasonId");
 

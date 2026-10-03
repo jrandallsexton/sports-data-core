@@ -351,6 +351,80 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         result.Value.PendingCount.Should().Be(1);
     }
 
+    [Theory]
+    [InlineData(PickType.StraightUp)]
+    [InlineData(PickType.AgainstTheSpread)]
+    public async Task ExecuteAsync_BetPoints_SumsTheLeaguesBetColumn(PickType pickType)
+    {
+        var (userId, groupId, week) = await SeedUserAsync();
+
+        // Win at -110, loss, push, and an unscored pick (null: not counted).
+        decimal?[] values = [0.9091m, -1m, 0m, null];
+        foreach (var value in values)
+        {
+            await DataContext.UserPicks.AddAsync(new PickemGroupUserPick
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                PickemGroupId = groupId,
+                ContestId = Guid.NewGuid(),
+                Week = week,
+                PickType = pickType,
+                TiebreakerType = TiebreakerType.TotalPoints,
+                PointsSU = pickType == PickType.StraightUp ? value : null,
+                PointsATS = pickType == PickType.AgainstTheSpread ? value : null
+            });
+        }
+        await DataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>()
+            .ExecuteAsync(new GetUserPicksByGroupAndWeekQuery { UserId = userId, GroupId = groupId, WeekNumber = week });
+
+        result.Value.BetPoints.Should().Be(-0.0909m);
+        result.Value.Picks.Select(p => p.BetPoints).Should().BeEquivalentTo(values);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_BetPoints_IsNull_WhenNoPickCarriesAValue()
+    {
+        var (userId, groupId, week) = await SeedUserAsync();
+        await DataContext.UserPicks.AddAsync(new PickemGroupUserPick
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PickemGroupId = groupId,
+            ContestId = Guid.NewGuid(),
+            Week = week,
+            PickType = PickType.StraightUp,
+            TiebreakerType = TiebreakerType.TotalPoints
+        });
+        await DataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>()
+            .ExecuteAsync(new GetUserPicksByGroupAndWeekQuery { UserId = userId, GroupId = groupId, WeekNumber = week });
+
+        result.Value.BetPoints.Should().BeNull("an unscored week shows nothing rather than a misleading 0");
+    }
+
+    private async Task<(Guid UserId, Guid GroupId, int Week)> SeedUserAsync()
+    {
+        var seededUtc = new DateTime(2025, 10, 4, 12, 0, 0, DateTimeKind.Utc);
+        PinClock(seededUtc.AddDays(2));
+        var userId = Guid.NewGuid();
+        await DataContext.Users.AddAsync(new UserEntity
+        {
+            Username = $"bet_user_{userId:N}",
+            Id = userId,
+            FirebaseUid = Guid.NewGuid().ToString(),
+            Email = "bet@test.com",
+            DisplayName = "Bet User",
+            SignInProvider = "test",
+            LastLoginUtc = seededUtc
+        });
+        await DataContext.SaveChangesAsync();
+        return (userId, Guid.NewGuid(), 5);
+    }
+
     [Fact]
     public async Task ExecuteAsync_ScoredPush_IsDecidedNotPending()
     {

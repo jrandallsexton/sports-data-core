@@ -12,8 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 using SportsData.Api.Application.Auth;
-using SportsData.Api.Application.Events;
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Config;
 using SportsData.Api.DependencyInjection;
@@ -33,6 +31,16 @@ using System.Data;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using SportsData.Api.Application.Plays.Consumers;
+using SportsData.Api.Application.User.Consumers;
+using SportsData.Api.Application.PickemGroups.Consumers;
+using SportsData.Api.Application.Athletes.Consumers;
+using SportsData.Api.Application.Contests.Consumers;
+using SportsData.Api.Application.FranchiseSeasons.Consumers;
+using SportsData.Api.Application.Matchups.Consumers;
+using SportsData.Api.Application.PlayerLineups.Consumers;
+using SportsData.Api.Application.SeasonPollWeek.Consumers;
+using SportsData.Api.Application.Previews.Consumers;
 
 namespace SportsData.Api
 {
@@ -149,8 +157,36 @@ namespace SportsData.Api
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.Configure<ApiConfig>(config.GetSection("SportsData.Api:ApiConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
-            services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
+            // Bound from the RAW JSON string, not by the section binder. The
+            // AppConfig value is a single key holding a nested document, and
+            // Azure only expands that into hierarchical keys when the setting
+            // carries content-type application/json — which Apply-AppConfig.ps1
+            // preserves for Key Vault references only, then drops on its
+            // `az appconfig kv import` path. So the section has a value but no
+            // children, and Configure<> bound an EMPTY dictionary: the provider
+            // logged "0 pick styles" at every startup and every styled bot threw
+            // ArgumentException the first time it met an ATS matchup with a
+            // spread (prod + local, 2026-09-20). Flattening the value into ~33
+            // keys per label was the alternative and is a lot of noise in
+            // AppConfig for one setting.
+            services.Configure<SyntheticUserPickStylesConfig>(
+                SyntheticUserPickStylesConfig.BindFrom(config, "SportsData.Api:SyntheticUserPickStyles"));
             services.Configure<SyntheticUsersConfig>(config.GetSection("CommonConfig:SyntheticUsers"));
+
+            // StatBot advisor tunables: an absent section keeps the code
+            // defaults; a present one is validated at startup so a bad value
+            // fails the pod rather than skewing every recommendation. The
+            // planner takes the plain options object, so the validated value
+            // is forwarded as the singleton.
+            services.AddOptions<Application.UI.Picks.Advisor.PickAdvisorOptions>()
+                .Bind(config.GetSection("SportsData.Api:PickAdvisor"))
+                .Validate(o => o.CoinFlipThreshold is > 0.5 and <= 1.0, "PickAdvisor:CoinFlipThreshold must be in (0.5, 1].")
+                .Validate(o => o.QbDrawFlipCount >= 0, "PickAdvisor:QbDrawFlipCount must be non-negative.")
+                .Validate(o => o.GoalLineMaxUnits > 0 && o.QbDrawMaxUnits >= o.GoalLineMaxUnits, "PickAdvisor unit thresholds must be positive and ordered.")
+                .Validate(o => o.MinUnit > 0 && o.FallbackUnitFraction > 0, "PickAdvisor:MinUnit and FallbackUnitFraction must be positive.")
+                .ValidateOnStart();
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Application.UI.Picks.Advisor.PickAdvisorOptions>>().Value);
 
             if (!isTestingEnv)
             {
@@ -318,25 +354,28 @@ namespace SportsData.Api
                 // shovel").
                 services.AddMessaging<AppDataContext>(config,
                 [
-                    typeof(AthleteCompetitionStatsUpdatedHandler),
-                    typeof(BaseballPlayCompletedHandler),
-                    typeof(ContestFinalizedHandler),
-                    typeof(ContestOddsUpdatedHandler),
-                    typeof(ContestRecapArticlePublishedHandler),
-                    typeof(ContestRefreshRequestedHandler),
-                    typeof(ContestScoreChangedHandler),
-                    typeof(ContestStartTimeUpdatedHandler),
-                    typeof(ContestStatusChangedHandler),
-                    typeof(FootballPlayCompletedHandler),
-                    typeof(PickemGroupCreatedHandler),
-                    typeof(PickemGroupMatchupAddedHandler),
+                    typeof(AthleteCompetitionStatsUpdatedConsumer),
+                    typeof(BaseballPlayCompletedConsumer),
+                    typeof(ContestFinalizedConsumer),
+                    typeof(ContestOddsCreatedConsumer),
+                    typeof(ContestOddsUpdatedConsumer),
+                    typeof(ContestRecapArticlePublishedConsumer),
+                    typeof(ContestRefreshRequestedConsumer),
+                    typeof(ContestScoreChangedConsumer),
+                    typeof(ContestStartTimeUpdatedConsumer),
+                    typeof(ContestStatusChangedConsumer),
+                    typeof(FootballPlayCompletedConsumer),
+                    typeof(FranchiseSeasonEnrichmentCompletedConsumer),
+                    typeof(PickemGroupCreatedConsumer),
+                    typeof(PickemGroupMatchupAddedConsumer),
                     typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
-                    typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                    typeof(PlayerLineupContestFinalizedHandler),
-                    typeof(PreviewGeneratedHandler),
-                    typeof(PreviewPromptCapturedHandler),
-                    typeof(SeasonPollWeekCreatedHandler),
+                    typeof(PickemGroupWeekMatchupsGeneratedConsumer),
+                    typeof(PlayerLineupContestFinalizedConsumer),
+                    typeof(MatchupPreviewApprovedConsumer),
+                    typeof(PreviewGeneratedConsumer),
+                    typeof(PreviewPromptCapturedConsumer),
+                    typeof(SeasonPollWeekCreatedConsumer),
                     typeof(UsersRequestedConsumer)
                 ]);
 

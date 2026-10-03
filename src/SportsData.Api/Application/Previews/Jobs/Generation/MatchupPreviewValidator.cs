@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.UI.Matchups;
+﻿namespace SportsData.Api.Application.Previews.Jobs.Generation;
 
 public class MatchupPreviewValidator
 {

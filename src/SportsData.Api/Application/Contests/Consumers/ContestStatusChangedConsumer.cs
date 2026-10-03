@@ -2,7 +2,6 @@ using MassTransit;
 
 using Microsoft.AspNetCore.SignalR;
 
-using SportsData.Api.Application.Events;
 using SportsData.Api.Application.Plays.Consumers;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Eventing.Events.Contests;

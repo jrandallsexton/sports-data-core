@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Previews;
+namespace SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 
 public enum PreviewGenerationMode
 {

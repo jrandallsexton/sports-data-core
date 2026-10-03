@@ -7,26 +7,25 @@ using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
-using SportsData.Api.Application.Athletes.Consumers;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.PlayerLineups.Consumers;
 using SportsData.Api.Application.UI.PlayerLineups.Scoring;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Eventing.Events.Athletes;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Infrastructure.Clients.Athlete;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Athletes.Consumers;
+namespace SportsData.Api.Tests.Unit.Application.PlayerLineups.Consumers;
 
 /// <summary>
-/// Phase 2 scoring: the stats-updated trigger persists slot points +
-/// lineup totals, and skips slots already frozen by contest finalization
-/// (see PlayerLineupContestFinalizedConsumerTests).
+/// Phase 2 scoring: contest finalization recomputes every slot tied to the
+/// contest and freezes it, so later stat events cannot move a final number.
 /// </summary>
-public class AthleteCompetitionStatsUpdatedConsumerTests : ApiTestBase<AthleteCompetitionStatsUpdatedConsumer>
+public class PlayerLineupContestFinalizedConsumerTests : ApiTestBase<PlayerLineupContestFinalizedConsumer>
 {
     private static readonly Guid LeagueId = Guid.NewGuid();
     private static readonly DateTime FixedNow = new(2026, 8, 27, 12, 0, 0, DateTimeKind.Utc);
@@ -34,13 +33,13 @@ public class AthleteCompetitionStatsUpdatedConsumerTests : ApiTestBase<AthleteCo
     private static readonly Guid ContestId = Guid.NewGuid();
     private static readonly Guid AthleteSeasonId = Guid.NewGuid();
 
-    public AthleteCompetitionStatsUpdatedConsumerTests()
+    public PlayerLineupContestFinalizedConsumerTests()
     {
         Mocker.GetMock<IDateTimeProvider>()
             .Setup(x => x.UtcNow())
             .Returns(new DateTime(2026, 8, 27, 20, 0, 0, DateTimeKind.Utc));
 
-        // Real scorer — the consumers' behavior IS the scorer's writes.
+        // Real scorer — the consumer's behavior IS the scorer's writes.
         Mocker.Use<IPlayerLineupScorer>(Mocker.CreateInstance<PlayerLineupScorer>());
 
         var hubClients = new Mock<IHubClients>();
@@ -68,7 +67,7 @@ public class AthleteCompetitionStatsUpdatedConsumerTests : ApiTestBase<AthleteCo
             .Returns(client.Object);
     }
 
-    private async Task SeedWorldAsync(bool slotAlreadyFinal = false)
+    private async Task SeedWorldAsync()
     {
         DataContext.PickemGroups.Add(new PickemGroup
         {
@@ -115,7 +114,7 @@ public class AthleteCompetitionStatsUpdatedConsumerTests : ApiTestBase<AthleteCo
             TeamName = "Team",
             TeamSlug = "team",
             ContestId = ContestId,
-            IsScoreFinal = slotAlreadyFinal,
+            IsScoreFinal = false,
             CreatedUtc = FixedNow,
             CreatedBy = UserId,
         });
@@ -132,39 +131,21 @@ public class AthleteCompetitionStatsUpdatedConsumerTests : ApiTestBase<AthleteCo
     }
 
     [Fact]
-    public async Task StatsUpdated_PersistsSlotPoints_AndLineupTotal()
+    public async Task ContestFinalized_RecomputesAndFreezes()
     {
         await SeedWorldAsync();
         SetStatline(new Dictionary<string, decimal>
         {
-            ["passing.passingYards"] = 187m,
-            ["passing.passingTouchdowns"] = 2m,
+            ["passing.passingYards"] = 250m, // 10.00
         });
-        var handler = Mocker.CreateInstance<AthleteCompetitionStatsUpdatedConsumer>();
+        var handler = Mocker.CreateInstance<PlayerLineupContestFinalizedConsumer>();
 
-        await handler.Consume(Ctx(new AthleteCompetitionStatsUpdated(
-            ContestId, Guid.NewGuid(), AthleteSeasonId, null, Sport.FootballNfl, 2026, Guid.NewGuid(), Guid.NewGuid())));
-
-        var slot = await DataContext.PlayerLineupSlots.SingleAsync();
-        slot.Points.Should().Be(19.48m); // 187/25 = 7.48 + 2 TD * 6
-        slot.StatLine.Should().Contain("187 PaYd");
-        slot.IsScoreFinal.Should().BeFalse();
-        var lineup = await DataContext.PlayerLineups.SingleAsync();
-        lineup.TotalPoints.Should().Be(19.48m);
-        lineup.ScoreUpdatedUtc.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task StatsUpdated_SkipsFrozenSlots()
-    {
-        await SeedWorldAsync(slotAlreadyFinal: true);
-        SetStatline(new Dictionary<string, decimal> { ["passing.passingYards"] = 999m });
-        var handler = Mocker.CreateInstance<AthleteCompetitionStatsUpdatedConsumer>();
-
-        await handler.Consume(Ctx(new AthleteCompetitionStatsUpdated(
-            ContestId, Guid.NewGuid(), AthleteSeasonId, null, Sport.FootballNfl, 2026, Guid.NewGuid(), Guid.NewGuid())));
+        await handler.Consume(Ctx(new ContestFinalized(
+            ContestId, null, Sport.FootballNfl, 2026, Guid.NewGuid(), Guid.NewGuid())));
 
         var slot = await DataContext.PlayerLineupSlots.SingleAsync();
-        slot.Points.Should().BeNull(); // frozen slot untouched
+        slot.Points.Should().Be(10.00m);
+        slot.IsScoreFinal.Should().BeTrue();
+        (await DataContext.PlayerLineups.SingleAsync()).TotalPoints.Should().Be(10.00m);
     }
 }

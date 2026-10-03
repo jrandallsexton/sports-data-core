@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;

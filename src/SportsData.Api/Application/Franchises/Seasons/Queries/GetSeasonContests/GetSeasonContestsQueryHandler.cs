@@ -5,7 +5,7 @@ using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
-namespace SportsData.Api.Application.Franchises.Seasons.Contests;
+namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetSeasonContests;
 
 public interface IGetSeasonContestsQueryHandler
 {

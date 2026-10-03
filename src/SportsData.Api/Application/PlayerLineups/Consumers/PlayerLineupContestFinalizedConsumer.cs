@@ -8,7 +8,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Eventing.Events.Contests;
 
-namespace SportsData.Api.Application.Events
+namespace SportsData.Api.Application.PlayerLineups.Consumers
 {
     /// <summary>
     /// Player Pick'em finals: when a contest finalizes, every anchored
@@ -18,15 +18,15 @@ namespace SportsData.Api.Application.Events
     /// never drift. Second consumer on ContestFinalized alongside the
     /// team-pick handler; the existing shovels carry it.
     /// </summary>
-    public class PlayerLineupContestFinalizedHandler : IConsumer<ContestFinalized>
+    public class PlayerLineupContestFinalizedConsumer : IConsumer<ContestFinalized>
     {
-        private readonly ILogger<PlayerLineupContestFinalizedHandler> _logger;
+        private readonly ILogger<PlayerLineupContestFinalizedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IPlayerLineupScorer _scorer;
         private readonly IHubContext<NotificationHub> _hubContext;
 
-        public PlayerLineupContestFinalizedHandler(
-            ILogger<PlayerLineupContestFinalizedHandler> logger,
+        public PlayerLineupContestFinalizedConsumer(
+            ILogger<PlayerLineupContestFinalizedConsumer> logger,
             AppDataContext dataContext,
             IPlayerLineupScorer scorer,
             IHubContext<NotificationHub> hubContext)

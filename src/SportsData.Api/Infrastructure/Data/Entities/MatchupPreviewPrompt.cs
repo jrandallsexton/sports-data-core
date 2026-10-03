@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;

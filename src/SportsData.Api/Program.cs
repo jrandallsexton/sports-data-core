@@ -12,7 +12,6 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 using SportsData.Api.Application.Auth;
-using SportsData.Api.Application.Events;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Config;
 using SportsData.Api.DependencyInjection;
@@ -39,6 +38,7 @@ using SportsData.Api.Application.Athletes.Consumers;
 using SportsData.Api.Application.Contests.Consumers;
 using SportsData.Api.Application.FranchiseSeasons.Consumers;
 using SportsData.Api.Application.Matchups.Consumers;
+using SportsData.Api.Application.PlayerLineups.Consumers;
 using SportsData.Api.Application.SeasonPollWeek.Consumers;
 using SportsData.Api.Application.Previews.Consumers;
 
@@ -371,7 +371,7 @@ namespace SportsData.Api
                     typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
                     typeof(PickemGroupWeekMatchupsGeneratedConsumer),
-                    typeof(PlayerLineupContestFinalizedHandler),
+                    typeof(PlayerLineupContestFinalizedConsumer),
                     typeof(MatchupPreviewApprovedConsumer),
                     typeof(PreviewGeneratedConsumer),
                     typeof(PreviewPromptCapturedConsumer),

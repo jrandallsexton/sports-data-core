@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.User
+namespace SportsData.Api.Application.User.Commands.UpsertUser
 {
     /// <summary>
     /// Builds a default username <i>seed</i> from a user's email (or display

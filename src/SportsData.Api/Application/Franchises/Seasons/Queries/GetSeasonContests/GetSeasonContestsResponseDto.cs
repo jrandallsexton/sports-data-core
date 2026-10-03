@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Franchises.Seasons.Contests;
+namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetSeasonContests;
 
 public record GetSeasonContestsResponseDto
 {

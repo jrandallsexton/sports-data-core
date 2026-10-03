@@ -179,12 +179,3 @@ namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
                 && (g.EndsOn == null || g.EndsOn >= now);
     }
 }
-
-public record ScheduleGroupWeekMatchupsCommand(
-    Guid GroupId,
-    Guid SeasonWeekId,
-    int SeasonYear,
-    int SeasonWeek,
-    bool IsNonStandardWeek,
-    Guid CorrelationId,
-    bool IsRefresh = false);

@@ -60,7 +60,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     {
         using (_logger.BeginScope(command.ToLogScope()))
         {
-            _logger.LogInformation("Processing started.");
+            _logger.LogDebug("Processing started.");
 
             try
             {
@@ -76,7 +76,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                     new KeyValuePair<string, object?>("DocumentType", command.DocumentType.ToString()),
                     new KeyValuePair<string, object?>("Sport", command.Sport.ToString()));
 
-                _logger.LogInformation("Processing completed.");
+                _logger.LogDebug("Processing completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {

@@ -8,7 +8,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
+namespace SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
 
 public interface IGetModelLabMatrixQueryHandler
 {

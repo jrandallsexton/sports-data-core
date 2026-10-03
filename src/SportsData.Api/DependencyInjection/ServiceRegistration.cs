@@ -116,6 +116,13 @@ using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
+using SportsData.Api.Application.Models.Commands.CreateModel;
+using SportsData.Api.Application.Models.Commands.CreateModelProvider;
+using SportsData.Api.Application.Models.Commands.SetDefaultModel;
+using SportsData.Api.Application.Models.Commands.UpdateModel;
+using SportsData.Api.Application.Models.Queries.GetModelById;
+using SportsData.Api.Application.Models.Queries.GetModelProviders;
+using SportsData.Api.Application.Models.Queries.GetModels;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
 using SportsData.Api.Application.Previews.Jobs.Generation;
@@ -289,8 +296,8 @@ namespace SportsData.Api.DependencyInjection
                 SportsData.Api.Application.Admin.Queries.GetMatchupForContest.GetMatchupForContestQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.IGetLeagueWeekContestsQueryHandler,
                 SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.GetLeagueWeekContestsQueryHandler>();
-            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetModelLabMatrix.IGetModelLabMatrixQueryHandler,
-                SportsData.Api.Application.Admin.Queries.GetModelLabMatrix.GetModelLabMatrixQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Models.Queries.GetModelLabMatrix.IGetModelLabMatrixQueryHandler,
+                SportsData.Api.Application.Models.Queries.GetModelLabMatrix.GetModelLabMatrixQueryHandler>();
 
             // Analytics Queries
             services.AddScoped<IGetFranchiseSeasonMetricsQueryHandler, GetFranchiseSeasonMetricsQueryHandler>();
@@ -452,13 +459,13 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetPromptByIdQueryHandler, GetPromptByIdQueryHandler>();
             services.AddScoped<IUpdatePromptCommandHandler, UpdatePromptCommandHandler>();
             services.AddScoped<ISetDefaultPromptCommandHandler, SetDefaultPromptCommandHandler>();
-            services.AddScoped<Application.Admin.Models.ICreateModelProviderCommandHandler, Application.Admin.Models.CreateModelProviderCommandHandler>();
-            services.AddScoped<Application.Admin.Models.IGetModelProvidersQueryHandler, Application.Admin.Models.GetModelProvidersQueryHandler>();
-            services.AddScoped<Application.Admin.Models.ICreateModelCommandHandler, Application.Admin.Models.CreateModelCommandHandler>();
-            services.AddScoped<Application.Admin.Models.IGetModelsQueryHandler, Application.Admin.Models.GetModelsQueryHandler>();
-            services.AddScoped<Application.Admin.Models.IGetModelByIdQueryHandler, Application.Admin.Models.GetModelByIdQueryHandler>();
-            services.AddScoped<Application.Admin.Models.IUpdateModelCommandHandler, Application.Admin.Models.UpdateModelCommandHandler>();
-            services.AddScoped<Application.Admin.Models.ISetDefaultModelCommandHandler, Application.Admin.Models.SetDefaultModelCommandHandler>();
+            services.AddScoped<ICreateModelProviderCommandHandler, CreateModelProviderCommandHandler>();
+            services.AddScoped<IGetModelProvidersQueryHandler, GetModelProvidersQueryHandler>();
+            services.AddScoped<ICreateModelCommandHandler, CreateModelCommandHandler>();
+            services.AddScoped<IGetModelsQueryHandler, GetModelsQueryHandler>();
+            services.AddScoped<IGetModelByIdQueryHandler, GetModelByIdQueryHandler>();
+            services.AddScoped<IUpdateModelCommandHandler, UpdateModelCommandHandler>();
+            services.AddScoped<ISetDefaultModelCommandHandler, SetDefaultModelCommandHandler>();
             services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();

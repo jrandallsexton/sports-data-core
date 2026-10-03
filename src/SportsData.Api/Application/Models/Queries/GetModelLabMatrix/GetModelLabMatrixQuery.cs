@@ -2,7 +2,7 @@ using FluentValidation;
 
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
+namespace SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
 
 /// <summary>
 /// One week of the Model Consensus Lab matrix: every contest any pick'em

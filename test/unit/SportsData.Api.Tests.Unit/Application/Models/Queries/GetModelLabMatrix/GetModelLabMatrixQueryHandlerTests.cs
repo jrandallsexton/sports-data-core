@@ -1,6 +1,6 @@
 using Moq;
 
-using SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
+using SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
@@ -11,7 +11,7 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Queries.GetModelLabMatrix;
+namespace SportsData.Api.Tests.Unit.Application.Models.Queries.GetModelLabMatrix;
 
 public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQueryHandler>
 {

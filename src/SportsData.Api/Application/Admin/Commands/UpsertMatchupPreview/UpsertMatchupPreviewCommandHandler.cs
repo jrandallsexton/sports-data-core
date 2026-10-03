@@ -65,7 +65,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
                 return new Failure<Guid>(
                     default!,
                     ResultStatus.Validation,
-                    [new ValidationFailure(nameof(MatchupPreview.PromptId), "Preview JSON must reference an existing Prompt via promptId (see GET /admin/prompts)")]);
+                    [new ValidationFailure(nameof(MatchupPreview.PromptId), "Preview JSON must reference an existing Prompt via promptId (see GET /api/prompts)")]);
             }
 
             // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured

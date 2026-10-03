@@ -560,9 +560,9 @@ model/prompt choice before real generations start):
    fault-eviction machinery is gone).
 
    Captures now stamp PromptId (Guid) alongside PromptVersion + text.
-   Admin endpoints: POST /admin/prompts (create; IsDefault flips the
-   slot), POST /admin/prompts/import-blob (ONE-TIME seeding from the
-   legacy container), GET /admin/prompts (+ /{id}). Preview Lab's
+   Admin endpoints: POST /api/prompts (create; IsDefault flips the
+   slot), POST /api/prompts/import-blob (ONE-TIME seeding from the
+   legacy container), GET /api/prompts (+ /{id}). Preview Lab's
    Prompt ID input takes the Guid.
 
    **DEPLOY GATE: seed before the next preview cycle** — the provider

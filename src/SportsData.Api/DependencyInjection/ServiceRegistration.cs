@@ -119,6 +119,12 @@ using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
 using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.Prompts.Commands.CreatePrompt;
+using SportsData.Api.Application.Prompts.Commands.ImportPromptFromBlob;
+using SportsData.Api.Application.Prompts.Commands.SetDefaultPrompt;
+using SportsData.Api.Application.Prompts.Commands.UpdatePrompt;
+using SportsData.Api.Application.Prompts.Queries.GetPromptById;
+using SportsData.Api.Application.Prompts.Queries.GetPrompts;
 using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 
 namespace SportsData.Api.DependencyInjection
@@ -440,12 +446,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<MatchupScheduler>();
             // Scoped: resolves prompts from AppDataContext (text lives in the DB).
             services.AddScoped<IMatchupPreviewPromptProvider, MatchupPreviewPromptProvider>();
-            services.AddScoped<Application.Admin.Prompts.ICreatePromptCommandHandler, Application.Admin.Prompts.CreatePromptCommandHandler>();
-            services.AddScoped<Application.Admin.Prompts.IImportPromptFromBlobCommandHandler, Application.Admin.Prompts.ImportPromptFromBlobCommandHandler>();
-            services.AddScoped<Application.Admin.Prompts.IGetPromptsQueryHandler, Application.Admin.Prompts.GetPromptsQueryHandler>();
-            services.AddScoped<Application.Admin.Prompts.IGetPromptByIdQueryHandler, Application.Admin.Prompts.GetPromptByIdQueryHandler>();
-            services.AddScoped<Application.Admin.Prompts.IUpdatePromptCommandHandler, Application.Admin.Prompts.UpdatePromptCommandHandler>();
-            services.AddScoped<Application.Admin.Prompts.ISetDefaultPromptCommandHandler, Application.Admin.Prompts.SetDefaultPromptCommandHandler>();
+            services.AddScoped<ICreatePromptCommandHandler, CreatePromptCommandHandler>();
+            services.AddScoped<IImportPromptFromBlobCommandHandler, ImportPromptFromBlobCommandHandler>();
+            services.AddScoped<IGetPromptsQueryHandler, GetPromptsQueryHandler>();
+            services.AddScoped<IGetPromptByIdQueryHandler, GetPromptByIdQueryHandler>();
+            services.AddScoped<IUpdatePromptCommandHandler, UpdatePromptCommandHandler>();
+            services.AddScoped<ISetDefaultPromptCommandHandler, SetDefaultPromptCommandHandler>();
             services.AddScoped<Application.Admin.Models.ICreateModelProviderCommandHandler, Application.Admin.Models.CreateModelProviderCommandHandler>();
             services.AddScoped<Application.Admin.Models.IGetModelProvidersQueryHandler, Application.Admin.Models.GetModelProvidersQueryHandler>();
             services.AddScoped<Application.Admin.Models.ICreateModelCommandHandler, Application.Admin.Models.CreateModelCommandHandler>();

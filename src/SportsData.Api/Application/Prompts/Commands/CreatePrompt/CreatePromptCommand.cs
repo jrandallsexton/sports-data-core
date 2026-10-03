@@ -3,7 +3,7 @@ using FluentValidation;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Prompts;
+namespace SportsData.Api.Application.Prompts.Commands.CreatePrompt;
 
 public class CreatePromptCommand
 {

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Prompts;
+namespace SportsData.Api.Application.Prompts.Commands.UpdatePrompt;
 
 /// <summary>
 /// Edits a prompt's Text and/or Description. Name and slot

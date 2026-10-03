@@ -214,7 +214,7 @@ export default function AdminPreviewLabPage() {
             type="text"
             value={promptId}
             onChange={handlePromptIdChange}
-            placeholder="optional — Prompt GUID from GET /admin/prompts"
+            placeholder="optional — Prompt GUID from GET /api/prompts"
             title="Explicit Prompt entity override for this run (Guid). Blank = the sport/variant default. An unknown id fails the run rather than silently using a default."
             style={{ flex: 1, padding: '6px 8px', minWidth: 240 }}
           />

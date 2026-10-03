@@ -84,7 +84,7 @@ public class MatchupPreviewPromptProvider : IMatchupPreviewPromptProvider
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException(
                 $"No default matchup-preview prompt configured for Sport={request.Sport}, WithStats={request.HasStats}. " +
-                "Seed one via POST /admin/prompts or POST /admin/prompts/import-blob.");
+                "Seed one via POST /api/prompts or POST /api/prompts/import-blob.");
 
         return resolved;
     }

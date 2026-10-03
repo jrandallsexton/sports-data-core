@@ -71,14 +71,14 @@ const AdminApi = {
   // Prompt management (per-sport-league prompt entities; text lives in
   // the API database). Name and slot (sport, withStats) are immutable —
   // a different slot means creating a new version.
-  getPrompts: () => apiClient.get('/admin/prompts'),
-  getPrompt: (promptId) => apiClient.get(`/admin/prompts/${encodeURIComponent(promptId)}`),
-  createPrompt: (body) => apiClient.post('/admin/prompts', body),
+  getPrompts: () => apiClient.get('/api/prompts'),
+  getPrompt: (promptId) => apiClient.get(`/api/prompts/${encodeURIComponent(promptId)}`),
+  createPrompt: (body) => apiClient.post('/api/prompts', body),
   updatePrompt: (promptId, body) =>
-    apiClient.put(`/admin/prompts/${encodeURIComponent(promptId)}`, body),
+    apiClient.put(`/api/prompts/${encodeURIComponent(promptId)}`, body),
   setDefaultPrompt: (promptId) =>
-    apiClient.post(`/admin/prompts/${encodeURIComponent(promptId)}/set-default`),
-  importPromptFromBlob: (body) => apiClient.post('/admin/prompts/import-blob', body),
+    apiClient.post(`/api/prompts/${encodeURIComponent(promptId)}/set-default`),
+  importPromptFromBlob: (body) => apiClient.post('/api/prompts/import-blob', body),
 
   // Model management (provider fleets + model identity records driving
   // the experiment harness and production routing; seed data in

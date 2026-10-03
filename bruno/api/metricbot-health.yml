@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrlApi}}/admin/metricbot/health"
+  url: "{{baseUrlApi}}/api/metricbot/health"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

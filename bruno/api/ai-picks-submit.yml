@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/admin/ai-predictions/b210d677-19c3-4f26-ac4b-b2cc7ad58c44"
+  url: "{{baseUrl}}/api/metricbot/predictions/b210d677-19c3-4f26-ac4b-b2cc7ad58c44"
   headers:
     - name: X-Admin-Token
       value: "{{adminToken}}"

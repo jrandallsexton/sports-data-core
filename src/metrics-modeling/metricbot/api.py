@@ -27,7 +27,7 @@ class PublishError(RuntimeError):
 
 
 def post_predictions(config: Config, dtos: list[dict], timeout_seconds: int = 60) -> str:
-    url = f"{config.api_base_url}/admin/ai-predictions/{config.metricbot_user_id}"
+    url = f"{config.api_base_url}/api/metricbot/predictions/{config.metricbot_user_id}"
 
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in ALLOWED_SCHEMES:

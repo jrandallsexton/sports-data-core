@@ -2,6 +2,7 @@
 
 using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews.Models;
+using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;

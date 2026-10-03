@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
-
 using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.UI.Matchups;
 
 using Xunit;
 

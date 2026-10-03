@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
+namespace SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 
 /// <summary>
 /// Admin command: send a single test push notification to one device

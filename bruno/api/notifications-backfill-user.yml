@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/notifications/matchups/backfill?sport=FootballNcaa"
+  url: "{{baseUrlApi}}/api/notifications/matchups/backfill?sport=FootballNcaa"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

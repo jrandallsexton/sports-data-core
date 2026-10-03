@@ -12,7 +12,7 @@ import {
 } from '@/src/lib/notifications/pushNotifications';
 
 // Dev / admin tool: surfaces the FCM device token so it can be copied
-// and pasted into the admin/notifications/test-push API endpoint. Pure
+// and pasted into the api/notifications/test-push API endpoint. Pure
 // proof-of-concept screen — not the end-state notification settings UI.
 // Once the production-shaped UserDeviceToken auto-registration ships
 // (see docs/mobile/push-notifications.md), this screen stops being a
@@ -100,7 +100,7 @@ export default function PushTokenScreen() {
           FCM Device Token
         </Text>
         <Text style={[styles.subhead, { color: theme.textMuted }]}>
-          Paste into the admin/notifications/test-push endpoint to verify
+          Paste into the api/notifications/test-push endpoint to verify
           the push pipeline.
         </Text>
 

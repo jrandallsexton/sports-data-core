@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
+namespace SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 
 public interface ISendTestPushNotificationCommandHandler
 {

@@ -5,6 +5,7 @@ using Moq;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;

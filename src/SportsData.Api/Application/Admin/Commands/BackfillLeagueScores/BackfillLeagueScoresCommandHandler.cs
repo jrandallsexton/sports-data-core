@@ -3,6 +3,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Season;

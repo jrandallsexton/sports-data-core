@@ -5,7 +5,7 @@ using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common.Jobs;
 
-namespace SportsData.Api.Application.Scoring.Jobs
+namespace SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring
 {
     /// <summary>
     /// Daily backstop for the leaderboard-scoring path.

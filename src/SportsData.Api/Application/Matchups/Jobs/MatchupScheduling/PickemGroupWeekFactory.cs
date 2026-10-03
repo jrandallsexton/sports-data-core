@@ -1,7 +1,7 @@
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Dtos.Canonical;
 
-namespace SportsData.Api.Application.PickemGroups;
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 
 /// <summary>
 /// Single source of truth for building a <see cref="PickemGroupWeek"/> row.

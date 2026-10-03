@@ -5,7 +5,7 @@ using MassTransit;
 using Moq;
 
 using SportsData.Api.Application.Contests.Consumers;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;

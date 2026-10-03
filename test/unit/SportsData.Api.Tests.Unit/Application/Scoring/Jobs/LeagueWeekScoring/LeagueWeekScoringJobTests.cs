@@ -1,12 +1,12 @@
 using Moq;
 
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Application.Scoring.Jobs;
 using SportsData.Api.Infrastructure.Data.Entities;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Scoring.Jobs;
+namespace SportsData.Api.Tests.Unit.Application.Scoring.Jobs.LeagueWeekScoring;
 
 /// <summary>
 /// Tests for LeagueWeekScoringJob — the sport-agnostic daily backstop.

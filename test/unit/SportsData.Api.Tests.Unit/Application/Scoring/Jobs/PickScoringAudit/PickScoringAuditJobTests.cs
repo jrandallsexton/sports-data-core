@@ -2,7 +2,6 @@ using AutoFixture;
 
 using Moq;
 
-using SportsData.Api.Application.Scoring.Jobs;
 using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;

@@ -3,7 +3,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;

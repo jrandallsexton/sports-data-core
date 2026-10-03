@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -7,7 +8,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups
 {
     public interface IBootstrapLeagueMatchups
     {
@@ -188,7 +189,3 @@ namespace SportsData.Api.Application.Processors
         }
     }
 }
-
-public record BootstrapLeagueMatchupsCommand(
-    Guid GroupId,
-    Guid CorrelationId);

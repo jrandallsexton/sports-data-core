@@ -6,7 +6,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Processors
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit
 {
     public interface IAuditMatchupRecords
     {
@@ -226,28 +226,4 @@ namespace SportsData.Api.Application.Processors
             return new MatchupRecordAuditResult(rows.Count, corrected, unresolved);
         }
     }
-
-    /// <param name="SeasonWeek">Null audits every week of the season year.</param>
-    public record MatchupRecordAuditCommand(
-        Sport Sport,
-        int SeasonYear,
-        int? SeasonWeek = null);
-
-    /// <summary>
-    /// Audit only the league matchups for these contests, in this sport.
-    /// Contests not in any league are simply absent from the rows and cost
-    /// nothing; an empty list is a no-op.
-    /// </summary>
-    public record MatchupRecordAuditByContestsCommand(
-        Sport Sport,
-        IReadOnlyList<Guid> ContestIds);
-
-    /// <param name="Unresolved">
-    /// Contests Producer could not derive a record for. Non-zero means the two
-    /// services disagree about what exists, which is worth looking at.
-    /// </param>
-    public record MatchupRecordAuditResult(
-        int Examined,
-        int Corrected,
-        int Unresolved);
 }

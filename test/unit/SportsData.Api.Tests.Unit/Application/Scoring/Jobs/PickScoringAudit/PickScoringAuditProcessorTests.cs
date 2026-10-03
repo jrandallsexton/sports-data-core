@@ -5,6 +5,7 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;

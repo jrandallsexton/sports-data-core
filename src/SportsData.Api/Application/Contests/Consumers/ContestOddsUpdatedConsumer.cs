@@ -1,6 +1,6 @@
 using MassTransit;
 
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
 

@@ -1,14 +1,14 @@
 using FluentAssertions;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.PickemGroups;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.PickemGroups;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Jobs.MatchupScheduling;
 
 /// <summary>
 /// Pins <see cref="PickemGroupWeekFactory"/> behavior — the central reason

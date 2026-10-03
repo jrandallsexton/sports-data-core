@@ -8,7 +8,7 @@ using Moq;
 
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;

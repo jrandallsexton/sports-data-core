@@ -1,11 +1,12 @@
 using Moq;
 
+using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Entities;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Scoring;
+namespace SportsData.Api.Tests.Unit.Application.Scoring.Jobs.LeagueWeekScoring;
 
 public class LeagueWeekScoringProcessorTests : ApiTestBase<LeagueWeekScoringProcessor>
 {

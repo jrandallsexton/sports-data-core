@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Infrastructure.Data;
 
 namespace SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;

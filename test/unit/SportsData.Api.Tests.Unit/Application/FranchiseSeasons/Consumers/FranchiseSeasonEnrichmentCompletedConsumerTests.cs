@@ -5,7 +5,7 @@ using MassTransit;
 using Moq;
 
 using SportsData.Api.Application.FranchiseSeasons.Consumers;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Franchise;
 

@@ -2,7 +2,7 @@ using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
-using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;

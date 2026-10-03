@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/metricbot/run-week"
+  url: "{{baseUrlApi}}/api/metricbot/run-week"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

@@ -20,7 +20,7 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
-using SportsData.Api.Application.Jobs;
+using SportsData.Api.Application.MetricBot.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticleById;
@@ -563,7 +563,7 @@ namespace SportsData.Api.DependencyInjection
             // NCAA runs Tuesday 03:00 UTC and NFL Wednesday 03:00 UTC.
             // Hangfire (not a K8s CronJob) so the dashboard's manual
             // trigger covers ad-hoc reruns; parameterized experiment runs
-            // go through POST /admin/metricbot/run-week instead.
+            // go through POST /api/metricbot/run-week instead.
             recurringJobManager.AddOrUpdate<MetricBotWeeklyJob>(
                 "MetricBotWeekly-FootballNcaa",
                 job => job.ExecuteAsync(Sport.FootballNcaa),

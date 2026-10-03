@@ -1,7 +1,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.MetricBot;
 
-namespace SportsData.Api.Application.Jobs
+namespace SportsData.Api.Application.MetricBot.Jobs
 {
     /// <summary>
     /// Weekly deetsMeter prediction run. Hangfire owns the schedule (and

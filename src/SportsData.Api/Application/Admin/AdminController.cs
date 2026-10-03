@@ -26,8 +26,6 @@ using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
-using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
-using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
@@ -320,60 +318,6 @@ namespace SportsData.Api.Application.Admin
             var result = await client.RequestFranchiseSeasonSourcing(
                 seasonYear, request, cancellationToken);
             return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Trigger a MetricBot prediction run (deetsMeter). Omit
-        /// seasonYear/week for a live run of the current week; supply both
-        /// for an experiment/backtest, which never publishes unless
-        /// publish=true. MetricBot is internal-only, so this proxy is the
-        /// on-demand entry point — the weekly schedule is a Hangfire job.
-        ///
-        /// Example: POST /admin/metricbot/run-week
-        /// Body: { "sport": "ncaaf", "seasonYear": 2025, "week": 6,
-        ///         "priorSeasonTail": 5, "includeDtos": true }
-        /// </summary>
-        [HttpPost]
-        [Route("metricbot/run-week")]
-        public async Task<ActionResult<MetricBotRunResponse>> RunMetricBotWeek(
-            [FromBody] MetricBotRunRequest request,
-            [FromServices] IProvideMetricBot metricBot,
-            CancellationToken cancellationToken)
-        {
-            var result = await metricBot.RunWeekAsync(request, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Backtest a historical week: predict it as-of (only information
-        /// available entering the week), then grade against final scores —
-        /// SU accuracy vs baselines, ATS with pushes excluded-and-counted,
-        /// model-vs-market margin MAE, Brier + calibration deciles. Never
-        /// publishes predictions.
-        ///
-        /// Example: POST /admin/metricbot/backtest
-        /// Body: { "sport": "FootballNcaa", "seasonYear": 2025, "week": 6,
-        ///         "priorSeasonTail": 5 }
-        /// </summary>
-        [HttpPost]
-        [Route("metricbot/backtest")]
-        public async Task<ActionResult<MetricBotBacktestResponse>> BacktestMetricBotWeek(
-            [FromBody] MetricBotBacktestRequest request,
-            [FromServices] IProvideMetricBot metricBot,
-            CancellationToken cancellationToken)
-        {
-            var result = await metricBot.BacktestAsync(request, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        [HttpGet]
-        [Route("metricbot/health")]
-        public async Task<IActionResult> GetMetricBotHealth(
-            [FromServices] IProvideMetricBot metricBot,
-            CancellationToken cancellationToken)
-        {
-            var healthy = await metricBot.IsHealthyAsync(cancellationToken);
-            return healthy ? Ok(new { status = "healthy" }) : StatusCode(503, new { status = "unreachable" });
         }
 
         /// <summary>
@@ -766,30 +710,6 @@ namespace SportsData.Api.Application.Admin
                 replaysQueued = succeeded,
                 replaysFailed = failed,
             });
-        }
-
-        [HttpPost]
-        [Route("ai-predictions/{syntheticId}")]
-        public async Task<IActionResult> PostBulkPicks(
-            [FromRoute] string syntheticId,
-            [FromBody] List<ContestPredictionDto> predictions,
-            [FromServices] ISubmitContestPredictionsCommandHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var userId = Guid.Parse(syntheticId);
-
-            var command = new SubmitContestPredictionsCommand
-            {
-                UserId = userId,
-                Predictions = predictions
-            };
-
-            var result = await handler.ExecuteAsync(command, cancellationToken);
-
-            if (result.IsSuccess)
-                return Created();
-
-            return BadRequest();
         }
 
         [HttpPost]

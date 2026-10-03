@@ -304,6 +304,6 @@ Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor Yellow
 Write-Host "  1. Review predictions in CSVs above" -ForegroundColor White
 Write-Host "  2. Import DTOs to Postman from: $dtosOutputPath" -ForegroundColor White
-Write-Host "  3. POST to: /api/admin/ai-predictions/b210d677-19c3-4f26-ac4b-b2cc7ad58c44" -ForegroundColor White
+Write-Host "  3. POST to: /api/metricbot/predictions/b210d677-19c3-4f26-ac4b-b2cc7ad58c44" -ForegroundColor White
 Write-Host "     (MetricBot synthetic user ID)" -ForegroundColor Gray
 Write-Host ""

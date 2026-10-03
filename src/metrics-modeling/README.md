@@ -83,7 +83,7 @@ model AND for the spread itself on the same games (model vs market —
 the honest head-to-head); Brier scores; calibration deciles
 (predicted 70% should win ~70%). O/U is absent by design — the model
 predicts margin, not totals. In prod, the same report comes from
-`POST /admin/metricbot/backtest` (see Deployment below).
+`POST /api/metricbot/backtest` (see Deployment below).
 
 Flag notes:
 
@@ -171,7 +171,7 @@ either works. Never committed, repo is public:
 |---|---|
 | `METRICBOT_PG_HOST` / `METRICBOT_PG_PORT` | Producer Postgres (port defaults 5432) |
 | `METRICBOT_PG_USER` / `METRICBOT_PG_PASSWORD` | credentials |
-| `METRICBOT_API_BASE_URL` | API base — same base the web app's API client uses; the CLI appends `/admin/ai-predictions/{userId}` |
+| `METRICBOT_API_BASE_URL` | API base — same base the web app's API client uses; the CLI appends `/api/metricbot/predictions/{userId}` |
 | `METRICBOT_ADMIN_TOKEN` | X-Admin-Token for the ingestion endpoint |
 | `METRICBOT_USER_ID` | optional GUID; defaults to the MetricBot synthetic user (`b210d677-…`) |
 
@@ -224,7 +224,7 @@ Hangfire (API pod)                    MetricBot (this service)
   MetricBotWeekly-FootballNfl   ──┤                       → predict → POST
     cron: Wed 03:00 UTC           │                         predictions back
                                   │                         to the API
-POST /admin/metricbot/run-week  ──┘   (admin-token gated proxy; the
+POST /api/metricbot/run-week  ──┘   (admin-token gated proxy; the
   {sport, seasonYear?, week?,          on-demand + experiment entry point)
    priorSeasonTail, publish,
    includeDtos}
@@ -258,7 +258,7 @@ curl http://localhost:8080/health
 ### Ad-hoc / experiment runs in prod
 
 ```
-POST /admin/metricbot/run-week      (X-Admin-Token)
+POST /api/metricbot/run-week      (X-Admin-Token)
 { "sport": "FootballNcaa", "seasonYear": 2025, "week": 6,
   "priorSeasonTail": 5, "includeDtos": true }
 ```

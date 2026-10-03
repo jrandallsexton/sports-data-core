@@ -116,7 +116,7 @@ def run_week(sport: str,
     # ── Publish ──────────────────────────────────────────────────────
     if effective_dry_run:
         reason = "DRY RUN" if dry_run else "EXPLICIT-WEEK RUN (pass --publish to override)"
-        logger.info("%s — skipping POST. %d DTOs ready for %s/admin/ai-predictions/%s",
+        logger.info("%s — skipping POST. %d DTOs ready for %s/api/metricbot/predictions/%s",
                     reason, len(dtos), config.api_base_url, config.metricbot_user_id)
     else:
         response = post_predictions(config, dtos)

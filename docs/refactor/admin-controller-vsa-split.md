@@ -1,7 +1,17 @@
 # Refactor: dissolve AdminController into resource controllers
 
-**Status: IN PROGRESS.** Decisions below are settled; nothing has moved yet.
-First written 2026-09-13; rewritten 2026-10-03 against current `main`.
+**Status: IN PROGRESS.** First written 2026-09-13; rewritten 2026-10-03 against current `main`.
+
+| Slice | PR | State |
+|---|---|---|
+| Snapshot test, Bruno secrets, this plan | #755 | merged |
+| Prompts → `PromptsController` | #814 | merged |
+| Models, ModelProviders, Model Lab → three controllers | #815 | merged |
+| MetricBot → `MetricBotController` (+ ingestion, weekly job) | this PR | open |
+
+**Deploy hold (2026-10-04):** nothing in this refactor deploys until every
+slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
+and **MetricBot** (its ingestion URL, below) deploy together.
 
 `Application/Admin/` holds 66 admin-token endpoints:
 - `AdminController`: 54 endpoints, 1,343 lines
@@ -101,7 +111,7 @@ flat layout predates D6.
 Handlers today: `Admin/Models/*` (flat). `model-providers` is its own resource,
 so per D3 it gets its own controller in the same feature folder.
 
-### Model Lab *(1 endpoint; placement open, Q2)*
+### Model Lab → `Models/` + `ModelLabController` *(done, #815; Q2 resolved)*
 | GET | `model-lab/matrix` | handler `Admin/Queries/GetModelLabMatrix` |
 |---|---|---|
 
@@ -149,17 +159,34 @@ allowlist (`producer` → `contests/refresh`). Two doors, one room: apply rule 0
 | POST | `leagues/{leagueId}/weeks/{week}/replay` | `Admin/Queries/GetLeagueWeekContests` + Producer proxy |
 
 ### MetricBot → `MetricBot/` + `MetricBotController` *(new; all admin)*
-| Verb | Today | Notes |
-|---|---|---|
-| POST | `metricbot/run-week` | MetricBot client proxy |
-| POST | `metricbot/backtest` | MetricBot client proxy |
-| GET | `metricbot/health` | MetricBot client proxy |
-| POST | `ai-predictions/{syntheticId}` | synthetic bulk picks (`UI/Contest/Commands/SubmitContestPredictions`) |
+| Verb | Today | New route | Notes |
+|---|---|---|---|
+| POST | `metricbot/run-week` | `api/metricbot/run-week` | MetricBot client proxy |
+| POST | `metricbot/backtest` | `api/metricbot/backtest` | MetricBot client proxy |
+| GET | `metricbot/health` | `api/metricbot/health` | MetricBot client proxy |
+| POST | `ai-predictions/{syntheticId}` | `api/metricbot/predictions/{syntheticId}` | **MetricBot's ingestion endpoint** |
 
-Also moves here: `Admin/SyntheticPicks/*`, which includes a `SyntheticPickService`
-(retire as a service per VSA). `StatBotPickWriter` is used by
-`MatchupPreviewApprovedConsumer`, so it may belong in Previews. The other move is
-`Application/Jobs/MetricBotWeeklyJob.cs`, deferred from the VSA pass to here.
+`ai-predictions` is not a web-app endpoint: the Python MetricBot service POSTs
+each run's predictions there with `X-Admin-Token` (`src/metrics-modeling/metricbot/api.py`).
+It moves under MetricBot's own controller, and the Python client changes in the same PR.
+That is why MetricBot is part of the deploy hold. The handler
+(`UI/Contest/Commands/SubmitContestPredictions`) stays put until the UI pass.
+
+`Application/Jobs/MetricBotWeeklyJob.cs` moves to `MetricBot/Jobs/`. That
+removes the catch-all `Application/Jobs/` folder.
+
+### Synthetic picks → own slice *(not MetricBot)*
+`Admin/SyntheticPicks/` (`SyntheticPickService`, `StatBotPickWriter`) was first
+grouped with MetricBot, but MetricBot never uses it. It is StatBot and
+synthetic-user pick generation:
+- `SyntheticPickService`: metric-based picks for synthetic users; used only by
+  `RefreshAiExistence` (`ai-refresh`).
+- `StatBotPickWriter`: StatBot's preview-derived picks; used by `RefreshAiExistence`,
+  `MatchupPreviewApprovedConsumer`, `PreviewGeneratedConsumer`, and the pick advisor.
+
+It gets its own slice together with `ai-refresh`, and retires
+`SyntheticPickService` as a service. Where it lives (a bots/synthetic-users feature,
+or Previews) is decided in that PR.
 
 ### Notifications → `Notifications/` + `NotificationsController` *(new; all admin)*
 | POST | `notifications/test-push` | `Admin/Commands/SendTestPushNotification` |
@@ -199,8 +226,8 @@ moving it is what lets `Application/Admin/` be deleted.
 ## Suggested order
 
 1. **This PR (#755):** snapshot test, Bruno secrets, this plan.
-2. **Prompts** (pattern end to end) → **Models** (+ Model Lab per Q2).
-3. **MetricBot**, **Notifications**, **SmackLab**, **Ops**: self-contained, new controllers.
+2. ~~**Prompts**~~ (#814) → ~~**Models** + **Model Lab**~~ (#815).
+3. **MetricBot** (this PR), **Notifications**, **SmackLab**, **Ops**: self-contained, new controllers. **Synthetic picks** + `ai-refresh`: own slice.
 4. **Diagnostics**: after Q5.
 5. **Matchups**, **Previews**, **Scoring/Leagues**: join or create controllers per Q1/Q4.
 6. **Contests**, **Franchises**: join sport-scoped controllers per Q3.
@@ -216,8 +243,7 @@ Steps 2–6 are independent after Prompts and can interleave with feature work.
   `api/`. Admin preview endpoints joining it would land at `preview/...`. Either
   accept that, or move `PreviewController` to `api/previews` in the same PR
   (that is a user-facing route change, so the web/mobile approve/reject calls follow).
-- **Q2. Model Lab.** Is it its own slice, or part of Models or Previews? It reads
-  preview captures across models.
+- ~~**Q2. Model Lab.**~~ Resolved: `ModelLabController` in `Models/` (#815).
 - **Q3. Joining sport-scoped controllers.** `ContestsController` and
   `FranchisesController` sit at `api/{sport}/{league}/...`. Joining them puts
   admin routes under `{sport}/{league}`. That replaces today's
@@ -245,10 +271,15 @@ The shared `X-Admin-Token` header is the weaker primitive:
 - the filter checks it before authentication
 
 The web admin UI already runs entirely on Firebase claims (`ClaimTypes.Role = "Admin"`,
-from `User.IsAdmin`); mobile calls no admin route. The header's remaining users are
-**Bruno** (hand-driven) and **`SmokeTestFixture`**, which runs after every production
-deploy. Retiring the header means migrating the smoke tests first: a service
-account, or a break-glass key scoped to the smoke-tested endpoints.
+from `User.IsAdmin`); mobile calls no admin route. The header's remaining users are:
+- **Bruno**: hand-driven.
+- **`SmokeTestFixture`**: runs after every production deploy.
+- **MetricBot**: the Python service authenticates its prediction ingestion
+  (`api/metricbot/predictions/{userId}`) with `METRICBOT_ADMIN_TOKEN`. It is
+  unattended, like the smoke tests.
+
+Retiring the header means migrating both unattended callers first: a service
+account, or a break-glass key scoped to exactly the endpoints they touch.
 
 Per D5 this comes after the split. It is then one attribute change per
 controller, and the snapshot asserts the new policy per endpoint.

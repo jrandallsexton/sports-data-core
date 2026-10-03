@@ -35,7 +35,7 @@ Two phases, both within the existing `src/metrics-modeling/` tree (no new servic
 Replace the PowerShell + inter-stage CSVs + Postman handoff with a single Python entry point.
 
 - One CLI: `python -m metricbot run-week` (or similar)
-- Internally: detect current week → query Postgres → train → predict SU + ATS → POST results to `/api/admin/ai-predictions/{MetricBot-user-id}` directly via HTTP
+- Internally: detect current week → query Postgres → train → predict SU + ATS → POST results to `/api/metricbot/predictions/{MetricBot-user-id}` directly via HTTP
 - Inter-stage state stays in memory on the happy path; keep a `--dump-intermediate` flag that writes CSVs for debugging when something looks wrong
 - Replace `Generate-Predictions.ps1` and the operator's Postman step
 - Real `requirements.txt` (or `pyproject.toml`) so the venv is reproducible
@@ -149,7 +149,7 @@ The shape that follows from the decisions below. **None of this is final** — s
 Does *not* own:
 
 - The DTO schema (lives in `SportsData.Core` or `SportsData.Api`)
-- The persistence of accepted predictions (`SportsData.Api` continues to own that via the existing `/api/admin/ai-predictions/{userId}` endpoint, or its successor)
+- The persistence of accepted predictions (`SportsData.Api` continues to own that via the `/api/metricbot/predictions/{userId}` endpoint)
 - The deetsMeter UI rendering (unchanged)
 
 ### Suggested entry points
@@ -261,7 +261,7 @@ The MLB pipeline has placeholder math at first — the user has explicitly said 
 
 ### Decision 6 — MetricBot user identity / auth
 
-Current pattern: prediction rows are POSTed by a synthetic user with `IsSynthetic = true`. The API endpoint `/api/admin/ai-predictions/{userId}` authenticates as that user.
+Current pattern: prediction rows are POSTed by a synthetic user with `IsSynthetic = true`. The API endpoint `/api/metricbot/predictions/{userId}` authenticates as that user.
 
 Two paths:
 
@@ -364,7 +364,7 @@ Production code (existing):
 - `src/metrics-modeling/Generate-Predictions.ps1` — current operator workflow
 - `src/UI/sd-ui/src/components/matchups/DeetsMeter.jsx` — UI consumer
 - `src/UI/sd-ui/src/components/matchups/DeetsMeter.css`
-- `src/SportsData.Api/Application/...AiPredictions...` — current ingestion endpoint (`/api/admin/ai-predictions/{userId}`)
+- `src/SportsData.Api/Application/...AiPredictions...` — current ingestion endpoint (`/api/metricbot/predictions/{userId}`, `MetricBotController`)
 
 Sibling design context:
 
@@ -372,7 +372,7 @@ Sibling design context:
 
 ## First graded backtests — 2025 NCAAFB, five weeks (2026-08-10)
 
-Grader: `POST /admin/metricbot/backtest` (shipped #612). Weeks 4, 5, 6,
+Grader: `POST /api/metricbot/backtest` (shipped #612). Weeks 4, 5, 6,
 8, 10; tail=0 per protocol (tail is an early-weeks-only question).
 1,439 graded games.
 
@@ -475,7 +475,7 @@ variance.
 > Re-run the sweep before acceptance — exact protocol:
 >
 > **v1.1.1 acceptance protocol:** five requests via
-> `POST /admin/metricbot/backtest`, body
+> `POST /api/metricbot/backtest`, body
 > `{"sport":"FootballNcaa","seasonYear":2025,"week":W}` for W in
 > {4,5,6,8,10} (priorSeasonTail omitted = 0). Aggregate weighted by
 > per-week denominators (`baseline_favorite.games_with_spread` for

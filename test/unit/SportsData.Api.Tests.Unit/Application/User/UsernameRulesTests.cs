@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User;
 
 using Xunit;

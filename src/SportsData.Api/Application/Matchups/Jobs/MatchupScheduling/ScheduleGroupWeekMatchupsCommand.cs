@@ -1,3 +1,5 @@
+namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
+
 public record ScheduleGroupWeekMatchupsCommand(
     Guid GroupId,
     Guid SeasonWeekId,

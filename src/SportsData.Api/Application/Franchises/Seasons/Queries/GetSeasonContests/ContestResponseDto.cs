@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Franchises.Seasons.Contests;
+namespace SportsData.Api.Application.Franchises.Seasons.Queries.GetSeasonContests;
 
 public record ContestResponseDto
 {

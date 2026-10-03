@@ -1,11 +1,12 @@
 using FluentAssertions;
 
+using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User;
 
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SportsData.Api.Tests.Unit.Application.User;
+namespace SportsData.Api.Tests.Unit.Application.User.Commands.UpsertUser;
 
 public class DisplayNameGeneratorTests
 {

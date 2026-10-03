@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.User
+﻿namespace SportsData.Api.Application.User.Commands.UpsertUser
 {
     public static class DisplayNameGenerator
     {

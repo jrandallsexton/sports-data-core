@@ -2,6 +2,7 @@ using Moq;
 
 using SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;

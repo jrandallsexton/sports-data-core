@@ -7,7 +7,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Models;
+namespace SportsData.Api.Application.Models.Commands.CreateModel;
 
 public class CreateModelCommand
 {
@@ -91,7 +91,7 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             return new Failure<Guid>(
                 default!,
                 ResultStatus.Validation,
-                [new ValidationFailure(nameof(command.ModelProviderId), "Model provider not found — create it first (POST /admin/model-providers)")]);
+                [new ValidationFailure(nameof(command.ModelProviderId), "Model provider not found — create it first (POST /api/model-providers)")]);
         }
 
         // A GatewayOnly provider has no first-party client by definition —

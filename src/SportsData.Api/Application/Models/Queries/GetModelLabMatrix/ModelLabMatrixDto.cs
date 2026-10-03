@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using SportsData.Api.Infrastructure.Data.Entities;
 
-namespace SportsData.Api.Application.Admin.Queries.GetModelLabMatrix;
+namespace SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
 
 /// <summary>
 /// The week matrix: rows = contests (each rendered as an SU line and an

@@ -84,7 +84,7 @@ GET    /ui/rankings/by-week/{seasonWeekId}/poll/{poll}                 [Authoriz
 GET    /ui/rankings/{seasonYear}                                       [Authorize]
 GET    /ui/rankings/{seasonYear}/week/{week}                           [Authorize]
 GET    /ui/rankings/{seasonYear}/week/{week}/poll/{poll}               [Authorize]
-GET    /ui/results/sport/{sport}/league/{league}/{seasonYear}          (none)
+GET    /ui/results/sport/{sport}/league/{league}/{seasonYear}          [AllowAnonymous]
 GET    /ui/season/{seasonYear}/overview                                [Authorize]
 GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear} (none)
 GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/finalized-games (none)

@@ -206,14 +206,20 @@ public class RouteTableSnapshotTests
             StringComparison.Ordinal);
 
     /// <summary>
-    /// Effective authorization: an action's own attributes win, otherwise the
-    /// controller's apply. Rendered as a stable, greppable marker so a change is
-    /// obvious in a diff.
+    /// Effective authorization from action OR controller attributes, rendered as
+    /// a stable, greppable marker so a change is obvious in a diff.
+    ///
+    /// [AllowAnonymous] (on either) is metadata the authorization middleware
+    /// honors, so it suppresses [Authorize]. It does NOT suppress
+    /// [AdminApiToken]: that is a plain IAuthorizationFilter that never checks
+    /// IAllowAnonymous, so it still runs. Both facts are shown rather than
+    /// letting [AllowAnonymous] hide a token requirement that is still enforced.
     /// </summary>
     private static string EffectiveAuth(Type controller, MethodInfo action)
     {
-        if (action.GetCustomAttribute<AllowAnonymousAttribute>(inherit: true) is not null)
-            return "[AllowAnonymous]";
+        var allowAnonymous =
+            action.GetCustomAttribute<AllowAnonymousAttribute>(inherit: true) is not null ||
+            controller.GetCustomAttribute<AllowAnonymousAttribute>(inherit: true) is not null;
 
         var markers = new List<string>();
 
@@ -221,6 +227,12 @@ public class RouteTableSnapshotTests
             controller.GetCustomAttribute<AdminApiTokenAttribute>(inherit: true) is not null)
         {
             markers.Add("[AdminApiToken]");
+        }
+
+        if (allowAnonymous)
+        {
+            markers.Add("[AllowAnonymous]");
+            return string.Join(" ", markers);
         }
 
         var authorize = action.GetCustomAttribute<AuthorizeAttribute>(inherit: true)

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/competitions/metrics/generate/2025"
+  url: "{{baseUrlApi}}/api/ops/producer/football/ncaa/competitions/metrics/generate/2025"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

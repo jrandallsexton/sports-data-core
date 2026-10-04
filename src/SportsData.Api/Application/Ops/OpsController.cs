@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
@@ -8,7 +9,7 @@ using SportsData.Core.Extensions;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace SportsData.Api.Application.Admin;
+namespace SportsData.Api.Application.Ops;
 
 /// <summary>
 /// The single allowlisted pass-through for internal ops endpoints. Producer
@@ -16,7 +17,7 @@ namespace SportsData.Api.Application.Admin;
 /// surface); this is the deliberate, bounded re-exposure: one route, admin
 /// token required, an explicit path allowlist, GET/POST only.
 ///
-///   POST /admin/ops/producer/football/nfl/franchise-seasons/seasonYear/2026/source
+///   POST /api/ops/producer/football/nfl/franchise-seasons/seasonYear/2026/source
 ///
 /// New op FAMILIES are one allowlist line; new endpoints inside an allowed
 /// family need nothing at all. Sport/league resolve via ModeMapper (the house
@@ -25,9 +26,9 @@ namespace SportsData.Api.Application.Admin;
 /// correctly in mode=All.
 /// </summary>
 [ApiController]
-[Route("admin/ops")]
+[Route("api/ops")]
 [AdminApiToken]
-public class AdminOpsProxyController : ControllerBase
+public class OpsController : ControllerBase
 {
     /// <summary>
     /// What the proxy may reach, per service. Prefix match on the forwarded
@@ -108,12 +109,12 @@ public class AdminOpsProxyController : ControllerBase
         }
     }
 
-    private readonly ILogger<AdminOpsProxyController> _logger;
+    private readonly ILogger<OpsController> _logger;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public AdminOpsProxyController(
-        ILogger<AdminOpsProxyController> logger,
+    public OpsController(
+        ILogger<OpsController> logger,
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory)
     {
@@ -202,7 +203,7 @@ public class AdminOpsProxyController : ControllerBase
             "Ops proxy relaying {Method} {Target}. Service={Service}, Mode={Mode}",
             Request.Method, targetUri.ToString().Sanitize(), service.Sanitize(), mode);
 
-        var client = _httpClientFactory.CreateClient(nameof(AdminOpsProxyController));
+        var client = _httpClientFactory.CreateClient(nameof(OpsController));
         using var upstreamResponse = await client.SendAsync(upstreamRequest, cancellationToken);
         var responseBody = await upstreamResponse.Content.ReadAsStringAsync(cancellationToken);
 

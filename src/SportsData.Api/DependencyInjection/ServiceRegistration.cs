@@ -193,7 +193,7 @@ namespace SportsData.Api.DependencyInjection
             // URI per call from the same AppConfig-backed CommonConfig keys
             // the typed client factories use, then verifies the resolved
             // base actually owns the final URI.
-            services.AddHttpClient(nameof(Application.Admin.AdminOpsProxyController))
+            services.AddHttpClient(nameof(Application.Ops.OpsController))
                 .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                 {
                     AllowAutoRedirect = false,

@@ -9,7 +9,8 @@
 | Models, ModelProviders, Model Lab → three controllers | #815 | merged |
 | MetricBot → `MetricBotController` (+ ingestion, weekly job) | #816 | merged |
 | Notifications → `NotificationsController` (test push + reminder backfill) | #817 | merged |
-| SmackLab → `SmackLab/SmackLabController` | this PR | open |
+| SmackLab → `SmackLab/SmackLabController` | #818 | merged |
+| Ops proxy → `Ops/OpsController` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -142,7 +143,7 @@ so per D3 it gets its own controller in the same feature folder.
 | POST | `football/contests/{contestId}/replay` | Producer client proxy |
 | POST | `baseball/contests/{contestId}/replay` | Producer client proxy |
 
-`contests/refresh` is also reachable through `AdminOpsProxyController`'s
+`contests/refresh` is also reachable through `OpsController`'s
 allowlist (`producer` → `contests/refresh`). Two doors, one room: apply rule 0.
 
 ### Matchups → `Matchups/` + `MatchupsController` *(new; all admin)*
@@ -218,11 +219,11 @@ the D4 pattern in existing code.
 | POST | `keda/load-test` | `Admin/Commands/GenerateLoadTest` + `Admin/Jobs/PublishLoadTestEventsJob` |
 | POST | `signalr-debug/{contest-status,football-play,baseball-play}` (3) | inline, request DTOs in `Admin/SignalRDebug/` |
 
-### SmackLab → `SmackLab/` + `SmackLabController` *(moves out of Admin; 8 endpoints; all admin; this PR)*
+### SmackLab → `SmackLab/` + `SmackLabController` *(done, #818)*
 `smack-lab/{leagues, leagues/{id}/picks, leagues/{id}/ratings, phrases, phrases/{id}, preview, ratings}` → `api/smack-lab/...`. Handlers in
 `Admin/SmackLab/` move with it.
 
-### Ops proxy → `Ops/` + `OpsController` *(2 endpoints; all admin)*
+### Ops proxy → `Ops/` + `OpsController` *(2 endpoints; all admin; this PR — renamed from AdminOpsProxyController)*
 `GET/POST ops/{service}/{sport}/{league}/{**opPath}` → `api/ops/...`. This is the
 allowlisted relay to Producer/Provider operations.
 

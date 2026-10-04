@@ -6,7 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Notification.Dtos;
 
-namespace SportsData.Api.Application.Admin.SmackLab;
+namespace SportsData.Api.Application.SmackLab.Queries.GetSmackLabPicks;
 
 /// <summary>
 /// A scored pick prepared for the Lab: the preview fact payload (what

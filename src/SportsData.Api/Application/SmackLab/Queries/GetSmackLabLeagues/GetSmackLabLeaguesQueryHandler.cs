@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.SmackLab;
+namespace SportsData.Api.Application.SmackLab.Queries.GetSmackLabLeagues;
 
 /// <summary>
 /// A league eligible for the SmackBot Lab: it has at least one scored pick to

@@ -1,13 +1,13 @@
 using FluentAssertions;
 
-using SportsData.Api.Application.Admin.SmackLab;
+using SportsData.Api.Application.SmackLab.Queries.GetSmackLabLeagues;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.SmackLab;
+namespace SportsData.Api.Tests.Unit.Application.SmackLab.Queries.GetSmackLabLeagues;
 
 /// <summary>
 /// Pins the ordering/filtering behaviour. Honest caveat: the first cut of

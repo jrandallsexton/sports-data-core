@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Api.Application.Admin.Commands.ReenrichContest;
+namespace SportsData.Api.Application.Contests.Commands.ReenrichContest;
 
 public class ReenrichContestCommandValidator : AbstractValidator<ReenrichContestCommand>
 {

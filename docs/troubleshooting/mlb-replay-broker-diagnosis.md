@@ -11,7 +11,7 @@ Decision pending on which of four remediation options to take.
 
 ## Symptom
 
-- Trigger: `POST /admin/baseball/contests/{contestId}/replay` against
+- Trigger: `POST /api/baseball/mlb/contests/{contestId}/replay` against
   a known-good MLB contest in prod.
 - Producer Seq shows the replay running (`BaseballReplay: starting`,
   per-play `BaseballReplay: published BaseballPlayCompleted`).

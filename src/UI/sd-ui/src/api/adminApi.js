@@ -99,11 +99,9 @@ const AdminApi = {
   // chosen contest. League-context fields (Predictions, AiWinner,
   // IsPreview*, HeadLine) come back null/empty per the endpoint contract.
   getBaseballMatchupForContest: (contestId) =>
-    apiClient.get(`/admin/baseball/contests/${contestId}/matchup`),
+    apiClient.get(`/api/baseball/mlb/contests/${contestId}/matchup`),
   getFootballMatchupForContest: (contestId, league) =>
-    apiClient.get(`/admin/football/contests/${contestId}/matchup`, {
-      params: league ? { league } : undefined,
-    }),
+    apiClient.get(`/api/football/${league || 'ncaa'}/contests/${contestId}/matchup`),
 
   // Triggers a contest replay through the matching sport's Producer.
   // Producer enqueues the work and the bus emits ContestStatusChanged
@@ -111,11 +109,9 @@ const AdminApi = {
   // alongside the matchup card observer / debug card to verify the
   // SignalR pipeline end-to-end against a real game.
   replayBaseballContest: (contestId) =>
-    apiClient.post(`/admin/baseball/contests/${contestId}/replay`),
+    apiClient.post(`/api/baseball/mlb/contests/${contestId}/replay`),
   replayFootballContest: (contestId, league) =>
-    apiClient.post(`/admin/football/contests/${contestId}/replay`, null, {
-      params: league ? { league } : undefined,
-    }),
+    apiClient.post(`/api/football/${league || 'ncaa'}/contests/${contestId}/replay`),
 
   // Re-run enrichment for a single contest. Clears UserPick scoring
   // fields and asks Producer to clear the Contest derived fields and
@@ -123,16 +119,14 @@ const AdminApi = {
   // Producer logged the work under — surfaced in ContestOverviewAdmin
   // so an operator can paste it into Seq for tracing.
   //
-  // Lives here (AdminApi → /admin/...) deliberately. The earlier
+  // Lives here (AdminApi, [AdminApiToken]-gated) deliberately. The earlier
   // sibling actions on contestApi (Refresh / Refresh Media / Finalize)
   // are exposed under the general /ui/contest surface gated only by
   // [Authorize]. Re-enrich rolls back UserPicks, so it MUST be on the
   // admin-token-gated controller — the UI's isAdmin check is
   // presentational only, not a trust boundary.
   reenrichContest: (contestId, sport, league) =>
-    apiClient.post(`/admin/contest/${contestId}/reenrich`, null, {
-      params: { sport, league }
-    }),
+    apiClient.post(`/api/${sport}/${league}/contests/${contestId}/reenrich`),
 
   // SmackBot Lab (docs/features/smackbot-lab.md). API composes pick facts
   // and relays preview/phrases/ratings to Notification through its typed

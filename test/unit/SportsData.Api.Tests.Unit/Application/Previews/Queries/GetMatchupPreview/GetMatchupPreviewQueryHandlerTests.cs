@@ -1,13 +1,13 @@
 using FluentAssertions;
 
-using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
+using SportsData.Api.Application.Previews.Queries.GetMatchupPreview;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Queries.GetMatchupPreview;
+namespace SportsData.Api.Tests.Unit.Application.Previews.Queries.GetMatchupPreview;
 
 public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQueryHandler>
 {

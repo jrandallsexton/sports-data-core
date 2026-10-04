@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
+namespace SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 
 public class GetMatchupPreviewCapturesQueryValidator : AbstractValidator<GetMatchupPreviewCapturesQuery>
 {

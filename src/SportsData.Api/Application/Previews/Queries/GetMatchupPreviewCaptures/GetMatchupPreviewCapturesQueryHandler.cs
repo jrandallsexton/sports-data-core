@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
+namespace SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 
 public interface IGetMatchupPreviewCapturesQueryHandler
 {

@@ -15,7 +15,7 @@ const AdminApi = {
   // free-text admin inputs, and a stray ?/#// would change the request target.
   resetPreview: (contestId, sport) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/api/previews/contests/${encodeURIComponent(contestId)}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
     ),
 
   // Preview Lab (docs/metrics-modeling/matchup-preview-data-inputs.md §3.6).
@@ -29,7 +29,7 @@ const AdminApi = {
   // run loudly rather than silently using the slot default.
   capturePreviewPrompt: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture`,
+      `/api/previews/contests/${encodeURIComponent(contestId)}/capture`,
       null,
       { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
@@ -37,7 +37,7 @@ const AdminApi = {
   // production client — the Model Lab's single-cell fill-in.
   runPreviewExperiment: (contestId, sport, promptId, modelId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment`,
+      `/api/previews/contests/${encodeURIComponent(contestId)}/experiment`,
       null,
       {
         params: {
@@ -48,13 +48,13 @@ const AdminApi = {
       }
     ),
   getPreviewCaptures: (contestId) =>
-    apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),
+    apiClient.get(`/api/previews/contests/${encodeURIComponent(contestId)}/captures`),
   // Model Consensus Lab fan-out: one Experiment per active, lab-reachable
   // model (same prompt, same contest) — a capture row per model, never a
   // MatchupPreview. docs/features/model-consensus-lab.md.
   runPreviewPanel: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment/panel`,
+      `/api/previews/contests/${encodeURIComponent(contestId)}/experiment/panel`,
       null,
       { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),

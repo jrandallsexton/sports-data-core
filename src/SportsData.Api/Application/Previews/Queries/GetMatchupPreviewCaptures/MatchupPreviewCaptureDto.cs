@@ -2,7 +2,7 @@ using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
+namespace SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 
 public class MatchupPreviewCaptureDto
 {

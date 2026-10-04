@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin.SmackLab;
+using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.SmackLab.Queries.GetSmackLabLeagues;
+using SportsData.Api.Application.SmackLab.Queries.GetSmackLabPicks;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Notification.Dtos;
 
-namespace SportsData.Api.Application.Admin;
+namespace SportsData.Api.Application.SmackLab;
 
 /// <summary>
 /// SmackBot Lab's API surface (web admin → here → Notification). Two
@@ -16,7 +18,7 @@ namespace SportsData.Api.Application.Admin;
 /// this controller already requires. See docs/features/smackbot-lab.md.
 /// </summary>
 [ApiController]
-[Route("admin/smack-lab")]
+[Route("api/smack-lab")]
 [AdminApiToken]
 public class SmackLabController : ControllerBase
 {

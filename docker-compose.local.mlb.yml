@@ -149,7 +149,7 @@ services:
 
   # ─── Notification (mode All — single service, no sport scoping) ─────────────
   # Needed locally for the SmackBot Lab relay chain (web admin -> API
-  # admin/smack-lab -> NotificationClient -> here) and for exercising push
+  # api/smack-lab -> NotificationClient -> here) and for exercising push
   # consumers. Firebase config is absent from the Local label, so the service
   # registers NoOpPushNotificationSender — FCM dispatches no-op, which is
   # exactly right for local work. [ApiKeyAuth] on the admin endpoints resolves

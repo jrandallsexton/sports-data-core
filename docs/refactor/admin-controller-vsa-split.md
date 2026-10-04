@@ -8,7 +8,8 @@
 | Prompts → `PromptsController` | #814 | merged |
 | Models, ModelProviders, Model Lab → three controllers | #815 | merged |
 | MetricBot → `MetricBotController` (+ ingestion, weekly job) | #816 | merged |
-| Notifications → `NotificationsController` (test push + reminder backfill) | this PR | open |
+| Notifications → `NotificationsController` (test push + reminder backfill) | #817 | merged |
+| SmackLab → `SmackLab/SmackLabController` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -217,7 +218,7 @@ the D4 pattern in existing code.
 | POST | `keda/load-test` | `Admin/Commands/GenerateLoadTest` + `Admin/Jobs/PublishLoadTestEventsJob` |
 | POST | `signalr-debug/{contest-status,football-play,baseball-play}` (3) | inline, request DTOs in `Admin/SignalRDebug/` |
 
-### SmackLab → `SmackLab/` + `SmackLabController` *(moves out of Admin; 8 endpoints; all admin)*
+### SmackLab → `SmackLab/` + `SmackLabController` *(moves out of Admin; 8 endpoints; all admin; this PR)*
 `smack-lab/{leagues, leagues/{id}/picks, leagues/{id}/ratings, phrases, phrases/{id}, preview, ratings}` → `api/smack-lab/...`. Handlers in
 `Admin/SmackLab/` move with it.
 

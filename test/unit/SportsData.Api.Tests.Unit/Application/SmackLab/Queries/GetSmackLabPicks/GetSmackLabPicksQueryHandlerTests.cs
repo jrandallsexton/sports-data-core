@@ -2,7 +2,7 @@ using FluentAssertions;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.SmackLab;
+using SportsData.Api.Application.SmackLab.Queries.GetSmackLabPicks;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -13,7 +13,7 @@ using Xunit;
 
 using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.SmackLab;
+namespace SportsData.Api.Tests.Unit.Application.SmackLab.Queries.GetSmackLabPicks;
 
 /// <summary>
 /// The Lab's fact payloads must match what a live send saw — the derivation

@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
@@ -11,8 +11,14 @@ using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Previews
 {
+    /// <summary>
+    /// Approve/reject are admin actions (the web app shows them only to admins);
+    /// [AdminApiToken] enforces that at the API, accepting the Admin-role JWT
+    /// the web app sends. Previously plain [Authorize]: any signed-in user.
+    /// </summary>
     [ApiController]
     [Route("preview")]
+    [AdminApiToken]
     public class PreviewController : ControllerBase
     {
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -23,7 +29,6 @@ namespace SportsData.Api.Application.Previews
         }
 
         [HttpPost]
-        [Authorize]
         [Route("{previewId}/approve")]
         public async Task<ActionResult<Guid>> ApproveContestPreview(
             [FromRoute] Guid previewId,
@@ -44,7 +49,6 @@ namespace SportsData.Api.Application.Previews
         }
 
         [HttpPost]
-        [Authorize]
         [Route("{previewId}/reject")]
         public async Task<IActionResult> RejectContestPreview(
             [FromBody] RejectMatchupPreviewCommand command,

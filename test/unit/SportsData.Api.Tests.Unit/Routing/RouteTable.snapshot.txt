@@ -145,8 +145,8 @@ POST   /api/smack-lab/ratings                                          [AdminApi
 POST   /api/synthetics/refresh                                         [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
-POST   /preview/{previewId}/approve                                    [Authorize]
-POST   /preview/{previewId}/reject                                     [Authorize]
+POST   /preview/{previewId}/approve                                    [AdminApiToken]
+POST   /preview/{previewId}/reject                                     [AdminApiToken]
 POST   /system/league-contests/in-use                                  (none)
 POST   /ui/contest/{id}/finalize                                       [Authorize]
 POST   /ui/contest/{id}/media/refresh                                  [Authorize]

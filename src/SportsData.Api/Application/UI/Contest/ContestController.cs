@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.UI.Contest.Commands.FinalizeContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
@@ -54,6 +55,10 @@ public class ContestController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    // Admin-only (the web app renders these only in ContestOverviewAdmin,
+    // behind an isAdmin check that is presentational, not a trust boundary).
+    // The class-level [Authorize] still admits any signed-in user to the GETs.
+    [AdminApiToken]
     [HttpPost("{id}/refresh")]
     public async Task<ActionResult<Guid>> RefreshContestById(
         [FromRoute] Guid id,
@@ -69,6 +74,7 @@ public class ContestController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [AdminApiToken]
     [HttpPost("{id}/media/refresh")]
     public async Task<ActionResult<Guid>> RefreshContestMediaById(
         [FromRoute] Guid id,
@@ -84,6 +90,7 @@ public class ContestController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    [AdminApiToken]
     [HttpPost("{id}/finalize")]
     public async Task<ActionResult<Guid>> FinalizeContestById(
         [FromRoute] Guid id,

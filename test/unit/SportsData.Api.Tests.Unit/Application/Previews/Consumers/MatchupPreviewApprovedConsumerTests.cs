@@ -2,9 +2,9 @@ using MassTransit;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Previews.Consumers;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Previews;

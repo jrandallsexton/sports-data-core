@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.SignalR;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Previews.Consumers;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;

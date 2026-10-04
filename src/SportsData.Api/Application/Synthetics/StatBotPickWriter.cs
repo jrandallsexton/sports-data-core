@@ -15,7 +15,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Application.Synthetics;
 
 public class StatBotPickWriter : IStatBotPickWriter
 {

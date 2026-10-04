@@ -1,5 +1,6 @@
 using AutoFixture;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
 
 using FluentAssertions;
 
@@ -8,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application;
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Config;
@@ -17,7 +17,7 @@ using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Tests.Unit.Application.Synthetics.Commands.RefreshAiExistence;
 
 public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
 {

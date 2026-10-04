@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SportsData.Api.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Application.Synthetics;
 
 /// <summary>
 /// Writes StatBot's pick - the pick the matchup preview dialog would make -

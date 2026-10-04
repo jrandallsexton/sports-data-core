@@ -4,7 +4,6 @@ using FluentValidation;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
@@ -14,7 +13,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+namespace SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
 
 public interface IRefreshAiExistenceCommandHandler
 {

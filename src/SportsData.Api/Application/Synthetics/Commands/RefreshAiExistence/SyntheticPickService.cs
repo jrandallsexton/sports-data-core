@@ -10,7 +10,7 @@ using SportsData.Api.Application.Common.Enums;
 
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
 
 /// <summary>
 /// Service responsible for generating synthetic user picks with pick style logic applied.

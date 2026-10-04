@@ -1,6 +1,6 @@
 using MassTransit;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Core.Eventing.Events.Previews;
 

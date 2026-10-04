@@ -4,7 +4,7 @@ using SportsData.Core.Common;
 
 using SportsData.Api.Application.Common.Enums;
 
-namespace SportsData.Api.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
 
 public interface ISyntheticPickService
 {

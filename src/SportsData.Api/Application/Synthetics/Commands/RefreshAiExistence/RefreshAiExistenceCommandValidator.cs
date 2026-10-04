@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+namespace SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
 
 public class RefreshAiExistenceCommandValidator : AbstractValidator<RefreshAiExistenceCommand>
 {

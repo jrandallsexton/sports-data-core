@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/admin/ai-refresh?week=3"
+  url: "{{baseUrl}}/api/synthetics/refresh?week=3"
   params:
     - name: week
       value: "3"

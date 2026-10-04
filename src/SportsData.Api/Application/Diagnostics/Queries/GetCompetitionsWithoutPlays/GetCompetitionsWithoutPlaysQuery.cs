@@ -1,0 +1,3 @@
+namespace SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutPlays;
+
+public record GetCompetitionsWithoutPlaysQuery;

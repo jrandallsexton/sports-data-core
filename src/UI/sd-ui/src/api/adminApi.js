@@ -3,13 +3,13 @@ import apiClient from './apiClient';
 const AdminApi = {
   getCompetitionsWithoutCompetitors: () =>
     // Controller likely under /ui/admin/errors/..., use /ui/admin as a safe prefix
-    apiClient.get('/admin/errors/competitions-without-competitors'),
+    apiClient.get('/api/diagnostics/competitions-without-competitors'),
   getCompetitionsWithoutPlays: () =>
-    apiClient.get('/admin/errors/competitions-without-plays'),
+    apiClient.get('/api/diagnostics/competitions-without-plays'),
   getCompetitionsWithoutDrives: () =>
-    apiClient.get('/admin/errors/competitions-without-drives'),
+    apiClient.get('/api/diagnostics/competitions-without-drives'),
   getCompetitionsWithoutMetrics: () =>
-    apiClient.get('/admin/errors/competitions-without-metrics'),
+    apiClient.get('/api/diagnostics/competitions-without-metrics'),
   // sport: backend Sport enum name (e.g. "FootballNfl"); omitted = NCAA.
   // contestId is encoded everywhere it enters the path — it comes from
   // free-text admin inputs, and a stray ?/#// would change the request target.
@@ -158,11 +158,11 @@ const AdminApi = {
   // *PlayCompleted carries play description + scoreboard tick in one
   // event — there is no longer a separate play-completed broadcast.
   broadcastContestStatus: (payload) =>
-    apiClient.post('/admin/signalr-debug/contest-status', payload),
+    apiClient.post('/api/signalr-debug/contest-status', payload),
   broadcastFootballPlay: (payload) =>
-    apiClient.post('/admin/signalr-debug/football-play', payload),
+    apiClient.post('/api/signalr-debug/football-play', payload),
   broadcastBaseballPlay: (payload) =>
-    apiClient.post('/admin/signalr-debug/baseball-play', payload),
+    apiClient.post('/api/signalr-debug/baseball-play', payload),
 };
 
 export default AdminApi;

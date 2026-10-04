@@ -8,15 +8,9 @@ using SportsData.Api.Application.Athletes.Queries.GetPickemAthletes;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
-using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
-using SportsData.Api.Application.Admin.Queries.GetAiResponse;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.MetricBot.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
@@ -106,9 +100,16 @@ using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Scoring.Jobs.PickScoringAudit;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.Contests.Jobs.ContestRecap;
+using SportsData.Api.Application.Diagnostics.Queries.GetAiResponse;
+using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutCompetitors;
+using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutDrives;
+using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutMetrics;
+using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetSeasonContests;
 using SportsData.Api.Application.Leagues.Jobs;
 using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
+using SportsData.Api.Application.LoadTests.Commands.GenerateLoadTest;
+using SportsData.Api.Application.LoadTests.Jobs;
 using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
@@ -280,7 +281,7 @@ namespace SportsData.Api.DependencyInjection
                 SportsData.Api.Infrastructure.Notifications.FirebasePushNotificationSender>();
 
             // Admin Jobs
-            services.AddScoped<SportsData.Api.Application.Admin.Jobs.IPublishLoadTestEventsJob, SportsData.Api.Application.Admin.Jobs.PublishLoadTestEventsJob>();
+            services.AddScoped<SportsData.Api.Application.LoadTests.Jobs.IPublishLoadTestEventsJob, SportsData.Api.Application.LoadTests.Jobs.PublishLoadTestEventsJob>();
 
             // Admin Queries
             services.AddScoped<IAuditAiQueryHandler, AuditAiQueryHandler>();

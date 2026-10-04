@@ -1,18 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
-using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
-using SportsData.Api.Application.Admin.Queries.GetAiResponse;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
-using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
 using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
-using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
 using SportsData.Api.Application.Scoring;
@@ -20,12 +13,8 @@ using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
-using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Dtos.Competition;
-using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Eventing.Events.Contests.Football;
 using SportsData.Core.Extensions;
@@ -41,38 +30,15 @@ namespace SportsData.Api.Application.Admin
     [AdminApiToken]
     public class AdminController : ApiControllerBase
     {
-        private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly IEventBus _eventBus;
-        private readonly IMessageDeliveryScope _deliveryScope;
         private readonly ILogger<AdminController> _logger;
 
         public AdminController(
-            IGenerateExternalRefIdentities externalRefIdentityGenerator,
             IProvideBackgroundJobs backgroundJobProvider,
-            IEventBus eventBus,
-            IMessageDeliveryScope deliveryScope,
             ILogger<AdminController> logger)
         {
-            _externalRefIdentityGenerator = externalRefIdentityGenerator;
             _backgroundJobProvider = backgroundJobProvider;
-            _eventBus = eventBus;
-            _deliveryScope = deliveryScope;
             _logger = logger;
-        }
-
-        [HttpPost]
-        [Route("generate-url-identity")]
-        public Task<IActionResult> GenerateUrlIdentity([FromBody] GenerateUrlIdentityCommand command)
-        {
-            if (string.IsNullOrWhiteSpace(command.Url))
-            {
-                return Task.FromResult<IActionResult>(BadRequest("URL cannot be empty."));
-            }
-
-            var identity = _externalRefIdentityGenerator.Generate(command.Url);
-
-            return Task.FromResult<IActionResult>(Ok(identity));
         }
 
         /// <summary>
@@ -205,50 +171,6 @@ namespace SportsData.Api.Application.Admin
             var query = new AuditAiQuery { CorrelationId = correlationId };
             _backgroundJobProvider.Enqueue<IAuditAiQueryHandler>(p => p.ExecuteAsync(query, CancellationToken.None));
             return Accepted(correlationId);
-        }
-
-        [HttpGet]
-        [Route("errors/competitions-without-competitors")]
-        public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(
-            [FromServices] IGetCompetitionsWithoutCompetitorsQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var query = new GetCompetitionsWithoutCompetitorsQuery();
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        [HttpGet]
-        [Route("errors/competitions-without-plays")]
-        public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(
-            [FromServices] IGetCompetitionsWithoutPlaysQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var query = new GetCompetitionsWithoutPlaysQuery();
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        [HttpGet]
-        [Route("errors/competitions-without-drives")]
-        public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
-            [FromServices] IGetCompetitionsWithoutDrivesQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var query = new GetCompetitionsWithoutDrivesQuery();
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        [HttpGet]
-        [Route("errors/competitions-without-metrics")]
-        public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(
-            [FromServices] IGetCompetitionsWithoutMetricsQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var query = new GetCompetitionsWithoutMetricsQuery();
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
         }
 
         /// <summary>
@@ -443,17 +365,6 @@ namespace SportsData.Api.Application.Admin
             });
         }
 
-        [HttpPost]
-        [Route("ai-test")]
-        public async Task<ActionResult<string>> TestAiCommunications(
-            [FromBody] GetAiResponseQuery query,
-            [FromServices] IGetAiResponseQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
-        }
-
         /// <summary>
         /// Backfills league week scores for an entire season.
         /// Processes all completed weeks for the specified season year.
@@ -523,188 +434,6 @@ namespace SportsData.Api.Application.Admin
         // real picks-page contests. Use to verify the pipeline end-to-end
         // without needing a real live game.
         // ─────────────────────────────────────────────────────────────
-
-        [HttpPost]
-        [Route("signalr-debug/contest-status")]
-        public async Task<IActionResult> BroadcastDebugContestStatus(
-            [FromBody] DebugContestStatusRequest request,
-            CancellationToken cancellationToken)
-        {
-            if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
-                return BadRequest($"Unknown sport '{request.Sport}'.");
-
-            // Explicit whitelist — Sport enum includes values (e.g.
-            // BasketballNba) the debug harness has no sandbox ContestId
-            // for. TryParse alone would accept them and silently fall
-            // through to the Football branch.
-            Guid contestId;
-            switch (sport)
-            {
-                case Sport.BaseballMlb:
-                    contestId = SignalRDebugContestIds.Baseball;
-                    break;
-                case Sport.FootballNcaa:
-                case Sport.FootballNfl:
-                    contestId = SignalRDebugContestIds.Football;
-                    break;
-                default:
-                    return BadRequest($"Unsupported sport '{request.Sport}' for SignalR debug harness.");
-            }
-
-            var correlationId = Guid.NewGuid();
-
-            // No DbContext write here, so bypass the MassTransit outbox and
-            // publish straight to the broker. UseBusOutbox would otherwise
-            // require a SaveChangesAsync to flush, which we have nothing to save.
-            using (_deliveryScope.Use(DeliveryMode.Direct))
-            {
-                await _eventBus.Publish(new ContestStatusChanged(
-                    ContestId: contestId,
-                    Status: request.Status,
-                    StatusDescription: request.StatusDescription,
-                    Ref: null,
-                    Sport: sport,
-                    SeasonYear: null,
-                    CorrelationId: correlationId,
-                    CausationId: CausationId.Api.SignalRDebugBroadcaster
-                ), cancellationToken);
-            }
-
-            var safeStatus = request.Status?
-                .Replace("\r", string.Empty)
-                .Replace("\n", string.Empty);
-
-            _logger.LogInformation(
-                "SignalRDebug: published ContestStatusChanged. ContestId={ContestId}, Sport={Sport}, Status={Status}, CorrelationId={CorrelationId}",
-                contestId, sport, safeStatus, correlationId);
-
-            return Accepted(new { contestId, correlationId });
-        }
-
-        [HttpPost]
-        [Route("signalr-debug/football-play")]
-        public async Task<IActionResult> BroadcastDebugFootballPlay(
-            [FromBody] DebugFootballPlayRequest request,
-            CancellationToken cancellationToken)
-        {
-            if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
-                return BadRequest($"Unknown sport '{request.Sport}'.");
-
-            // football-play is football-only by definition — reject
-            // any other sport rather than publishing a FootballPlayCompleted
-            // for them.
-            if (sport is not (Sport.FootballNcaa or Sport.FootballNfl))
-                return BadRequest($"Unsupported sport '{request.Sport}' for football-play debug endpoint.");
-
-            var contestId = SignalRDebugContestIds.Football;
-            var correlationId = Guid.NewGuid();
-
-            using (_deliveryScope.Use(DeliveryMode.Direct))
-            {
-                await _eventBus.Publish(new FootballPlayCompleted(
-                    ContestId: contestId,
-                    CompetitionId: contestId, // sandbox: reuse contestId so consumers don't need a real competition row
-                    PlayId: Guid.NewGuid(),
-                    PlayDescription: request.PlayDescription,
-                    Period: request.Period,
-                    Clock: request.Clock,
-                    AwayScore: request.AwayScore,
-                    HomeScore: request.HomeScore,
-                    PossessionFranchiseSeasonId: request.PossessionFranchiseSeasonId,
-                    IsScoringPlay: request.IsScoringPlay,
-                    ScoringPlayType: request.ScoringPlayType,
-                    BallOnYardLine: request.BallOnYardLine,
-                    Down: request.Down,
-                    Distance: request.Distance,
-                    Ref: null,
-                    Sport: sport,
-                    SeasonYear: null,
-                    CorrelationId: correlationId,
-                    CausationId: CausationId.Api.SignalRDebugBroadcaster
-                ), cancellationToken);
-            }
-
-            var sanitizedPeriodForLog = request.Period?.ToString()?.Replace("\r", "").Replace("\n", "");
-            var sanitizedClockForLog = request.Clock?.Replace("\r", "").Replace("\n", "");
-            _logger.LogInformation(
-                "SignalRDebug: published FootballPlayCompleted. ContestId={ContestId}, Period={Period}, Clock={Clock}, Score={Away}-{Home}, Yard={Yard}, Scoring={Scoring}, CorrelationId={CorrelationId}",
-                contestId, sanitizedPeriodForLog, sanitizedClockForLog, request.AwayScore, request.HomeScore, request.BallOnYardLine, request.IsScoringPlay, correlationId);
-
-            return Accepted(new { contestId, correlationId });
-        }
-
-        [HttpPost]
-        [Route("signalr-debug/baseball-play")]
-        public async Task<IActionResult> BroadcastDebugBaseballPlay(
-            [FromBody] DebugBaseballPlayRequest request,
-            CancellationToken cancellationToken)
-        {
-            var contestId = SignalRDebugContestIds.Baseball;
-            var correlationId = Guid.NewGuid();
-
-            using (_deliveryScope.Use(DeliveryMode.Direct))
-            {
-                await _eventBus.Publish(new BaseballPlayCompleted(
-                    ContestId: contestId,
-                    CompetitionId: contestId, // sandbox: reuse contestId so consumers don't need a real competition row
-                    PlayId: Guid.NewGuid(),
-                    PlayDescription: request.PlayDescription,
-                    Inning: request.Inning,
-                    HalfInning: request.HalfInning,
-                    AwayScore: request.AwayScore,
-                    HomeScore: request.HomeScore,
-                    Balls: request.Balls,
-                    Strikes: request.Strikes,
-                    Outs: request.Outs,
-                    RunnerOnFirst: request.RunnerOnFirst,
-                    RunnerOnSecond: request.RunnerOnSecond,
-                    RunnerOnThird: request.RunnerOnThird,
-                    AtBatAthleteSeasonId: request.AtBatAthleteSeasonId,
-                    AtBatShortName: request.AtBatShortName,
-                    AtBatPositionAbbreviation: request.AtBatPositionAbbreviation,
-                    AtBatHeadshotUrl: request.AtBatHeadshotUrl,
-                    PitchingAthleteSeasonId: request.PitchingAthleteSeasonId,
-                    PitchingShortName: request.PitchingShortName,
-                    PitchingPositionAbbreviation: request.PitchingPositionAbbreviation,
-                    PitchingHeadshotUrl: request.PitchingHeadshotUrl,
-                    Ref: null,
-                    Sport: Sport.BaseballMlb,
-                    SeasonYear: null,
-                    CorrelationId: correlationId,
-                    CausationId: CausationId.Api.SignalRDebugBroadcaster
-                ), cancellationToken);
-            }
-
-            var halfInningForLog = (request.HalfInning ?? string.Empty)
-                .Replace("\r", string.Empty)
-                .Replace("\n", string.Empty);
-
-            _logger.LogInformation(
-                "SignalRDebug: published BaseballPlayCompleted. ContestId={ContestId}, Inning={Half} {Inning}, Score={Away}-{Home}, Count={Balls}-{Strikes}, Outs={Outs}, CorrelationId={CorrelationId}",
-                contestId, halfInningForLog, request.Inning, request.AwayScore, request.HomeScore, request.Balls, request.Strikes, request.Outs, correlationId);
-
-            return Accepted(new { contestId, correlationId });
-        }
-
-        /// <summary>
-        /// Generates synthetic load to test KEDA autoscaling.
-        /// Publishes events to RabbitMQ which are consumed and enqueued to Hangfire.
-        /// KEDA monitors Hangfire queue depth and autoscales pods accordingly.
-        /// </summary>
-        /// <param name="command">Load test configuration</param>
-        /// <param name="handler">Command handler</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Test execution details</returns>
-        [HttpPost]
-        [Route("keda/load-test")]
-        public async Task<ActionResult<GenerateLoadTestResult>> GenerateLoadTest(
-            [FromBody] GenerateLoadTestCommand command,
-            [FromServices] IGenerateLoadTestCommandHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var result = await handler.ExecuteAsync(command, cancellationToken);
-            return result.ToActionResult();
-        }
 
         /// <summary>
         /// Recomputes the record snapshots on PickemGroupMatchup from prior

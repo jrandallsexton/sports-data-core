@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/admin/ai-test"
+  url: "{{baseUrl}}/api/load-tests"
   headers:
     - name: X-Admin-Token
       value: "{{adminToken}}"

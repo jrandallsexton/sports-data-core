@@ -13,7 +13,8 @@
 | Ops proxy → `Ops/OpsController` | #819 | merged |
 | Synthetic picks + `ai-refresh` → `Synthetics/SyntheticsController` | #820 | merged |
 | Security fix: preview approve/reject admin-only; 403 for non-admin callers | #821 | merged |
-| Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | this PR | open |
+| Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | #822 | merged |
+| Diagnostics → `DiagnosticsController`, `SignalRDebugController`, `LoadTestsController` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -121,7 +122,7 @@ so per D3 it gets its own controller in the same feature folder.
 | GET | `model-lab/matrix` | handler `Admin/Queries/GetModelLabMatrix` |
 |---|---|---|
 
-### Previews → `PreviewsController` at `api/previews` *(this PR; Q1 resolved)*
+### Previews → `PreviewsController` at `api/previews` *(done, #822; Q1 resolved)*
 `PreviewController` (`preview/`) is renamed `PreviewsController` and moves to
 `api/previews`. Its approve/reject (`api/previews/{previewId}/approve|reject`) became
 admin-only in #821. The seven contest-keyed admin routes join it under
@@ -229,15 +230,24 @@ one resource. The backfill's logic is inline in the action and moves verbatim
 `[AdminApiToken]` (`.../seasons/{seasonYear}/enrich` and `/source`), so this is
 the D4 pattern in existing code.
 
-### Diagnostics → `Diagnostics/` *(new; controller naming open, Q5)*
-| Verb | Today | Handler today |
-|---|---|---|
-| GET | `errors/competitions-without-{competitors,plays,drives,metrics}` (4) | `Admin/Queries/GetCompetitionsWithout*` |
-| POST | `generate-url-identity` | `Admin/GenerateUrlIdentityCommand` |
-| POST | `ai-test` | `Admin/Queries/GetAiResponse` |
-| POST | `keda/load-test` | `Admin/Commands/GenerateLoadTest` + `Admin/Jobs/PublishLoadTestEventsJob` |
-| POST | `signalr-debug/{contest-status,football-play,baseball-play}` (3) | inline, request DTOs in `Admin/SignalRDebug/` |
+### Diagnostics → three controllers *(this PR; Q5 resolved)*
+Split along tool lines, so no controller is a smaller catch-all:
 
+| Verb | Today | New route | Controller | Handler |
+|---|---|---|---|---|
+| GET | `errors/competitions-without-{competitors,plays,drives,metrics}` (4) | `api/diagnostics/competitions-without-*` | `DiagnosticsController` | `Diagnostics/Queries/GetCompetitionsWithout*` |
+| POST | `ai-test` | `api/diagnostics/ai-test` | `DiagnosticsController` | `Diagnostics/Queries/GetAiResponse` |
+| POST | `generate-url-identity` | `api/diagnostics/generate-url-identity` | `DiagnosticsController` | inline + `Diagnostics/Commands/GenerateUrlIdentity` |
+| POST | `signalr-debug/{contest-status,football-play,baseball-play}` (3) | `api/signalr-debug/*` | `SignalRDebugController` | inline; request DTOs in `SignalRDebug/` |
+| POST | `keda/load-test` | `api/load-tests` | `LoadTestsController` | `LoadTests/Commands/GenerateLoadTest` + `LoadTests/Jobs/PublishLoadTestEventsJob` |
+
+- **SignalR debug gets its own controller.** Each call broadcasts to every
+  connected client, which makes it the most dangerous admin tool.
+- **Load tests rename the route.** The old `keda/` named the autoscaler, not
+  the action.
+- **`generate-url-identity` is a deletion candidate.** No web, Bruno, script or
+  doc caller was found. It was moved, not deleted, pending the operator's review
+  of intent (rule 0).
 ### SmackLab → `SmackLab/` + `SmackLabController` *(done, #818)*
 `smack-lab/{leagues, leagues/{id}/picks, leagues/{id}/ratings, phrases, phrases/{id}, preview, ratings}` → `api/smack-lab/...`. Handlers in
 `Admin/SmackLab/` move with it.
@@ -278,7 +288,7 @@ Steps 2–6 are independent after Prompts and can interleave with feature work.
 - **Q4. Where do league-score backfill, bet-points backfill and league-week
   replay live?** Candidates: a `LeaguesController` under `api/` (the existing
   `LeagueController` is the UI surface at `ui/leagues`), or `Scoring/`.
-- **Q5. Diagnostics controller naming.** D3 says `{Resource}Controller`, but these
+- ~~**Q5. Diagnostics controller naming.**~~ Resolved: three controllers (Diagnostics, SignalRDebug, LoadTests). Original question: D3 says `{Resource}Controller`, but these
   are tools rather than a resource. Options: `DiagnosticsController`, or split by
   resource (`CompetitionsController` for the integrity queries, `SignalRDebugController`, `LoadTestsController`).
 - **Q6. Route renames.** `contest/{id}` vs `contests/...` (singular vs plural),

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/ab980339-9958-4238-8db1-7459c556b6c7/process"
+  url: "{{baseUrlApi}}/api/ops/provider/football/ncaa/resourceIndex/ab980339-9958-4238-8db1-7459c556b6c7/process"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

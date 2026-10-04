@@ -27,7 +27,7 @@ Two push notifications, in natural order:
 | Piece | Where | Status |
 |---|---|---|
 | AP poll sourcing | Recurring `ResourceIndex` row `ab980339-9958-4238-8db1-7459c556b6c7` (`…college-football.seasons.rankings`), cron `0 22 * * 0` (Sun 22:00 UTC), registered by `SourcingJobOrchestrator` as Hangfire job `Resource:{guid}` | LIVE |
-| Manual re-fire | `POST admin/ops/provider/football/ncaa/resourceIndex/{id}/process` via ops proxy; `bruno/api/resourceIndex-process.yml` (id corrected 2026-09-08) | LIVE |
+| Manual re-fire | `POST api/ops/provider/football/ncaa/resourceIndex/{id}/process` via ops proxy; `bruno/api/resourceIndex-process.yml` (id corrected 2026-09-08) | LIVE |
 | Poll-detected event | `SeasonPollWeekCreated` published by `SeasonTypeWeekRankingsDocumentProcessor` (Producer), outbox-atomic with the new `SeasonPollWeek` row. Carries `SeasonPollWeekId`, `SeasonPollId`, `SeasonWeekId?` + week date bounds, `SeasonYear`, `PollSlug`, `Sport` | LIVE |
 | Poll → matchup refresh | `SeasonPollWeekCreatedHandler` (API) enqueues a refresh `ScheduleGroupWeekMatchupsCommand` for every active league with a `RankingFilter` whose window overlaps the poll's week | **DEAD in-season** — the event carries the linkage defect's off-by-one `SeasonWeekId` (Week-2 poll → ESPN week 3), so the shell join matches nothing ("affects 0 leagues"; verified in E2E). Daily `MatchupScheduler` cron (`Cron.Daily(6)` — 06:00 UTC / 02:00 ET) is the working backstop. Date-based fix = deferred API follow-up |
 | Matchups-ready event | `PickemGroupWeekMatchupsGenerated` published by `MatchupScheduleProcessor` **only when new matchups were inserted** and the week isn't already completed | LIVE |

@@ -1,17 +1,17 @@
 using FluentAssertions;
 
-using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.Ops;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin;
+namespace SportsData.Api.Tests.Unit.Application.Ops;
 
 /// <summary>
 /// The allowlist IS the security boundary of the ops proxy — with a valid
 /// admin token, only these path families are reachable on the internal
 /// services. Deny-by-default for everything else.
 /// </summary>
-public class AdminOpsProxyAllowlistTests
+public class OpsAllowlistTests
 {
     [Theory]
     [InlineData("producer", "franchise-seasons/seasonYear/2026/source")]
@@ -24,7 +24,7 @@ public class AdminOpsProxyAllowlistTests
     [InlineData("provider", "resourceindex/00000000-0000-0000-0000-000000000000/process")]
     public void AllowedFamilies_PassPerService(string service, string path)
     {
-        AdminOpsProxyController.Allowlist.IsAllowed(service, path).Should().BeTrue();
+        OpsController.Allowlist.IsAllowed(service, path).Should().BeTrue();
     }
 
     [Theory]
@@ -40,7 +40,7 @@ public class AdminOpsProxyAllowlistTests
     [InlineData("producer", "contestsX/anything", "no segment boundary after prefix")]
     public void EverythingElse_IsDenied(string service, string path, string because)
     {
-        AdminOpsProxyController.Allowlist.IsAllowed(service, path).Should().BeFalse(because);
+        OpsController.Allowlist.IsAllowed(service, path).Should().BeFalse(because);
     }
 
     // Base ends in /api, mirroring the real ProducerClientConfig ApiUrl — the
@@ -56,7 +56,7 @@ public class AdminOpsProxyAllowlistTests
     [InlineData("//attacker.internal/contests/refresh", "scheme-relative opPath escapes to another host")]
     public void TraversalPaths_AreDenied_AfterCanonicalization(string opPath, string because)
     {
-        AdminOpsProxyController.Allowlist
+        OpsController.Allowlist
             .TryResolveAllowedTarget("producer", BaseUri, opPath, string.Empty, out _)
             .Should().BeFalse(because);
     }
@@ -66,7 +66,7 @@ public class AdminOpsProxyAllowlistTests
     {
         // Normalization that stays INSIDE the family is fine — the check is
         // on the canonical destination, not on cosmetic path shape.
-        AdminOpsProxyController.Allowlist
+        OpsController.Allowlist
             .TryResolveAllowedTarget(
                 "producer", BaseUri, "contests/ignored/../refresh", "?seasonYear=2026", out var target)
             .Should().BeTrue();

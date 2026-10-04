@@ -14,7 +14,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/athletes/seasonYear/2025/statistics/source"
+  url: "{{baseUrlApi}}/api/ops/producer/football/ncaa/athletes/seasonYear/2025/statistics/source"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

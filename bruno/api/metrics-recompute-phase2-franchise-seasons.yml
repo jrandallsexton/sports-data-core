@@ -6,12 +6,12 @@ info:
 # PHASE 2 of the metrics recompute campaign — run ONLY after phase 1's
 # gates pass (docs/audit/competition-metrics-formula-audit.md): the
 # season aggregation reads persisted CompetitionMetric rows, so ordering
-# is load-bearing. Relayed via the API's AdminOpsProxy ("franchise-seasons"
+# is load-bearing. Relayed via the API's OpsController ("franchise-seasons"
 # family already allowlisted); sport resolves from the route segments.
 # NOTE: aggregates FBS franchise seasons only (handler filter).
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/franchise-seasons/seasonYear/2025/metrics/generate"
+  url: "{{baseUrlApi}}/api/ops/producer/football/ncaa/franchise-seasons/seasonYear/2025/metrics/generate"
   headers:
     - name: X-Admin-Token
       value: "{{adminToken}}"

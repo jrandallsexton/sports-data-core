@@ -12,7 +12,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/create"
+  url: "{{baseUrlApi}}/api/ops/provider/football/ncaa/resourceIndex/create"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

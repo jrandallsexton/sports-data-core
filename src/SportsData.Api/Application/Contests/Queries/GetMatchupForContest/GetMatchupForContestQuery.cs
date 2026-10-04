@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
+namespace SportsData.Api.Application.Contests.Queries.GetMatchupForContest;
 
 /// <summary>
 /// Returns one canonical matchup in the same shape the picks page consumes

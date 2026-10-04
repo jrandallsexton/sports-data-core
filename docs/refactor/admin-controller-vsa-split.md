@@ -15,7 +15,8 @@
 | Security fix: preview approve/reject admin-only; 403 for non-admin callers | #821 | merged |
 | Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | #822 | merged |
 | Diagnostics → `DiagnosticsController`, `SignalRDebugController`, `LoadTestsController` | #823 | merged |
-| Matchups → `MatchupsController` at `api/matchups` | this PR | open |
+| Matchups → `MatchupsController` at `api/matchups` | #824 | merged |
+| Contests → join `ContestsController` (`api/{sport}/{league}/contests`) | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -145,22 +146,28 @@ same-named `UI/Matchups/Queries/GetMatchupPreview` (returns `MatchupPreviewDto`)
 is the user-facing one and stays for the UI pass. `ai-refresh` went to
 Synthetics (#820). `ai/game-recap` and `ai-audit` are still in `AdminController`.
 
-### Contests → join `ContestsController` *(exists at `api/{sport}/{league}/contests`; Q3)*
-| Verb | Today | Handler today |
-|---|---|---|
-| POST | `contest/{contestId}/reenrich` | `Admin/Commands/ReenrichContest` |
-| POST | `contests/refresh` | Producer client proxy |
-| POST | `contest/{contestId}/score` | inline (enqueues pick scoring) |
-| POST | `ai/game-recap` | `Contests/Commands/GenerateGameRecap` |
-| GET | `football/contests/{contestId}/matchup` | `Admin/Queries/GetMatchupForContest` |
-| GET | `baseball/contests/{contestId}/matchup` | same |
-| POST | `football/contests/{contestId}/replay` | Producer client proxy |
-| POST | `baseball/contests/{contestId}/replay` | Producer client proxy |
+### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(this PR; Q3 resolved for contests)*
+The first mixed controller: its GETs are public, and every moved action carries
+`[AdminApiToken]` on the **action**.
 
-`contests/refresh` is also reachable through `OpsController`'s
-allowlist (`producer` → `contests/refresh`). Two doors, one room: apply rule 0.
+| Verb | Today | New route | Notes |
+|---|---|---|---|
+| POST | `contest/{contestId}/score` | `api/{sport}/{league}/contests/{contestId}/score` | scoring is keyed by contest id; sport/league only place the route |
+| POST | `contest/{contestId}/reenrich?sport=&league=` | `api/{sport}/{league}/contests/{contestId}/reenrich` | `Contests/Commands/ReenrichContest` (moved) |
+| POST | `contests/refresh?sport=&league=&seasonYear=` | `api/{sport}/{league}/contests/refresh?seasonYear=` | the literal `refresh` cannot clash with `{contestId:guid}` |
+| GET | `baseball/contests/{id}/matchup` + `football/contests/{id}/matchup?league=` | `api/{sport}/{league}/contests/{contestId}/matchup` | **merged**; `Contests/Queries/GetMatchupForContest` (moved) |
+| POST | `baseball/contests/{id}/replay` + `football/contests/{id}/replay?league=` | `api/{sport}/{league}/contests/{contestId}/replay` | **merged** |
 
-### Matchups → `MatchupsController` at `api/matchups` *(this PR)*
+The baseball/football pairs **had** to merge. Under a sport-scoped prefix they
+would share one template. The merged actions resolve the sport with
+`ModeMapper.ResolveMode(sport, league)`, as the football actions already did;
+`("baseball","mlb")` maps to the `Sport.BaseballMlb` the baseball actions
+hard-coded. Sport/league move from query string (default football/ncaa) into
+the route, so callers must now name them.
+
+`contest/{id}/score` deliberately lives here, not in a scoring controller.
+`ai/game-recap` is not a contest route and is still in `AdminController`.
+### Matchups → `MatchupsController` at `api/matchups` *(done, #824)*
 | Verb | Today | New route | Handler |
 |---|---|---|---|
 | POST | `matchups/refresh` | `api/matchups/refresh` | `Matchups/Commands/RefreshWeekMatchups` (moved from `Admin/Commands/`) |

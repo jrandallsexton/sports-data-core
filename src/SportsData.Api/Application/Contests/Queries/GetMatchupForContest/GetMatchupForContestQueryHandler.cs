@@ -5,7 +5,7 @@ using SportsData.Api.Application.UI.Leagues.Mapping;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
+namespace SportsData.Api.Application.Contests.Queries.GetMatchupForContest;
 
 public interface IGetMatchupForContestQueryHandler
 {

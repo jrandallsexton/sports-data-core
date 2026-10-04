@@ -13,8 +13,6 @@ GET    /Auth/claims                                                    [Authoriz
 GET    /User/me                                                        [Authorize]
 GET    /User/me/notification-preferences                               [Authorize]
 GET    /User/me/options                                                [Authorize]
-GET    /admin/baseball/contests/{contestId:guid}/matchup               [AdminApiToken]
-GET    /admin/football/contests/{contestId:guid}/matchup               [AdminApiToken]
 GET    /api/diagnostics/competitions-without-competitors               [AdminApiToken]
 GET    /api/diagnostics/competitions-without-drives                    [AdminApiToken]
 GET    /api/diagnostics/competitions-without-metrics                   [AdminApiToken]
@@ -40,6 +38,7 @@ GET    /api/{sport}/{league}/athletes/pickem                           (none)
 GET    /api/{sport}/{league}/athletes/{athleteId:guid}                 (none)
 GET    /api/{sport}/{league}/contests/{contestId:guid}                 (none)
 GET    /api/{sport}/{league}/contests/{contestId:guid}/history         (none)
+GET    /api/{sport}/{league}/contests/{contestId:guid}/matchup         [AdminApiToken]
 GET    /api/{sport}/{league}/franchises                                (none)
 GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}            (none)
 GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons    (none)
@@ -104,11 +103,6 @@ POST   /admin/ai-audit                                                 [AdminApi
 POST   /admin/ai/game-recap                                            [AdminApiToken]
 POST   /admin/backfill-league-scores/{seasonYear}                      [AdminApiToken]
 POST   /admin/backfill-user-pick-bet-points                            [AdminApiToken]
-POST   /admin/baseball/contests/{contestId:guid}/replay                [AdminApiToken]
-POST   /admin/contest/{contestId}/reenrich                             [AdminApiToken]
-POST   /admin/contest/{contestId}/score                                [AdminApiToken]
-POST   /admin/contests/refresh                                         [AdminApiToken]
-POST   /admin/football/contests/{contestId:guid}/replay                [AdminApiToken]
 POST   /admin/leagues/{leagueId:guid}/weeks/{week:int}/replay          [AdminApiToken]
 POST   /admin/sourcing/franchise-seasons/{sport}/{seasonYear:int}      [AdminApiToken]
 POST   /api/diagnostics/ai-test                                        [AdminApiToken]
@@ -145,6 +139,10 @@ POST   /api/smack-lab/phrases                                          [AdminApi
 POST   /api/smack-lab/preview                                          [AdminApiToken]
 POST   /api/smack-lab/ratings                                          [AdminApiToken]
 POST   /api/synthetics/refresh                                         [AdminApiToken]
+POST   /api/{sport}/{league}/contests/refresh                          [AdminApiToken]
+POST   /api/{sport}/{league}/contests/{contestId:guid}/reenrich        [AdminApiToken]
+POST   /api/{sport}/{league}/contests/{contestId:guid}/replay          [AdminApiToken]
+POST   /api/{sport}/{league}/contests/{contestId:guid}/score           [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
 POST   /system/league-contests/in-use                                  (none)

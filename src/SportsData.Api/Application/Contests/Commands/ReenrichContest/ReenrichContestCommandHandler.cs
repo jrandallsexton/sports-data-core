@@ -7,7 +7,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Admin.Commands.ReenrichContest;
+namespace SportsData.Api.Application.Contests.Commands.ReenrichContest;
 
 public interface IReenrichContestCommandHandler
 {

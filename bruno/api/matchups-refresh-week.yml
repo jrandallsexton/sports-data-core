@@ -23,14 +23,14 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/matchups/refresh?seasonYear=2026&seasonWeek=2"
+  url: "{{baseUrlApi}}/api/matchups/refresh?seasonYear=2026&seasonWeek=2"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"
   auth: inherit
 
 # Precise form, once the id is known:
-# url: "{{baseUrlApi}}/admin/matchups/refresh?seasonWeekId=00000000-0000-0000-0000-000000000000"
+# url: "{{baseUrlApi}}/api/matchups/refresh?seasonWeekId=00000000-0000-0000-0000-000000000000"
 
 settings:
   encodeUrl: true

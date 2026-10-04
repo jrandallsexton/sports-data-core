@@ -14,7 +14,8 @@
 | Synthetic picks + `ai-refresh` → `Synthetics/SyntheticsController` | #820 | merged |
 | Security fix: preview approve/reject admin-only; 403 for non-admin callers | #821 | merged |
 | Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | #822 | merged |
-| Diagnostics → `DiagnosticsController`, `SignalRDebugController`, `LoadTestsController` | this PR | open |
+| Diagnostics → `DiagnosticsController`, `SignalRDebugController`, `LoadTestsController` | #823 | merged |
+| Matchups → `MatchupsController` at `api/matchups` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -159,13 +160,17 @@ Synthetics (#820). `ai/game-recap` and `ai-audit` are still in `AdminController`
 `contests/refresh` is also reachable through `OpsController`'s
 allowlist (`producer` → `contests/refresh`). Two doors, one room: apply rule 0.
 
-### Matchups → `Matchups/` + `MatchupsController` *(new; all admin)*
-| Verb | Today | Handler today |
-|---|---|---|
-| POST | `matchups/refresh` | `Admin/Commands/RefreshWeekMatchups` |
-| POST | `matchups/audit-records` | `Matchups/Jobs/MatchupRecordAudit` (enqueue) |
-| POST | `backfill-matchup-odds-pricing` | `Admin/Commands/BackfillMatchupOddsPricing` |
+### Matchups → `MatchupsController` at `api/matchups` *(this PR)*
+| Verb | Today | New route | Handler |
+|---|---|---|---|
+| POST | `matchups/refresh` | `api/matchups/refresh` | `Matchups/Commands/RefreshWeekMatchups` (moved from `Admin/Commands/`) |
+| POST | `matchups/audit-records` | `api/matchups/audit-records` | `Matchups/Jobs/MatchupRecordAudit` (already in Matchups) |
+| POST | `backfill-matchup-odds-pricing` | `api/matchups/backfill-odds-pricing` | `Matchups/Commands/BackfillMatchupOddsPricing` (moved, incl. the per-contest `ApplyMatchupOddsPricingHandler` job) |
 
+The new admin `MatchupsController` sits beside the user-facing
+`UI/Matchups/MatchupController` (`ui/matchup`). The backfill route drops the
+"matchup" that is redundant under the matchups resource.
+`notifications/matchups/backfill` went to Notifications (#817).
 ### Scoring / Leagues *(Q4)*
 | Verb | Today | Handler today |
 |---|---|---|
@@ -230,7 +235,7 @@ one resource. The backfill's logic is inline in the action and moves verbatim
 `[AdminApiToken]` (`.../seasons/{seasonYear}/enrich` and `/source`), so this is
 the D4 pattern in existing code.
 
-### Diagnostics → three controllers *(this PR; Q5 resolved)*
+### Diagnostics → three controllers *(done, #823; Q5 resolved)*
 Split along tool lines, so no controller is a smaller catch-all:
 
 | Verb | Today | New route | Controller | Handler |

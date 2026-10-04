@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
+namespace SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 
 public class RefreshWeekMatchupsCommandValidator : AbstractValidator<RefreshWeekMatchupsCommand>
 {

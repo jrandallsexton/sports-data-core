@@ -8,7 +8,6 @@ using SportsData.Api.Application.Athletes.Queries.GetPickemAthletes;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
-using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.MetricBot.Jobs;
@@ -110,6 +109,8 @@ using SportsData.Api.Application.Leagues.Jobs;
 using SportsData.Api.Application.Leagues.Jobs.LeagueJoinExpiry;
 using SportsData.Api.Application.LoadTests.Commands.GenerateLoadTest;
 using SportsData.Api.Application.LoadTests.Jobs;
+using SportsData.Api.Application.Matchups.Commands.BackfillMatchupOddsPricing;
+using SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Matchups.Jobs.ApplyMatchupOdds;
 using SportsData.Api.Application.Matchups.Jobs.BootstrapLeagueMatchups;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
@@ -250,12 +251,12 @@ namespace SportsData.Api.DependencyInjection
             // Admin Commands
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
             services.AddScoped<
-                Application.Admin.Commands.BackfillMatchupOddsPricing.IBackfillMatchupOddsPricingCommandHandler,
-                Application.Admin.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingCommandHandler>();
+                Application.Matchups.Commands.BackfillMatchupOddsPricing.IBackfillMatchupOddsPricingCommandHandler,
+                Application.Matchups.Commands.BackfillMatchupOddsPricing.BackfillMatchupOddsPricingCommandHandler>();
             // Hangfire resolves the per-contest job by interface.
             services.AddScoped<
-                Application.Admin.Commands.BackfillMatchupOddsPricing.IApplyMatchupOddsPricing,
-                Application.Admin.Commands.BackfillMatchupOddsPricing.ApplyMatchupOddsPricingHandler>();
+                Application.Matchups.Commands.BackfillMatchupOddsPricing.IApplyMatchupOddsPricing,
+                Application.Matchups.Commands.BackfillMatchupOddsPricing.ApplyMatchupOddsPricingHandler>();
             services.AddScoped<
                 Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler,
                 Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommandHandler>();

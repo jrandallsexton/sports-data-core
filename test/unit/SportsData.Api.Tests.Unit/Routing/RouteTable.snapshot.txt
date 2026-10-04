@@ -146,9 +146,9 @@ POST   /api/{sport}/{league}/contests/{contestId:guid}/score           [AdminApi
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
 POST   /system/league-contests/in-use                                  (none)
-POST   /ui/contest/{id}/finalize                                       [Authorize]
-POST   /ui/contest/{id}/media/refresh                                  [Authorize]
-POST   /ui/contest/{id}/refresh                                        [Authorize]
+POST   /ui/contest/{id}/finalize                                       [AdminApiToken] [Authorize]
+POST   /ui/contest/{id}/media/refresh                                  [AdminApiToken] [Authorize]
+POST   /ui/contest/{id}/refresh                                        [AdminApiToken] [Authorize]
 POST   /ui/devices                                                     [Authorize]
 POST   /ui/leagues                                                     [Authorize]
 POST   /ui/leagues/baseball/mlb                                        [Authorize]

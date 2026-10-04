@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/backfill-matchup-odds-pricing"
+  url: "{{baseUrlApi}}/api/matchups/backfill-odds-pricing"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

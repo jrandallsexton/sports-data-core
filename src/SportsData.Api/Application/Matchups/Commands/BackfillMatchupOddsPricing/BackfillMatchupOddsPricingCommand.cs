@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillMatchupOddsPricing;
+namespace SportsData.Api.Application.Matchups.Commands.BackfillMatchupOddsPricing;
 
 /// <summary>
 /// Populate odds pricing (per-team moneyline and spread price, over/under

@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.Commands.BackfillMatchupOddsPricing;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Matchups.Commands.BackfillMatchupOddsPricing;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -13,7 +13,7 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.BackfillMatchupOddsPricing;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Commands.BackfillMatchupOddsPricing;
 
 public class ApplyMatchupOddsPricingHandlerTests : ApiTestBase<ApplyMatchupOddsPricingHandler>
 {

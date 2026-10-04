@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
+namespace SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 
 /// <summary>
 /// Re-runs the matchup scheduler over an already-generated week so the record

@@ -8,7 +8,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
-namespace SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
+namespace SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 
 public interface IRefreshWeekMatchupsCommandHandler
 {

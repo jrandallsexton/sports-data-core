@@ -5,7 +5,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillMatchupOddsPricing;
+namespace SportsData.Api.Application.Matchups.Commands.BackfillMatchupOddsPricing;
 
 public interface IApplyMatchupOddsPricing
 {

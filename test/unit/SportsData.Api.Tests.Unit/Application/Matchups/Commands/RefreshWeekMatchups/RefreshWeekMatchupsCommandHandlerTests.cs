@@ -6,8 +6,8 @@ using FluentValidation;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -15,7 +15,7 @@ using SportsData.Core.Processing;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands;
+namespace SportsData.Api.Tests.Unit.Application.Matchups.Commands.RefreshWeekMatchups;
 
 /// <summary>
 /// The week a caller names has to be the week that gets refreshed. Week NUMBERS

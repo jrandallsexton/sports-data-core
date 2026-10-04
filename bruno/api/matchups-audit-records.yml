@@ -19,7 +19,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/matchups/audit-records?seasonYear=2026&seasonWeek=1&sport=FootballNcaa"
+  url: "{{baseUrlApi}}/api/matchups/audit-records?seasonYear=2026&seasonWeek=1&sport=FootballNcaa"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

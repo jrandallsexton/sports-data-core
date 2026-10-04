@@ -3,7 +3,6 @@
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
-using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -375,22 +374,6 @@ namespace SportsData.Api.Application.Admin
 
             return result.ToActionResult(_ =>
                 Accepted(new { correlationId, sport = mode.ToString(), seasonYear }));
-        }
-
-        /// <summary>
-        /// Ensure every synthetic is in every league and has picks for a week.
-        /// StatBot's picks are written as previews land (event handlers); this
-        /// is the catch-all sweep. <paramref name="week"/> defaults to the
-        /// current week; name a past week to backfill it.
-        /// </summary>
-        [HttpPost]
-        [Route("ai-refresh")]
-        public IActionResult RefreshAiExistence([FromQuery] int? week = null)
-        {
-            var correlationId = Guid.NewGuid();
-            var command = new RefreshAiExistenceCommand { CorrelationId = correlationId, Week = week };
-            _backgroundJobProvider.Enqueue<IRefreshAiExistenceCommandHandler>(p => p.ExecuteAsync(command, CancellationToken.None));
-            return Accepted(correlationId);
         }
 
         [HttpPost]

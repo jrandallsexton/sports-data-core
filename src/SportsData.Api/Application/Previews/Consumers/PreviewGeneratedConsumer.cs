@@ -2,7 +2,7 @@ using MassTransit;
 
 using Microsoft.AspNetCore.SignalR;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Eventing.Events.Previews;

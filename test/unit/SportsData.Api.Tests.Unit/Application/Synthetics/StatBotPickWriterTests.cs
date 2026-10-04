@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.SyntheticPicks;
+namespace SportsData.Api.Tests.Unit.Application.Synthetics;
 
 /// <summary>
 /// StatBot's picks are ordinary UserPick rows, one per (league, contest),

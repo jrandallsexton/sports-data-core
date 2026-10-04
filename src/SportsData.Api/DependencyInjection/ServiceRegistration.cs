@@ -9,7 +9,6 @@ using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
-using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
@@ -19,7 +18,6 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.MetricBot.Jobs;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
@@ -133,6 +131,8 @@ using SportsData.Api.Application.Prompts.Commands.UpdatePrompt;
 using SportsData.Api.Application.Prompts.Queries.GetPromptById;
 using SportsData.Api.Application.Prompts.Queries.GetPrompts;
 using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
+using SportsData.Api.Application.Synthetics.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Synthetics;
 
 namespace SportsData.Api.DependencyInjection
 {

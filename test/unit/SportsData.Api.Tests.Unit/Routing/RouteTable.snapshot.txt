@@ -101,7 +101,6 @@ POST   /Auth/auth-sync                                                 [Authoriz
 POST   /Auth/clear-token                                               (none)
 POST   /User                                                           [Authorize]
 POST   /admin/ai-audit                                                 [AdminApiToken]
-POST   /admin/ai-refresh                                               [AdminApiToken]
 POST   /admin/ai-test                                                  [AdminApiToken]
 POST   /admin/ai/game-recap                                            [AdminApiToken]
 POST   /admin/backfill-league-scores/{seasonYear}                      [AdminApiToken]
@@ -143,6 +142,7 @@ POST   /api/prompts/{promptId}/set-default                             [AdminApi
 POST   /api/smack-lab/phrases                                          [AdminApiToken]
 POST   /api/smack-lab/preview                                          [AdminApiToken]
 POST   /api/smack-lab/ratings                                          [AdminApiToken]
+POST   /api/synthetics/refresh                                         [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
 POST   /preview/{previewId}/approve                                    [Authorize]

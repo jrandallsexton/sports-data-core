@@ -10,7 +10,8 @@
 | MetricBot → `MetricBotController` (+ ingestion, weekly job) | #816 | merged |
 | Notifications → `NotificationsController` (test push + reminder backfill) | #817 | merged |
 | SmackLab → `SmackLab/SmackLabController` | #818 | merged |
-| Ops proxy → `Ops/OpsController` | this PR | open |
+| Ops proxy → `Ops/OpsController` | #819 | merged |
+| Synthetic picks + `ai-refresh` → `Synthetics/SyntheticsController` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -128,7 +129,6 @@ so per D3 it gets its own controller in the same feature folder.
 | GET | `matchup/preview/{contestId}/captures` | `Admin/Queries/GetMatchupPreviewCaptures` |
 | POST | `matchup/preview/{contestId}/experiment` | inline (enqueues generation) |
 | POST | `matchup/preview/{contestId}/experiment/panel` | inline |
-| POST | `ai-refresh` | `Admin/Commands/RefreshAiExistence` |
 | POST | `ai-audit` | `Admin/Queries/AuditAi` |
 
 ### Contests → join `ContestsController` *(exists at `api/{sport}/{league}/contests`; Q3)*
@@ -186,9 +186,16 @@ synthetic-user pick generation:
 - `StatBotPickWriter`: StatBot's preview-derived picks; used by `RefreshAiExistence`,
   `MatchupPreviewApprovedConsumer`, `PreviewGeneratedConsumer`, and the pick advisor.
 
-It gets its own slice together with `ai-refresh`, and retires
-`SyntheticPickService` as a service. Where it lives (a bots/synthetic-users feature,
-or Previews) is decided in that PR.
+**Landed (this PR):** feature `Application/Synthetics/`, using the codebase's own
+vocabulary (`IsSynthetic`, `SyntheticUsersConfig`, `SyntheticPickStyle`).
+- `SyntheticsController` at `api/synthetics`. `ai-refresh` → `POST api/synthetics/refresh`.
+  This drops the `ai-` pseudo-namespace (Q6) because the route changes anyway.
+- `Synthetics/Commands/RefreshAiExistence/`: command, handler, validator, and
+  `SyntheticPickService`, whose only user is this handler. It is now a
+  slice-internal collaborator rather than a top-level service; renaming or
+  folding it is a follow-up.
+- `Synthetics/StatBotPickWriter` sits at the feature root because several features
+  share it (refresh, two preview consumers, the pick advisor).
 
 ### Notifications → `Notifications/` + `NotificationsController` *(new; all admin)*
 | Verb | Today | New route | Handler today |
@@ -223,7 +230,7 @@ the D4 pattern in existing code.
 `smack-lab/{leagues, leagues/{id}/picks, leagues/{id}/ratings, phrases, phrases/{id}, preview, ratings}` → `api/smack-lab/...`. Handlers in
 `Admin/SmackLab/` move with it.
 
-### Ops proxy → `Ops/` + `OpsController` *(2 endpoints; all admin; this PR — renamed from AdminOpsProxyController)*
+### Ops proxy → `Ops/` + `OpsController` *(done, #819 — renamed from AdminOpsProxyController)*
 `GET/POST ops/{service}/{sport}/{league}/{**opPath}` → `api/ops/...`. This is the
 allowlisted relay to Producer/Provider operations.
 

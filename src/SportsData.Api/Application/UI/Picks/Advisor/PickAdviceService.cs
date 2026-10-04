@@ -2,8 +2,8 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Synthetics;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;

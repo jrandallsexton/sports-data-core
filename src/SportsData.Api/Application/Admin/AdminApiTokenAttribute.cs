@@ -37,9 +37,14 @@ public class AdminApiTokenAttribute : Attribute, IAuthorizationFilter
             {
                 return;
             }
+
+            // Authenticated but not an admin: the caller is known and simply
+            // not allowed - 403, not 401 (re-authenticating would not help).
+            context.Result = new ForbidResult();
+            return;
         }
 
-        // Neither admin token nor admin role found
+        // No valid admin token and no authenticated user: 401.
         context.Result = new UnauthorizedResult();
     }
 }

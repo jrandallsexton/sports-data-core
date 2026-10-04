@@ -6,7 +6,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
-namespace SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
+namespace SportsData.Api.Application.Previews.Queries.GetMatchupPreview;
 
 public interface IGetMatchupPreviewQueryHandler
 {

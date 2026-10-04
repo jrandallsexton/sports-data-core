@@ -11,7 +11,6 @@ using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
-using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Admin.Queries.GetAiResponse;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
@@ -123,7 +122,9 @@ using SportsData.Api.Application.Models.Queries.GetModelProviders;
 using SportsData.Api.Application.Models.Queries.GetModels;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
+using SportsData.Api.Application.Previews.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Prompts.Commands.CreatePrompt;
 using SportsData.Api.Application.Prompts.Commands.ImportPromptFromBlob;
 using SportsData.Api.Application.Prompts.Commands.SetDefaultPrompt;
@@ -288,10 +289,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetCompetitionsWithoutPlaysQueryHandler, GetCompetitionsWithoutPlaysQueryHandler>();
             services.AddScoped<IGetCompetitionsWithoutDrivesQueryHandler, GetCompetitionsWithoutDrivesQueryHandler>();
             services.AddScoped<IGetCompetitionsWithoutMetricsQueryHandler, GetCompetitionsWithoutMetricsQueryHandler>();
-            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetMatchupPreview.IGetMatchupPreviewQueryHandler,
-                SportsData.Api.Application.Admin.Queries.GetMatchupPreview.GetMatchupPreviewQueryHandler>();
-            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures.IGetMatchupPreviewCapturesQueryHandler,
-                SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures.GetMatchupPreviewCapturesQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Previews.Queries.GetMatchupPreview.IGetMatchupPreviewQueryHandler,
+                SportsData.Api.Application.Previews.Queries.GetMatchupPreview.GetMatchupPreviewQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures.IGetMatchupPreviewCapturesQueryHandler,
+                SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures.GetMatchupPreviewCapturesQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Admin.Queries.GetMatchupForContest.IGetMatchupForContestQueryHandler,
                 SportsData.Api.Application.Admin.Queries.GetMatchupForContest.GetMatchupForContestQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.IGetLeagueWeekContestsQueryHandler,

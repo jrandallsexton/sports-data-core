@@ -11,7 +11,9 @@
 | Notifications → `NotificationsController` (test push + reminder backfill) | #817 | merged |
 | SmackLab → `SmackLab/SmackLabController` | #818 | merged |
 | Ops proxy → `Ops/OpsController` | #819 | merged |
-| Synthetic picks + `ai-refresh` → `Synthetics/SyntheticsController` | this PR | open |
+| Synthetic picks + `ai-refresh` → `Synthetics/SyntheticsController` | #820 | merged |
+| Security fix: preview approve/reject admin-only; 403 for non-admin callers | #821 | merged |
+| Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -119,17 +121,27 @@ so per D3 it gets its own controller in the same feature folder.
 | GET | `model-lab/matrix` | handler `Admin/Queries/GetModelLabMatrix` |
 |---|---|---|
 
-### Previews → join `PreviewController` *(exists at `preview/`; Q1)*
-| Verb | Today | Handler today |
-|---|---|---|
-| GET | `matchup/preview/{contestId}` | `UI/Matchups/Queries/GetMatchupPreview` |
-| POST | `matchup/preview/{contestId}` | `Admin/Commands/UpsertMatchupPreview` |
-| POST | `matchup/preview/{contestId}/reset` | inline |
-| POST | `matchup/preview/{contestId}/capture` | inline (enqueues generation) |
-| GET | `matchup/preview/{contestId}/captures` | `Admin/Queries/GetMatchupPreviewCaptures` |
-| POST | `matchup/preview/{contestId}/experiment` | inline (enqueues generation) |
-| POST | `matchup/preview/{contestId}/experiment/panel` | inline |
-| POST | `ai-audit` | `Admin/Queries/AuditAi` |
+### Previews → `PreviewsController` at `api/previews` *(this PR; Q1 resolved)*
+`PreviewController` (`preview/`) is renamed `PreviewsController` and moves to
+`api/previews`. Its approve/reject (`api/previews/{previewId}/approve|reject`) became
+admin-only in #821. The seven contest-keyed admin routes join it under
+`contests/{contestId}`, so a contest id and a preview id never share a position:
+
+| Verb | Today | New route | Handler |
+|---|---|---|---|
+| GET | `matchup/preview/{contestId}` | `api/previews/contests/{contestId}` | `Previews/Queries/GetMatchupPreview` (moved from `Admin/Queries/`) |
+| POST | `matchup/preview/{contestId}` | `api/previews/contests/{contestId}` | `Previews/Commands/UpsertMatchupPreview` (moved) |
+| POST | `matchup/preview/{contestId}/reset` | `api/previews/contests/{contestId}/reset` | inline (enqueues generation) |
+| POST | `matchup/preview/{contestId}/capture` | `api/previews/contests/{contestId}/capture` | inline |
+| GET | `matchup/preview/{contestId}/captures` | `api/previews/contests/{contestId}/captures` | `Previews/Queries/GetMatchupPreviewCaptures` (moved) |
+| POST | `matchup/preview/{contestId}/experiment` | `api/previews/contests/{contestId}/experiment` | inline |
+| POST | `matchup/preview/{contestId}/experiment/panel` | `api/previews/contests/{contestId}/experiment/panel` | inline |
+
+"Matchup" was a misnomer: the preview is the resource. `GetAiPreview` uses the
+admin `GetMatchupPreview` slice, which returns the raw preview string. The
+same-named `UI/Matchups/Queries/GetMatchupPreview` (returns `MatchupPreviewDto`)
+is the user-facing one and stays for the UI pass. `ai-refresh` went to
+Synthetics (#820). `ai/game-recap` and `ai-audit` are still in `AdminController`.
 
 ### Contests → join `ContestsController` *(exists at `api/{sport}/{league}/contests`; Q3)*
 | Verb | Today | Handler today |
@@ -256,10 +268,7 @@ Steps 2–6 are independent after Prompts and can interleave with feature work.
 
 ## Open questions (settle per slice, before its PR)
 
-- **Q1. Previews and `preview/`.** `PreviewController` lives at `preview/`, not
-  `api/`. Admin preview endpoints joining it would land at `preview/...`. Either
-  accept that, or move `PreviewController` to `api/previews` in the same PR
-  (that is a user-facing route change, so the web/mobile approve/reject calls follow).
+- ~~**Q1. Previews and `preview/`.**~~ Resolved: renamed `PreviewsController`, moved to `api/previews` (approve/reject follow; mobile never called them).
 - ~~**Q2. Model Lab.**~~ Resolved: `ModelLabController` in `Models/` (#815).
 - **Q3. Joining sport-scoped controllers.** `ContestsController` and
   `FranchisesController` sit at `api/{sport}/{league}/...`. Joining them puts

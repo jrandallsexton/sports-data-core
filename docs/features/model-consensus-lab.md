@@ -110,7 +110,7 @@ live pick until weeks of season data justify the swap.
    client resolver (direct routes deliberately unreachable until a panel
    seat is earned), model gate at the TOP of MatchupPreviewProcessor (an
    inactive model costs nothing — not even a Producer round trip), and
-   POST admin/matchup/preview/{contestId}/experiment/panel fanning out one
+   POST api/previews/contests/{contestId}/experiment/panel fanning out one
    Experiment per active, lab-reachable model (25-model budget guard).
    AppConfig keys: CommonConfig:OpenRouterClientConfig:{ApiKey,BaseUrl}.
    Seed roster: sql/pgsql/seed_model_lab.sql (idempotent; ids verified

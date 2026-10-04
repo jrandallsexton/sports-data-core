@@ -271,7 +271,7 @@ call returns).
 ### Where things stand in code
 
 - Single-game admin trigger EXISTS:
-  `POST /admin/matchup/preview/{contestId}/reset?sport=...` → enqueues
+  `POST /api/previews/contests/{contestId}/reset?sport=...` → enqueues
   `GenerateMatchupPreviewsCommand` via Hangfire.
 - The processor composes `fullPrompt = promptText + "\n\n" + json(dto)
   [+ editorNote]` inline at `MatchupPreviewProcessor.cs:109` — assembly
@@ -347,12 +347,12 @@ few thousand rows/season is noise. Full prompt = PromptText + "\n\n" +
 PayloadJson + EditorNote, all from the row.
 
 **4. Admin capture endpoint** — new
-`POST /admin/matchup/preview/{contestId}/capture?sport=...`, ASYNC via
+`POST /api/previews/contests/{contestId}/capture?sport=...`, ASYNC via
 Hangfire, matching the established admin pattern (decision 2026-08-07:
 toast on submit → SignalR notification on completion, exactly like
 regeneration). Capture completion publishes a lightweight event through
 the same notification path. Retrieval is a companion
-`GET /admin/matchup/preview/{contestId}/captures` (list, newest first)
+`GET /api/previews/contests/{contestId}/captures` (list, newest first)
 returning payload + metadata, with the full prompt reconstructed
 (persisted PromptText + PayloadJson + EditorNote — no blob round-trip,
 matching BuildCapture) so the admin sees exactly what the

@@ -1,13 +1,13 @@
 using FluentAssertions;
 using FluentValidation;
 
-using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+using SportsData.Api.Application.Previews.Commands.UpsertMatchupPreview;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.UpsertMatchupPreview;
+namespace SportsData.Api.Tests.Unit.Application.Previews.Commands.UpsertMatchupPreview;
 
 public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchupPreviewCommandHandler>
 {

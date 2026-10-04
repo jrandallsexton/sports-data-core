@@ -4,7 +4,6 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
-using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Admin.Queries.GetAiResponse;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
@@ -13,15 +12,9 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
 using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
-using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
-using SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
-using SportsData.Api.Application.Previews;
-using Microsoft.EntityFrameworkCore;
-using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
-using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Leagues.Dtos;
@@ -40,7 +33,6 @@ using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Processing;
-using SportsData.Api.Application.Previews.Jobs.Generation;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -99,141 +91,6 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
-        [HttpPost]
-        [Route("matchup/preview/{contestId}/reset")]
-        public IActionResult ResetContestPreview(
-            [FromRoute] Guid contestId,
-            // Sport enum name (e.g. "FootballNfl"); omitted = NCAA for
-            // backward compatibility. The processor validates by resolving
-            // the contest against this sport's canonical client — a wrong
-            // sport 404s there and is logged as a skip.
-            [FromQuery] Sport sport = Sport.FootballNcaa)
-        {
-            var cmd = new GenerateMatchupPreviewsCommand
-            {
-                ContestId = contestId,
-                Sport = sport
-            };
-            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
-            return Accepted(new { cmd.CorrelationId });
-        }
-
-        /// <summary>
-        /// Dry run: assemble and persist the exact prompt payload for a
-        /// contest WITHOUT calling the model or writing a preview. Completed
-        /// contests are allowed (backtest capture). Completion is announced
-        /// via SignalR (PreviewPromptCaptured); retrieve results from the
-        /// captures endpoint below.
-        /// </summary>
-        [HttpPost]
-        [Route("matchup/preview/{contestId}/capture")]
-        public IActionResult CaptureContestPreviewPrompt(
-            [FromRoute] Guid contestId,
-            [FromQuery] Sport sport = Sport.FootballNcaa,
-            // Prompt entity Guid — model binding rejects malformed values
-            // with a 400 before anything reaches Hangfire.
-            [FromQuery] Guid? promptId = null)
-        {
-            var cmd = new GenerateMatchupPreviewsCommand
-            {
-                ContestId = contestId,
-                Sport = sport,
-                Mode = PreviewGenerationMode.Capture,
-                PromptId = promptId
-            };
-            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
-            return Accepted(new { cmd.CorrelationId });
-        }
-
-        /// <summary>
-        /// Eval run: assemble the prompt, call the model, and store the raw
-        /// response on the capture row. NEVER writes a MatchupPreview — safe
-        /// to run against contests that already have a real preview from a
-        /// prior season (the picks page reads newest-non-rejected, so an
-        /// experimental preview row would shadow the real one). Completed
-        /// contests allowed. Completion announced via SignalR
-        /// (PreviewPromptCaptured).
-        /// </summary>
-        [HttpPost]
-        [Route("matchup/preview/{contestId}/experiment")]
-        public IActionResult RunContestPreviewExperiment(
-            [FromRoute] Guid contestId,
-            [FromQuery] Sport sport = Sport.FootballNcaa,
-            [FromQuery] Guid? promptId = null,
-            [FromQuery] Guid? modelId = null)
-        {
-            // modelId (optional): run against that Model row instead of the
-            // production client — the Model Lab's single-cell fill-in.
-            var cmd = new GenerateMatchupPreviewsCommand
-            {
-                ContestId = contestId,
-                Sport = sport,
-                Mode = PreviewGenerationMode.Experiment,
-                PromptId = promptId,
-                ModelId = modelId
-            };
-            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
-            return Accepted(new { cmd.CorrelationId });
-        }
-
-        /// <summary>
-        /// Model Consensus Lab fan-out: run the SAME experiment (same prompt
-        /// assembly, same contest) against every active Model whose provider
-        /// the lab can reach — one capture row per model, never a
-        /// MatchupPreview. The audition in one call. Model/ModelProvider
-        /// rows are managed by the existing admin CRUD (models /
-        /// model-providers routes). See docs/features/model-consensus-lab.md.
-        /// </summary>
-        [HttpPost]
-        [Route("matchup/preview/{contestId}/experiment/panel")]
-        public async Task<IActionResult> RunContestPreviewPanel(
-            [FromRoute] Guid contestId,
-            [FromServices] AppDataContext dataContext,
-            [FromServices] IAiModelClientResolver modelClientResolver,
-            [FromQuery] Sport sport = Sport.FootballNcaa,
-            [FromQuery] Guid? promptId = null,
-            CancellationToken cancellationToken = default)
-        {
-            // Budget guard: experiment spend is approved, runaway loops are
-            // not. 25 models per fan-out is far above any realistic audition.
-            const int maxPanelSize = 25;
-
-            var candidates = await dataContext.Models
-                .AsNoTracking()
-                .Where(x => x.IsActive && x.ModelProvider!.IsActive)
-                .OrderBy(x => x.Name)
-                .Select(x => new { x.Id, x.Name, x.Gateway, x.ModelProvider!.Kind })
-                .ToListAsync(cancellationToken);
-
-            // The resolver is the single source of truth for which routes
-            // have a lab client (today: the OpenRouter gateway; direct
-            // first-party clients arrive with panel promotion).
-            var models = candidates
-                .Where(x => modelClientResolver.CanResolve(x.Gateway, x.Kind))
-                .Take(maxPanelSize)
-                .ToList();
-
-            if (models.Count == 0)
-                return UnprocessableEntity(new { error = "No active models under a lab-reachable provider." });
-
-            var correlationId = Guid.NewGuid();
-            foreach (var model in models)
-            {
-                var cmd = new GenerateMatchupPreviewsCommand
-                {
-                    ContestId = contestId,
-                    Sport = sport,
-                    Mode = PreviewGenerationMode.Experiment,
-                    PromptId = promptId,
-                    ModelId = model.Id,
-                    CorrelationId = correlationId
-                };
-                _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
-            }
-
-            return Accepted(new { correlationId, modelCount = models.Count });
-        }
-
         /// <summary>
         /// Fan out ESPN sourcing for every FranchiseSeason in a season year,
         /// optionally narrowed to specific child document types. Producer is
@@ -255,42 +112,6 @@ namespace SportsData.Api.Application.Admin
             var client = franchiseClientFactory.Resolve(sport);
             var result = await client.RequestFranchiseSeasonSourcing(
                 seasonYear, request, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Persisted prompt captures for a contest, newest first — payload,
-        /// metadata, and the full rendered prompt exactly as the model would
-        /// receive it (instruction blob + payload + editor note).
-        /// </summary>
-        [HttpGet]
-        [Route("matchup/preview/{contestId}/captures")]
-        public async Task<ActionResult<List<MatchupPreviewCaptureDto>>> GetContestPreviewPromptCaptures(
-            [FromRoute] Guid contestId,
-            [FromServices] IGetMatchupPreviewCapturesQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var result = await handler.ExecuteAsync(new GetMatchupPreviewCapturesQuery(contestId), cancellationToken);
-            return result.ToActionResult();
-        }
-
-        [HttpPost]
-        [Route("matchup/preview/{contestId}")]
-        public async Task<ActionResult<Guid>> UpsertContestPreview(
-            [FromRoute] Guid contestId,
-            [FromBody] string matchupPreview,
-            [FromServices] IUpsertMatchupPreviewCommandHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var command = new UpsertMatchupPreviewCommand(matchupPreview);
-            var result = await handler.ExecuteAsync(command, cancellationToken);
-
-            if (result.IsSuccess && result.Value == contestId)
-                return Created($"/admin/matchup/preview/{contestId}", new { contestId });
-
-            if (result.IsSuccess)
-                return BadRequest("The provided preview does not match the specified contest ID.");
-
             return result.ToActionResult();
         }
 
@@ -384,18 +205,6 @@ namespace SportsData.Api.Application.Admin
             var query = new AuditAiQuery { CorrelationId = correlationId };
             _backgroundJobProvider.Enqueue<IAuditAiQueryHandler>(p => p.ExecuteAsync(query, CancellationToken.None));
             return Accepted(correlationId);
-        }
-
-        [HttpGet]
-        [Route("matchup/preview/{contestId}")]
-        public async Task<ActionResult<string>> GetAiPreview(
-            [FromRoute] Guid contestId,
-            [FromServices] IGetMatchupPreviewQueryHandler handler,
-            CancellationToken cancellationToken)
-        {
-            var query = new GetMatchupPreviewQuery(contestId);
-            var result = await handler.ExecuteAsync(query, cancellationToken);
-            return result.ToActionResult();
         }
 
         [HttpGet]

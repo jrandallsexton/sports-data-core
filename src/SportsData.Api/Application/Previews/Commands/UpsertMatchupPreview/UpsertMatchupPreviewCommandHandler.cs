@@ -8,7 +8,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
-namespace SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
+namespace SportsData.Api.Application.Previews.Commands.UpsertMatchupPreview;
 
 public interface IUpsertMatchupPreviewCommandHandler
 {

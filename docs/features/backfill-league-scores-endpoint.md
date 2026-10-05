@@ -65,7 +65,7 @@ The response is keyed by league and week, reflecting the per-league/week process
 
 ### Using curl
 ```bash
-curl -X POST https://your-api.com/api/leagues/scores/backfill?seasonYear=2025 \
+curl -X POST "https://your-api.com/api/leagues/scores/backfill?seasonYear=2025" \
   -H "X-Admin-Token: YOUR_ADMIN_TOKEN"
 ```
 

@@ -194,9 +194,13 @@ surfaces stay where they are: `UI/Leagues/LeagueController` (`ui/leagues`) and
 The league is the resource for the replay and the score backfill (it writes
 league week results). The bet-points backfill writes UserPick columns, so it
 goes to picks. `seasonYear` moves to the query string, as on
-`contests/refresh`. Hangfire enqueues `IApplyUserPickBetPoints` by type
-name, so the namespace move strands only jobs still queued at deploy (a
-one-off backfill).
+`contests/refresh`. Hangfire stores `IApplyUserPickBetPoints` and
+`ApplyUserPickBetPointsCommand` by type name, so the namespace move strands
+any bet-point job not finished at deploy: enqueued, scheduled, or awaiting
+retry (Hangfire retries failed jobs for hours). Before deploying, confirm the
+Hangfire dashboard shows none of these jobs in Enqueued, Scheduled or
+Retries. It is a one-off backfill, so this is normally empty.
+
 ### MetricBot → `MetricBot/` + `MetricBotController` *(new; all admin)*
 | Verb | Today | New route | Notes |
 |---|---|---|---|

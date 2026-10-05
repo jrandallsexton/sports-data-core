@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Contests.Commands.ReenrichContest;
 using SportsData.Api.Application.Contests.Queries.GetContestById;
@@ -9,6 +8,7 @@ using SportsData.Api.Application.Contests.Queries.GetContestHistory;
 using SportsData.Api.Application.Contests.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;

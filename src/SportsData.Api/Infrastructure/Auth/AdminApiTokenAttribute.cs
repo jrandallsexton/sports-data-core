@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 using System.Security.Claims;
 
-namespace SportsData.Api.Application.Admin;
+namespace SportsData.Api.Infrastructure.Auth;
 
 /// <summary>
 /// Requires either:

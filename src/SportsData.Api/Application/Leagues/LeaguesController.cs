@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Leagues.Queries.GetLeagueWeekContests;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;

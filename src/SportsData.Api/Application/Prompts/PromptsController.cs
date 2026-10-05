@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Prompts.Commands.CreatePrompt;
 using SportsData.Api.Application.Prompts.Commands.ImportPromptFromBlob;
 using SportsData.Api.Application.Prompts.Commands.SetDefaultPrompt;
 using SportsData.Api.Application.Prompts.Commands.UpdatePrompt;
 using SportsData.Api.Application.Prompts.Queries.GetPromptById;
 using SportsData.Api.Application.Prompts.Queries.GetPrompts;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 

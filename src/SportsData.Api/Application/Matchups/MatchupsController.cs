@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Matchups.Commands.BackfillMatchupOddsPricing;
 using SportsData.Api.Application.Matchups.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Matchups.Jobs.MatchupRecordAudit;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Previews.Commands.ApproveMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
@@ -11,6 +10,7 @@ using SportsData.Api.Application.Previews.Queries.AuditAi;
 using SportsData.Api.Application.Previews.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Extensions;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;

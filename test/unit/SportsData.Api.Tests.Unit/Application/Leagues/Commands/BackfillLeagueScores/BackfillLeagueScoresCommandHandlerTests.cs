@@ -3,7 +3,7 @@ using FluentValidation;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Scoring.Jobs.LeagueWeekScoring;
 using SportsData.Api.Application.Scoring;
@@ -14,7 +14,7 @@ using SportsData.Core.Infrastructure.Clients.Season;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.BackfillLeagueScores;
+namespace SportsData.Api.Tests.Unit.Application.Leagues.Commands.BackfillLeagueScores;
 
 public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagueScoresCommandHandler>
 {

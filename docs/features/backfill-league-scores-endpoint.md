@@ -8,11 +8,11 @@ Backfills league week scores for all completed weeks in a season. Useful for:
 
 ## Endpoint
 ```
-POST /admin/backfill-league-scores/{seasonYear}
+POST /api/leagues/scores/backfill?seasonYear={seasonYear}
 ```
 
 ## Parameters
-- `seasonYear` (int) - The season year to backfill (e.g., 2024, 2025)
+- `seasonYear` (int, query string) - The season year to backfill (e.g., 2024, 2025)
 
 ## Authentication
 Requires admin API token (via `AdminApiToken` attribute)
@@ -65,13 +65,13 @@ The response is keyed by league and week, reflecting the per-league/week process
 
 ### Using curl
 ```bash
-curl -X POST https://your-api.com/admin/backfill-league-scores/2025 \
+curl -X POST "https://your-api.com/api/leagues/scores/backfill?seasonYear=2025" \
   -H "X-Admin-Token: YOUR_ADMIN_TOKEN"
 ```
 
 ### Using Postman
 1. Method: POST
-2. URL: `https://your-api.com/admin/backfill-league-scores/2025`
+2. URL: `https://your-api.com/api/leagues/scores/backfill?seasonYear=2025`
 3. Headers:
    - `X-Admin-Token: YOUR_ADMIN_TOKEN`
 

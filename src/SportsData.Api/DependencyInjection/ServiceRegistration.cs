@@ -2,7 +2,7 @@
 
 using FluentValidation;
 
-using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
 using SportsData.Api.Application.Athletes.Queries.GetPickemAthletes;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
@@ -258,12 +258,12 @@ namespace SportsData.Api.DependencyInjection
                 Application.Matchups.Commands.BackfillMatchupOddsPricing.IApplyMatchupOddsPricing,
                 Application.Matchups.Commands.BackfillMatchupOddsPricing.ApplyMatchupOddsPricingHandler>();
             services.AddScoped<
-                Application.Admin.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler,
-                Application.Admin.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommandHandler>();
+                Application.Picks.Commands.BackfillUserPickBetPoints.IBackfillUserPickBetPointsCommandHandler,
+                Application.Picks.Commands.BackfillUserPickBetPoints.BackfillUserPickBetPointsCommandHandler>();
             // Hangfire resolves the per-contest job by interface.
             services.AddScoped<
-                Application.Admin.Commands.BackfillUserPickBetPoints.IApplyUserPickBetPoints,
-                Application.Admin.Commands.BackfillUserPickBetPoints.ApplyUserPickBetPointsHandler>();
+                Application.Picks.Commands.BackfillUserPickBetPoints.IApplyUserPickBetPoints,
+                Application.Picks.Commands.BackfillUserPickBetPoints.ApplyUserPickBetPointsHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
             services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
             services.AddScoped<IReenrichContestCommandHandler, ReenrichContestCommandHandler>();
@@ -297,8 +297,8 @@ namespace SportsData.Api.DependencyInjection
                 SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures.GetMatchupPreviewCapturesQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Contests.Queries.GetMatchupForContest.IGetMatchupForContestQueryHandler,
                 SportsData.Api.Application.Contests.Queries.GetMatchupForContest.GetMatchupForContestQueryHandler>();
-            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.IGetLeagueWeekContestsQueryHandler,
-                SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.GetLeagueWeekContestsQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Leagues.Queries.GetLeagueWeekContests.IGetLeagueWeekContestsQueryHandler,
+                SportsData.Api.Application.Leagues.Queries.GetLeagueWeekContests.GetLeagueWeekContestsQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Models.Queries.GetModelLabMatrix.IGetModelLabMatrixQueryHandler,
                 SportsData.Api.Application.Models.Queries.GetModelLabMatrix.GetModelLabMatrixQueryHandler>();
 

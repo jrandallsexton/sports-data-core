@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+namespace SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 
 public class BackfillLeagueScoresCommandValidator : AbstractValidator<BackfillLeagueScoresCommand>
 {

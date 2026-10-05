@@ -16,7 +16,9 @@
 | Previews → `PreviewsController` at `api/previews` (+ 7 contest-keyed routes) | #822 | merged |
 | Diagnostics → `DiagnosticsController`, `SignalRDebugController`, `LoadTestsController` | #823 | merged |
 | Matchups → `MatchupsController` at `api/matchups` | #824 | merged |
-| Contests → join `ContestsController` (`api/{sport}/{league}/contests`) | this PR | open |
+| Contests → join `ContestsController` (`api/{sport}/{league}/contests`) | #825 | merged |
+| Security fix: `ui/contest` refresh, media refresh, finalize admin-only | #826 | merged |
+| Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -146,7 +148,7 @@ same-named `UI/Matchups/Queries/GetMatchupPreview` (returns `MatchupPreviewDto`)
 is the user-facing one and stays for the UI pass. `ai-refresh` went to
 Synthetics (#820). `ai/game-recap` and `ai-audit` are still in `AdminController`.
 
-### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(this PR; Q3 resolved for contests)*
+### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(done, #825; Q3 resolved for contests)*
 The first mixed controller: its GETs are public, and every moved action carries
 `[AdminApiToken]` on the **action**.
 
@@ -178,12 +180,26 @@ The new admin `MatchupsController` sits beside the user-facing
 `UI/Matchups/MatchupController` (`ui/matchup`). The backfill route drops the
 "matchup" that is redundant under the matchups resource.
 `notifications/matchups/backfill` went to Notifications (#817).
-### Scoring / Leagues *(Q4)*
-| Verb | Today | Handler today |
-|---|---|---|
-| POST | `backfill-league-scores/{seasonYear}` | `Admin/Commands/BackfillLeagueScores` |
-| POST | `backfill-user-pick-bet-points` | `Admin/Commands/BackfillUserPickBetPoints` |
-| POST | `leagues/{leagueId}/weeks/{week}/replay` | `Admin/Queries/GetLeagueWeekContests` + Producer proxy |
+### Leagues + Picks → `LeaguesController` at `api/leagues`, `PicksController` at `api/picks` *(this PR; Q4 resolved)*
+Both new, both all-admin (`[AdminApiToken]` on the class). The user-facing
+surfaces stay where they are: `UI/Leagues/LeagueController` (`ui/leagues`) and
+`UI/Picks/PicksController` (`ui/picks`).
+
+| Verb | Today | New route | Handler (moved) |
+|---|---|---|---|
+| POST | `leagues/{leagueId}/weeks/{week}/replay` | `api/leagues/{leagueId}/weeks/{week}/replay` | `Leagues/Queries/GetLeagueWeekContests` + Producer proxy |
+| POST | `backfill-league-scores/{seasonYear}` | `api/leagues/scores/backfill?seasonYear=` | `Leagues/Commands/BackfillLeagueScores` |
+| POST | `backfill-user-pick-bet-points` | `api/picks/bet-points/backfill` | `Picks/Commands/BackfillUserPickBetPoints` |
+
+The league is the resource for the replay and the score backfill (it writes
+league week results). The bet-points backfill writes UserPick columns, so it
+goes to picks. `seasonYear` moves to the query string, as on
+`contests/refresh`. Hangfire stores `IApplyUserPickBetPoints` and
+`ApplyUserPickBetPointsCommand` by type name, so the namespace move strands
+any bet-point job not finished at deploy: enqueued, scheduled, or awaiting
+retry (Hangfire retries failed jobs for hours). Before deploying, confirm the
+Hangfire dashboard shows none of these jobs in Enqueued, Scheduled or
+Retries. It is a one-off backfill, so this is normally empty.
 
 ### MetricBot → `MetricBot/` + `MetricBotController` *(new; all admin)*
 | Verb | Today | New route | Notes |
@@ -211,7 +227,7 @@ synthetic-user pick generation:
 - `StatBotPickWriter`: StatBot's preview-derived picks; used by `RefreshAiExistence`,
   `MatchupPreviewApprovedConsumer`, `PreviewGeneratedConsumer`, and the pick advisor.
 
-**Landed (this PR):** feature `Application/Synthetics/`, using the codebase's own
+**Landed (#820):** feature `Application/Synthetics/`, using the codebase's own
 vocabulary (`IsSynthetic`, `SyntheticUsersConfig`, `SyntheticPickStyle`).
 - `SyntheticsController` at `api/synthetics`. `ai-refresh` → `POST api/synthetics/refresh`.
   This drops the `ai-` pseudo-namespace (Q6) because the route changes anyway.
@@ -278,7 +294,7 @@ moving it is what lets `Application/Admin/` be deleted.
 
 1. **This PR (#755):** snapshot test, Bruno secrets, this plan.
 2. ~~**Prompts**~~ (#814) → ~~**Models** + **Model Lab**~~ (#815).
-3. **MetricBot** (this PR), **Notifications**, **SmackLab**, **Ops**: self-contained, new controllers. **Synthetic picks** + `ai-refresh`: own slice.
+3. **MetricBot** (#816), **Notifications**, **SmackLab**, **Ops**: self-contained, new controllers. **Synthetic picks** + `ai-refresh`: own slice.
 4. **Diagnostics**: after Q5.
 5. **Matchups**, **Previews**, **Scoring/Leagues**: join or create controllers per Q1/Q4.
 6. **Contests**, **Franchises**: join sport-scoped controllers per Q3.
@@ -297,9 +313,7 @@ Steps 2–6 are independent after Prompts and can interleave with feature work.
   admin routes under `{sport}/{league}`. That replaces today's
   `football/...` / `baseball/...` route prefixes, but means handlers take sport
   from the route.
-- **Q4. Where do league-score backfill, bet-points backfill and league-week
-  replay live?** Candidates: a `LeaguesController` under `api/` (the existing
-  `LeagueController` is the UI surface at `ui/leagues`), or `Scoring/`.
+- ~~**Q4. Where do league-score backfill, bet-points backfill and league-week replay live?**~~ Resolved: `LeaguesController` at `api/leagues` (replay, score backfill) and `PicksController` at `api/picks` (bet-points backfill).
 - ~~**Q5. Diagnostics controller naming.**~~ Resolved: three controllers (Diagnostics, SignalRDebug, LoadTests). Original question: D3 says `{Resource}Controller`, but these
   are tools rather than a resource. Options: `DiagnosticsController`, or split by
   resource (`CompetitionsController` for the integrity queries, `SignalRDebugController`, `LoadTestsController`).

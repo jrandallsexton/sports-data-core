@@ -9,7 +9,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+namespace SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 
 public interface IBackfillLeagueScoresCommandHandler
 {

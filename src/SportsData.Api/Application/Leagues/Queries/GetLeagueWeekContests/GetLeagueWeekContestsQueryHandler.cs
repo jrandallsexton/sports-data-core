@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
+namespace SportsData.Api.Application.Leagues.Queries.GetLeagueWeekContests;
 
 public interface IGetLeagueWeekContestsQueryHandler
 {

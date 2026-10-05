@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillUserPickBetPoints;
+namespace SportsData.Api.Application.Picks.Commands.BackfillUserPickBetPoints;
 
 /// <summary>
 /// Compute the simulated $1 bet columns (PointsSU, PointsATS, PointsOU) on

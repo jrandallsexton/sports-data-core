@@ -5,7 +5,6 @@ using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -39,30 +38,6 @@ namespace SportsData.Api.Application.Admin
             CancellationToken cancellationToken)
         {
             var result = await handler.ExecuteAsync(command, cancellationToken);
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Fan out ESPN sourcing for every FranchiseSeason in a season year,
-        /// optionally narrowed to specific child document types. Producer is
-        /// not publicly reachable; this proxy is the operator's entry point.
-        ///
-        /// Example: POST /admin/sourcing/franchise-seasons/FootballNcaa/2025
-        /// Body: { "includeLinkedDocumentTypes": ["TeamSeasonRecord"] }
-        /// (empty body object {} = the historical full cascade)
-        /// </summary>
-        [HttpPost]
-        [Route("sourcing/franchise-seasons/{sport}/{seasonYear:int}")]
-        public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
-            [FromRoute] Sport sport,
-            [FromRoute] int seasonYear,
-            [FromBody] FranchiseSeasonSourcingRequest request,
-            [FromServices] IFranchiseClientFactory franchiseClientFactory,
-            CancellationToken cancellationToken)
-        {
-            var client = franchiseClientFactory.Resolve(sport);
-            var result = await client.RequestFranchiseSeasonSourcing(
-                seasonYear, request, cancellationToken);
             return result.ToActionResult();
         }
 

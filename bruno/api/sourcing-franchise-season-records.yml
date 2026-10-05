@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/sourcing/franchise-seasons/FootballNcaa/1999"
+  url: "{{baseUrlApi}}/api/football/ncaa/franchises/seasons/1999/source"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

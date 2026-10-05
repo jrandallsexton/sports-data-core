@@ -101,7 +101,6 @@ POST   /Auth/clear-token                                               (none)
 POST   /User                                                           [Authorize]
 POST   /admin/ai-audit                                                 [AdminApiToken]
 POST   /admin/ai/game-recap                                            [AdminApiToken]
-POST   /admin/sourcing/franchise-seasons/{sport}/{seasonYear:int}      [AdminApiToken]
 POST   /api/diagnostics/ai-test                                        [AdminApiToken]
 POST   /api/diagnostics/generate-url-identity                          [AdminApiToken]
 POST   /api/leagues/scores/backfill                                    [AdminApiToken]
@@ -143,6 +142,7 @@ POST   /api/{sport}/{league}/contests/refresh                          [AdminApi
 POST   /api/{sport}/{league}/contests/{contestId:guid}/reenrich        [AdminApiToken]
 POST   /api/{sport}/{league}/contests/{contestId:guid}/replay          [AdminApiToken]
 POST   /api/{sport}/{league}/contests/{contestId:guid}/score           [AdminApiToken]
+POST   /api/{sport}/{league}/franchises/seasons/{seasonYear:int}/source [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
 POST   /system/league-contests/in-use                                  (none)

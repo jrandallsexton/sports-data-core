@@ -45,7 +45,7 @@ $body = @{
 } | ConvertTo-Json
 
 $response = Invoke-RestMethod `
-    -Uri "http://localhost:5000/admin/ai/game-recap" `
+    -Uri "http://localhost:5000/api/football/ncaa/contests/recap" `
     -Method Post `
     -Headers @{ "X-Admin-Token" = "your-token" } `
     -Body $body `

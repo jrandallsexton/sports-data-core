@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Admin;
+using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Contests.Commands.ReenrichContest;
 using SportsData.Api.Application.Contests.Queries.GetContestById;
 using SportsData.Api.Application.Contests.Queries.GetContestById.Dtos;
@@ -209,6 +210,28 @@ public class ContestsController : ControllerBase
             .Resolve(mode)
             .ReplayContest(contestId, cancellationToken);
 
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Generates a game recap from caller-supplied game data: the recap prompt
+    /// (blob storage, cached; <c>reloadPrompt</c> forces a reload) plus the
+    /// body's <c>gameDataJson</c>, sent to the AI client. An operator test
+    /// harness for the same handler the scheduled ContestRecap job uses. The
+    /// handler takes no sport or contest id; {sport}/{league} only places the
+    /// route under the contest resource.
+    ///
+    /// Example: POST /api/football/ncaa/contests/recap
+    /// Body: { "gameDataJson": "{ ... }", "reloadPrompt": false }
+    /// </summary>
+    [AdminApiToken]
+    [HttpPost("recap")]
+    public async Task<ActionResult<GameRecapResponse>> GenerateGameRecap(
+        [FromBody] GenerateGameRecapCommand command,
+        [FromServices] IGenerateGameRecapCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(command, cancellationToken);
         return result.ToActionResult();
     }
 }

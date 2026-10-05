@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/admin/ai/game-recap"
+  url: "{{baseUrl}}/api/football/ncaa/contests/recap"
   headers:
     - name: X-Admin-Token
       value: "{{adminToken}}"

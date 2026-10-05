@@ -93,7 +93,7 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
         // nothing to persist and would never flush the outbox — the events
         // would be enqueued into the tracker and silently dropped. Publish
         // straight to the broker instead. See
-        // feedback_direct_publish_no_dbcontext / AdminController's
+        // feedback_direct_publish_no_dbcontext / the API's SignalRDebugController
         // BroadcastDebugContestStatus.
         using (_deliveryScope.Use(DeliveryMode.Direct))
         {

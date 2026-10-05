@@ -18,7 +18,8 @@
 | Matchups → `MatchupsController` at `api/matchups` | #824 | merged |
 | Contests → join `ContestsController` (`api/{sport}/{league}/contests`) | #825 | merged |
 | Security fix: `ui/contest` refresh, media refresh, finalize admin-only | #826 | merged |
-| Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | this PR | open |
+| Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | #827 | merged |
+| Franchise season sourcing → join `FranchisesController` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -180,7 +181,7 @@ The new admin `MatchupsController` sits beside the user-facing
 `UI/Matchups/MatchupController` (`ui/matchup`). The backfill route drops the
 "matchup" that is redundant under the matchups resource.
 `notifications/matchups/backfill` went to Notifications (#817).
-### Leagues + Picks → `LeaguesController` at `api/leagues`, `PicksController` at `api/picks` *(this PR; Q4 resolved)*
+### Leagues + Picks → `LeaguesController` at `api/leagues`, `PicksController` at `api/picks` *(done, #827; Q4 resolved)*
 Both new, both all-admin (`[AdminApiToken]` on the class). The user-facing
 surfaces stay where they are: `UI/Leagues/LeagueController` (`ui/leagues`) and
 `UI/Picks/PicksController` (`ui/picks`).
@@ -250,13 +251,20 @@ pick-deadline and contest-start reminders. Both `notifications/...` routes are
 one resource. The backfill's logic is inline in the action and moves verbatim
 (rule 1). Making it a command slice is a follow-up.
 
-### Franchises → join `FranchisesController` *(exists, sport-scoped; Q3)*
-| POST | `sourcing/franchise-seasons/{sport}/{seasonYear}` | Producer client proxy |
-|---|---|---|
+### Franchises → join `FranchisesController` at `api/{sport}/{league}/franchises` *(this PR; Q3 resolved for franchises)*
+| Verb | Today | New route | Notes |
+|---|---|---|---|
+| POST | `sourcing/franchise-seasons/{Sport}/{seasonYear}` | `api/{sport}/{league}/franchises/seasons/{seasonYear}/source` | Producer client proxy, inline |
 
-`FranchisesController` already carries two admin actions with per-action
-`[AdminApiToken]` (`.../seasons/{seasonYear}/enrich` and `/source`), so this is
-the D4 pattern in existing code.
+The all-franchises sibling of the existing per-franchise
+`.../franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source`: same verb and
+shape, minus the franchise segment. The literal `seasons` cannot be taken for a
+slug (literal segments outrank parameters, and no POST template has that
+shape). The sport moves from the `Sport` enum in the route (`FootballNcaa`) to
+`{sport}/{league}` resolved by `ModeMapper`, as on every other action here.
+`[AdminApiToken]` sits on the action, beside the existing `enrich` and
+`source` (D4). It stays an inline proxy, as `GetTeamRoster` in the same
+controller already is.
 
 ### Diagnostics → three controllers *(done, #823; Q5 resolved)*
 Split along tool lines, so no controller is a smaller catch-all:

@@ -128,6 +128,34 @@ public class FranchisesController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Admin: fan out ESPN sourcing for EVERY franchise season in a season
+    /// year (the all-franchises sibling of the per-franchise <c>source</c>
+    /// above), optionally narrowed to specific child document types.
+    /// Producer is not publicly reachable; this proxy is the operator's entry
+    /// point. Returns the Producer correlation id.
+    ///
+    /// Example: POST /api/football/ncaa/franchises/seasons/2025/source
+    /// Body: { "includeLinkedDocumentTypes": ["TeamSeasonRecord"] }
+    /// (empty body object {} = the historical full cascade)
+    /// </summary>
+    [HttpPost("seasons/{seasonYear:int}/source")]
+    [AdminApiToken]
+    public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromRoute] int seasonYear,
+        [FromBody] FranchiseSeasonSourcingRequest request,
+        [FromServices] IFranchiseClientFactory franchiseClientFactory,
+        CancellationToken cancellationToken = default)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var client = franchiseClientFactory.Resolve(mode);
+        var result = await client.RequestFranchiseSeasonSourcing(
+            seasonYear, request, cancellationToken);
+        return result.ToActionResult();
+    }
+
     [HttpGet("{franchiseIdOrSlug}/seasons/{seasonYear}/roster")]
     public async Task<ActionResult<TeamRosterDto>> GetTeamRoster(
         [FromRoute] string sport,

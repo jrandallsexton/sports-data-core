@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+namespace SportsData.Api.Application.Leagues.Commands.BackfillLeagueScores;
 
 public record BackfillLeagueScoresCommand(int SeasonYear);
 

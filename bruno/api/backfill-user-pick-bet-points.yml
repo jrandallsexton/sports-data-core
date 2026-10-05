@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/backfill-user-pick-bet-points"
+  url: "{{baseUrlApi}}/api/picks/bet-points/backfill"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

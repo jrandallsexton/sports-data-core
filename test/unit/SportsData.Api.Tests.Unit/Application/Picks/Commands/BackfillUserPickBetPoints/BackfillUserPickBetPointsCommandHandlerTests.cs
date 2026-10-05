@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 using Moq;
 
-using SportsData.Api.Application.Admin.Commands.BackfillUserPickBetPoints;
+using SportsData.Api.Application.Picks.Commands.BackfillUserPickBetPoints;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -10,7 +10,7 @@ using SportsData.Core.Processing;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.BackfillUserPickBetPoints;
+namespace SportsData.Api.Tests.Unit.Application.Picks.Commands.BackfillUserPickBetPoints;
 
 public class BackfillUserPickBetPointsCommandHandlerTests : ApiTestBase<BackfillUserPickBetPointsCommandHandler>
 {

@@ -7,7 +7,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
-namespace SportsData.Api.Application.Admin.Commands.BackfillUserPickBetPoints;
+namespace SportsData.Api.Application.Picks.Commands.BackfillUserPickBetPoints;
 
 public interface IApplyUserPickBetPoints
 {

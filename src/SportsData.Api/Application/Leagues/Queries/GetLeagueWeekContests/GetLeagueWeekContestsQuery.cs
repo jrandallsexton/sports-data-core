@@ -1,6 +1,6 @@
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
+namespace SportsData.Api.Application.Leagues.Queries.GetLeagueWeekContests;
 
 /// <summary>
 /// Returns the sport and contest IDs for a given pickem league's week.

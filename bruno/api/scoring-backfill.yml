@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/admin/backfill-league-scores/2025"
+  url: "{{baseUrl}}/api/leagues/scores/backfill?seasonYear=2025"
   headers:
     - name: X-Admin-Token
       value: "{{adminToken}}"

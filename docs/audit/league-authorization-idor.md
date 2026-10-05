@@ -153,4 +153,4 @@ across every suite. Full API suite: 573 tests green.
 
 - Invitation lifecycle / signed invite links (Option B).
 - The other audit P0s (`OutboxTestController`, password reset, placeholder content, database hardware).
-- Admin-gating contest refresh/finalize and preview approve/reject (audit P1) — same theme, separate change.
+- Admin-gating contest refresh/finalize and preview approve/reject (audit P1) — same theme, separate change. **Done:** preview approve/reject in #821, `ui/contest` refresh / media refresh / finalize in #826 (both `[AdminApiToken]`).

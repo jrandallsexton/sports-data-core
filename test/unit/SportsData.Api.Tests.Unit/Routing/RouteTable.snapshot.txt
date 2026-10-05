@@ -95,7 +95,7 @@ PATCH  /User/me/notification-preferences                               [Authoriz
 PATCH  /User/me/options                                                [Authorize]
 PATCH  /User/me/timezone                                               [Authorize]
 PATCH  /User/me/username                                               [Authorize]
-PATCH  /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/logos/{logoId}/dark-bg [Authorize]
+PATCH  /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/logos/{logoId}/dark-bg [AdminApiToken] [Authorize]
 POST   /Auth/auth-sync                                                 [Authorize]
 POST   /Auth/clear-token                                               (none)
 POST   /User                                                           [Authorize]

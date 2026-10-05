@@ -5,6 +5,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
@@ -136,8 +137,11 @@ public class TeamCardController : ApiControllerBase
     }
 
     // The only mutation on this controller — and it was ANONYMOUS until #573
-    // added a class-level gate. Keep it authorized even though the GETs above
-    // are not; the web client additionally gates this behind isAdmin UI-side.
+    // added a class-level gate. Admin-only: its only caller is the web app's
+    // admin Logos tab, behind an isAdmin check that is presentational, not a
+    // trust boundary. [Authorize] alone let any signed-in user rewrite shared
+    // logo metadata. The GETs above stay anonymous.
+    [AdminApiToken]
     [Authorize]
     [HttpPatch("logos/{logoId}/dark-bg")]
     public async Task<ActionResult<bool>> UpdateLogoDarkBg(

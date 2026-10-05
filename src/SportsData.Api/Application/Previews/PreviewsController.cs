@@ -7,6 +7,7 @@ using SportsData.Api.Application.Previews.Commands.GenerateMatchupPreviews;
 using SportsData.Api.Application.Previews.Commands.RejectMatchupPreview;
 using SportsData.Api.Application.Previews.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Previews.Jobs.Generation;
+using SportsData.Api.Application.Previews.Queries.AuditAi;
 using SportsData.Api.Application.Previews.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Previews.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Extensions;
@@ -85,6 +86,21 @@ namespace SportsData.Api.Application.Previews
             return Accepted(new { cmd.CorrelationId });
         }
     
+        /// <summary>
+        /// Enqueues a read-only audit of every league-attached preview: logs
+        /// previews whose predicted straight-up or spread winner is not one of
+        /// the matchup's two FranchiseSeasonIds (a hallucinated id), and a total.
+        /// Returns 202 with the correlation id. Football NCAA only (TODO in the
+        /// handler).
+        /// </summary>
+        [HttpPost("audit")]
+        public IActionResult AiPreviewsAudit()
+        {
+            var correlationId = Guid.NewGuid();
+            var query = new AuditAiQuery { CorrelationId = correlationId };
+            _backgroundJobProvider.Enqueue<IAuditAiQueryHandler>(p => p.ExecuteAsync(query, CancellationToken.None));
+            return Accepted(correlationId);
+        }
 
         [HttpGet("contests/{contestId}")]
         public async Task<ActionResult<string>> GetAiPreview(

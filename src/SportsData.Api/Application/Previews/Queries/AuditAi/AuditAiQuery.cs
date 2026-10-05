@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Admin.Queries.AuditAi;
+namespace SportsData.Api.Application.Previews.Queries.AuditAi;
 
 public class AuditAiQuery
 {

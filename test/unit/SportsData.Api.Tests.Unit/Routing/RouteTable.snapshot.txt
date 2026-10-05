@@ -99,7 +99,6 @@ PATCH  /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/logos
 POST   /Auth/auth-sync                                                 [Authorize]
 POST   /Auth/clear-token                                               (none)
 POST   /User                                                           [Authorize]
-POST   /admin/ai-audit                                                 [AdminApiToken]
 POST   /admin/ai/game-recap                                            [AdminApiToken]
 POST   /api/diagnostics/ai-test                                        [AdminApiToken]
 POST   /api/diagnostics/generate-url-identity                          [AdminApiToken]
@@ -121,6 +120,7 @@ POST   /api/notifications/matchups/backfill                            [AdminApi
 POST   /api/notifications/test-push                                    [AdminApiToken]
 POST   /api/ops/{service}/{sport}/{league}/{**opPath}                  [AdminApiToken]
 POST   /api/picks/bet-points/backfill                                  [AdminApiToken]
+POST   /api/previews/audit                                             [AdminApiToken]
 POST   /api/previews/contests/{contestId}                              [AdminApiToken]
 POST   /api/previews/contests/{contestId}/capture                      [AdminApiToken]
 POST   /api/previews/contests/{contestId}/experiment                   [AdminApiToken]

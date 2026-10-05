@@ -14,7 +14,7 @@ A complete solution for testing large AI prompts (game recap generation) with De
 
 ### 2. API Integration
 - **`GenerateGameRecapCommandHandler.cs`** - CQRS command handler implementing `IGenerateGameRecapCommandHandler`; contains the game recap generation logic
-- **`AdminController.cs`** - `/admin/ai/game-recap` endpoint delegates to `IGenerateGameRecapCommandHandler` (not inline logic)
+- **`ContestsController.cs`** - `/api/{sport}/{league}/contests/recap` endpoint delegates to `IGenerateGameRecapCommandHandler` (not inline logic)
 - **`ServiceRegistration.cs`** - Registered GameRecapPromptProvider
 
 ### 3. Documentation
@@ -42,7 +42,7 @@ $body = @{
 } | ConvertTo-Json
 
 Invoke-RestMethod `
-    -Uri "http://localhost:5000/admin/ai/game-recap" `
+    -Uri "http://localhost:5000/api/football/ncaa/contests/recap" `
     -Method Post `
     -Headers @{ "X-Admin-Token" = "your-token" } `
     -Body $body `
@@ -95,8 +95,8 @@ Invoke-RestMethod `
 ## ??? Architecture
 
 ```
-AdminController
-  /admin/ai/game-recap
+ContestsController
+  /api/{sport}/{league}/contests/recap
          |
          v
 GenerateGameRecapCommandHandler (CQRS pattern)
@@ -227,7 +227,7 @@ _logger.LogInformation(
 
 - **Setup Guide:** `docs/GameRecapGeneration_Guide.md`
 - **DeepSeek Config:** `docs/DeepSeekClient_Usage_Example.cs`
-- **API Reference:** See AdminController `/admin/ai/game-recap`
+- **API Reference:** See ContestsController `/api/{sport}/{league}/contests/recap`
 
 ---
 

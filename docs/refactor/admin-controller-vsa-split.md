@@ -20,7 +20,8 @@
 | Security fix: `ui/contest` refresh, media refresh, finalize admin-only | #826 | merged |
 | Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | #827 | merged |
 | Franchise season sourcing → join `FranchisesController` | #828 | merged |
-| `ai-audit` → `PreviewsController` at `api/previews/audit` | this PR | open |
+| `ai-audit` → `PreviewsController` at `api/previews/audit` | #829 | merged |
+| `ai/game-recap` → `ContestsController` at `.../contests/recap`; `AdminController` deleted | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -150,14 +151,24 @@ same-named `UI/Matchups/Queries/GetMatchupPreview` (returns `MatchupPreviewDto`)
 is the user-facing one and stays for the UI pass. `ai-refresh` went to
 Synthetics (#820).
 
-**`ai-audit` (this PR):** `POST admin/ai-audit` → `POST api/previews/audit`;
+**`ai-audit` (#829):** `POST admin/ai-audit` → `POST api/previews/audit`;
 `Admin/Queries/AuditAi` → `Previews/Queries/AuditAi`, moved verbatim. The
 handler is read-only: it logs previews whose predicted winner is not one of
 the matchup's two FranchiseSeasonIds. It is enqueued as
 `IAuditAiQueryHandler`, so the namespace move strands only audit jobs not
 finished at deploy (manual, rarely run). With it gone, `AdminController`'s
 constructor (background jobs, logger) had no users and is removed.
-`ai/game-recap` is the last action in `AdminController`.
+`ai/game-recap` was the last action in `AdminController`.
+
+**`ai/game-recap` (this PR):** `POST admin/ai/game-recap` → `POST
+api/{sport}/{league}/contests/recap`, with `[AdminApiToken]` on the action in the
+mixed `ContestsController`. The handler (`Contests/Commands/GenerateGameRecap`,
+already in place) takes no sport or contest id: `{sport}/{league}` only places
+the route under the contest resource, as with `score`. "game" is dropped as
+redundant under contests, and `recap` matches the scheduled `ContestRecap` job
+that uses the same handler. **With its last action gone, `AdminController` is
+deleted; the API serves no `/admin` routes.** `AdminApiTokenAttribute` still
+lives in `Application/Admin/` until the finale moves it.
 
 ### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(done, #825; Q3 resolved for contests)*
 The first mixed controller: its GETs are public, and every moved action carries

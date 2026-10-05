@@ -51,7 +51,7 @@ services.AddSingleton<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepS
 ### Endpoint Details
 
 ```
-POST /admin/ai/game-recap
+POST /api/football/ncaa/contests/recap
 Headers: 
   X-Admin-Token: your-admin-token
   Content-Type: application/json
@@ -69,7 +69,7 @@ Headers:
 ### Example Using HTTPie
 
 ```bash
-http POST http://localhost:5000/admin/ai/game-recap \
+http POST http://localhost:5000/api/football/ncaa/contests/recap \
   X-Admin-Token:your-admin-token \
   gameDataJson=@wku_at_lsu.json \
   reloadPrompt:=false
@@ -78,7 +78,7 @@ http POST http://localhost:5000/admin/ai/game-recap \
 ### Example Using cURL
 
 ```bash
-curl -X POST http://localhost:5000/admin/ai/game-recap \
+curl -X POST http://localhost:5000/api/football/ncaa/contests/recap \
   -H "X-Admin-Token: your-admin-token" \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,7 +98,7 @@ $body = @{
 } | ConvertTo-Json
 
 Invoke-RestMethod `
-    -Uri "http://localhost:5000/admin/ai/game-recap" `
+    -Uri "http://localhost:5000/api/football/ncaa/contests/recap" `
     -Method Post `
     -Headers @{ "X-Admin-Token" = "your-admin-token" } `
     -Body $body `
@@ -214,7 +214,7 @@ $body = @{
 } | ConvertTo-Json
 
 $response = Invoke-RestMethod `
-    -Uri "http://localhost:5000/admin/ai/game-recap" `
+    -Uri "http://localhost:5000/api/football/ncaa/contests/recap" `
     -Method Post `
     -Headers @{ "X-Admin-Token" = "your-token" } `
     -Body $body `
@@ -326,7 +326,7 @@ services.AddHttpClient<DeepSeekClient>((sp, client) =>
 ### Reload Prompt Without Restarting API
 
 ```http
-POST /admin/ai/game-recap
+POST /api/football/ncaa/contests/recap
 {
   "gameDataJson": "{ ... }",
   "reloadPrompt": true  // ? Forces reload from blob storage
@@ -403,12 +403,12 @@ $body = @{
     reloadPrompt = $false
 } | ConvertTo-Json
 
-Write-Host "Sending request to $ApiUrl/admin/ai/game-recap..." -ForegroundColor Cyan
+Write-Host "Sending request to $ApiUrl/api/football/ncaa/contests/recap..." -ForegroundColor Cyan
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 try {
     $response = Invoke-RestMethod `
-        -Uri "$ApiUrl/admin/ai/game-recap" `
+        -Uri "$ApiUrl/api/football/ncaa/contests/recap" `
         -Method Post `
         -Headers @{ "X-Admin-Token" = $AdminToken } `
         -Body $body `
@@ -453,7 +453,7 @@ catch {
 - `GameRecapPromptProvider` - Loads prompts from blob storage with caching
 - `GenerateGameRecapCommand` - Request model for game recap generation
 - `GameRecapResponse` - Response model with metrics
-- `/admin/ai/game-recap` endpoint - HTTP API for testing
+- `/api/football/ncaa/contests/recap` endpoint - HTTP API for testing
 
 ? **Features:**
 - Loads large prompts from Azure Blob Storage

@@ -99,7 +99,6 @@ PATCH  /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/logos
 POST   /Auth/auth-sync                                                 [Authorize]
 POST   /Auth/clear-token                                               (none)
 POST   /User                                                           [Authorize]
-POST   /admin/ai/game-recap                                            [AdminApiToken]
 POST   /api/diagnostics/ai-test                                        [AdminApiToken]
 POST   /api/diagnostics/generate-url-identity                          [AdminApiToken]
 POST   /api/leagues/scores/backfill                                    [AdminApiToken]
@@ -138,6 +137,7 @@ POST   /api/smack-lab/phrases                                          [AdminApi
 POST   /api/smack-lab/preview                                          [AdminApiToken]
 POST   /api/smack-lab/ratings                                          [AdminApiToken]
 POST   /api/synthetics/refresh                                         [AdminApiToken]
+POST   /api/{sport}/{league}/contests/recap                            [AdminApiToken]
 POST   /api/{sport}/{league}/contests/refresh                          [AdminApiToken]
 POST   /api/{sport}/{league}/contests/{contestId:guid}/reenrich        [AdminApiToken]
 POST   /api/{sport}/{league}/contests/{contestId:guid}/replay          [AdminApiToken]

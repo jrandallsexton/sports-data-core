@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Core.Common;
-using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
-using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
 {
@@ -14,17 +11,6 @@ namespace SportsData.Api.Application.Admin
     [AdminApiToken]
     public class AdminController : ApiControllerBase
     {
-        private readonly IProvideBackgroundJobs _backgroundJobProvider;
-        private readonly ILogger<AdminController> _logger;
-
-        public AdminController(
-            IProvideBackgroundJobs backgroundJobProvider,
-            ILogger<AdminController> logger)
-        {
-            _backgroundJobProvider = backgroundJobProvider;
-            _logger = logger;
-        }
-
         /// <summary>
         /// Test game recap generation with large prompt + JSON data
         /// Example: POST /admin/ai/game-recap
@@ -40,16 +26,5 @@ namespace SportsData.Api.Application.Admin
             var result = await handler.ExecuteAsync(command, cancellationToken);
             return result.ToActionResult();
         }
-
-        [HttpPost]
-        [Route("ai-audit")]
-        public IActionResult AiPreviewsAudit()
-        {
-            var correlationId = Guid.NewGuid();
-            var query = new AuditAiQuery { CorrelationId = correlationId };
-            _backgroundJobProvider.Enqueue<IAuditAiQueryHandler>(p => p.ExecuteAsync(query, CancellationToken.None));
-            return Accepted(correlationId);
-        }
-
     }
 }

@@ -19,7 +19,8 @@
 | Contests → join `ContestsController` (`api/{sport}/{league}/contests`) | #825 | merged |
 | Security fix: `ui/contest` refresh, media refresh, finalize admin-only | #826 | merged |
 | Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | #827 | merged |
-| Franchise season sourcing → join `FranchisesController` | this PR | open |
+| Franchise season sourcing → join `FranchisesController` | #828 | merged |
+| `ai-audit` → `PreviewsController` at `api/previews/audit` | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -147,7 +148,16 @@ admin-only in #821. The seven contest-keyed admin routes join it under
 admin `GetMatchupPreview` slice, which returns the raw preview string. The
 same-named `UI/Matchups/Queries/GetMatchupPreview` (returns `MatchupPreviewDto`)
 is the user-facing one and stays for the UI pass. `ai-refresh` went to
-Synthetics (#820). `ai/game-recap` and `ai-audit` are still in `AdminController`.
+Synthetics (#820).
+
+**`ai-audit` (this PR):** `POST admin/ai-audit` → `POST api/previews/audit`;
+`Admin/Queries/AuditAi` → `Previews/Queries/AuditAi`, moved verbatim. The
+handler is read-only: it logs previews whose predicted winner is not one of
+the matchup's two FranchiseSeasonIds. It is enqueued as
+`IAuditAiQueryHandler`, so the namespace move strands only audit jobs not
+finished at deploy (manual, rarely run). With it gone, `AdminController`'s
+constructor (background jobs, logger) had no users and is removed.
+`ai/game-recap` is the last action in `AdminController`.
 
 ### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(done, #825; Q3 resolved for contests)*
 The first mixed controller: its GETs are public, and every moved action carries
@@ -251,7 +261,7 @@ pick-deadline and contest-start reminders. Both `notifications/...` routes are
 one resource. The backfill's logic is inline in the action and moves verbatim
 (rule 1). Making it a command slice is a follow-up.
 
-### Franchises → join `FranchisesController` at `api/{sport}/{league}/franchises` *(this PR; Q3 resolved for franchises)*
+### Franchises → join `FranchisesController` at `api/{sport}/{league}/franchises` *(done, #828; Q3 resolved for franchises)*
 | Verb | Today | New route | Notes |
 |---|---|---|---|
 | POST | `sourcing/franchise-seasons/{Sport}/{seasonYear}` | `api/{sport}/{league}/franchises/seasons/{seasonYear}/source` | Producer client proxy, inline |

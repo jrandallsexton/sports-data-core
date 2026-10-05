@@ -6,7 +6,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Queries.AuditAi;
+namespace SportsData.Api.Application.Previews.Queries.AuditAi;
 
 public interface IAuditAiQueryHandler
 {

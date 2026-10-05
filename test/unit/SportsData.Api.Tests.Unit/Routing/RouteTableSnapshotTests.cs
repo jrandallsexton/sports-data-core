@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 
-using SportsData.Api.Application.Admin;
+using SportsData.Api.Infrastructure.Auth;
 
 using System;
 using System.Collections.Generic;

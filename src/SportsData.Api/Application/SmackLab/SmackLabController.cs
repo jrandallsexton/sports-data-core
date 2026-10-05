@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.SmackLab.Queries.GetSmackLabLeagues;
 using SportsData.Api.Application.SmackLab.Queries.GetSmackLabPicks;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Notification.Dtos;

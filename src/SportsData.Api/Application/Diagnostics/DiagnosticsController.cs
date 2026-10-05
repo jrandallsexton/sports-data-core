@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Diagnostics.Commands.GenerateUrlIdentity;
 using SportsData.Api.Application.Diagnostics.Queries.GetAiResponse;
 using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutCompetitors;
 using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutPlays;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Competition;

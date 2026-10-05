@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 

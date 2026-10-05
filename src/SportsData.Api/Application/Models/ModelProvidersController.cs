@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Models.Commands.CreateModelProvider;
 using SportsData.Api.Application.Models.Queries.GetModelProviders;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 

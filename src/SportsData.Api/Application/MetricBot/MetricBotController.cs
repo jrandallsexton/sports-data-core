@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.MetricBot;

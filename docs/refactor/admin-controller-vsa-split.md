@@ -21,7 +21,8 @@
 | Leagues + Picks → `LeaguesController` (`api/leagues`), `PicksController` (`api/picks`) | #827 | merged |
 | Franchise season sourcing → join `FranchisesController` | #828 | merged |
 | `ai-audit` → `PreviewsController` at `api/previews/audit` | #829 | merged |
-| `ai/game-recap` → `ContestsController` at `.../contests/recap`; `AdminController` deleted | this PR | open |
+| `ai/game-recap` → `ContestsController` at `.../contests/recap`; `AdminController` deleted | #830 | merged |
+| Finale: `AdminApiTokenAttribute` → `Infrastructure/Auth/`; `Application/Admin/` deleted | this PR | open |
 
 **Deploy hold (2026-10-04):** nothing in this refactor deploys until every
 slice has landed. Then the API, the web app (admin routes in `adminApi.js`)
@@ -160,15 +161,15 @@ finished at deploy (manual, rarely run). With it gone, `AdminController`'s
 constructor (background jobs, logger) had no users and is removed.
 `ai/game-recap` was the last action in `AdminController`.
 
-**`ai/game-recap` (this PR):** `POST admin/ai/game-recap` → `POST
+**`ai/game-recap` (#830):** `POST admin/ai/game-recap` → `POST
 api/{sport}/{league}/contests/recap`, with `[AdminApiToken]` on the action in the
 mixed `ContestsController`. The handler (`Contests/Commands/GenerateGameRecap`,
 already in place) takes no sport or contest id: `{sport}/{league}` only places
 the route under the contest resource, as with `score`. "game" is dropped as
 redundant under contests, and `recap` matches the scheduled `ContestRecap` job
 that uses the same handler. **With its last action gone, `AdminController` is
-deleted; the API serves no `/admin` routes.** `AdminApiTokenAttribute` still
-lives in `Application/Admin/` until the finale moves it.
+deleted; the API serves no `/admin` routes.** `AdminApiTokenAttribute` moved in
+the finale (below).
 
 ### Contests → join `ContestsController` at `api/{sport}/{league}/contests` *(done, #825; Q3 resolved for contests)*
 The first mixed controller: its GETs are public, and every moved action carries
@@ -313,9 +314,13 @@ Split along tool lines, so no controller is a smaller catch-all:
 `GET/POST ops/{service}/{sport}/{league}/{**opPath}` → `api/ops/...`. This is the
 allowlisted relay to Producer/Provider operations.
 
-### The auth primitive
-`AdminApiTokenAttribute` → `Infrastructure/Auth/`. It is infrastructure, and
-moving it is what lets `Application/Admin/` be deleted.
+### The auth primitive *(this PR — the finale)*
+`AdminApiTokenAttribute` → `Infrastructure/Auth/` (namespace
+`SportsData.Api.Infrastructure.Auth`), beside `FirebaseUserAdmin`. It is
+infrastructure, and moving it is what lets `Application/Admin/` be deleted. Its
+tests move to `Infrastructure/Auth/` too. The 22 files that imported
+`SportsData.Api.Application.Admin` only for the attribute import the new
+namespace instead. The route snapshot is unchanged: no endpoint's auth moves.
 
 ---
 
@@ -327,7 +332,7 @@ moving it is what lets `Application/Admin/` be deleted.
 4. **Diagnostics**: after Q5.
 5. **Matchups**, **Previews**, **Scoring/Leagues**: join or create controllers per Q1/Q4.
 6. **Contests**, **Franchises**: join sport-scoped controllers per Q3.
-7. Move `AdminApiTokenAttribute`; delete `Application/Admin/`.
+7. ~~Move `AdminApiTokenAttribute`; delete `Application/Admin/`.~~ (this PR)
 
 Steps 2–6 are independent after Prompts and can interleave with feature work.
 
@@ -385,3 +390,9 @@ controller, and the snapshot asserts the new policy per endpoint.
 - The snapshot shows every formerly-admin endpoint under its new route, each
   still `[AdminApiToken]`. No endpoint lost its auth across the whole refactor.
 - The admin pages work at the end, and at every step in between.
+
+**Status (finale PR):** the first four hold in code: `Application/Admin/` is
+gone, the snapshot has no `admin/` route, and every formerly-admin endpoint is
+still `[AdminApiToken]` (#821 and #826 also closed two UI-only gates on the
+way). The last is confirmed at the coordinated deploy of the API, the web app
+and MetricBot.

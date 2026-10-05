@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Notifications.Commands.SendTestPushNotification;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;

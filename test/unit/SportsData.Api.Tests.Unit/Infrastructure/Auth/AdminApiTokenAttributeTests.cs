@@ -8,14 +8,14 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-using SportsData.Api.Application.Admin;
+using SportsData.Api.Infrastructure.Auth;
 
 using System.Collections.Generic;
 using System.Security.Claims;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin;
+namespace SportsData.Api.Tests.Unit.Infrastructure.Auth;
 
 /// <summary>
 /// [AdminApiToken] is the only thing standing between every admin endpoint

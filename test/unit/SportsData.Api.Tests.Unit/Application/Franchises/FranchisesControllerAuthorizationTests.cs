@@ -4,8 +4,8 @@ using FluentAssertions;
 
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.Admin;
 using SportsData.Api.Application.Franchises;
+using SportsData.Api.Infrastructure.Auth;
 
 using Xunit;
 

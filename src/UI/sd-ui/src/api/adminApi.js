@@ -2,7 +2,6 @@ import apiClient from './apiClient';
 
 const AdminApi = {
   getCompetitionsWithoutCompetitors: () =>
-    // Controller likely under /ui/admin/errors/..., use /ui/admin as a safe prefix
     apiClient.get('/api/diagnostics/competitions-without-competitors'),
   getCompetitionsWithoutPlays: () =>
     apiClient.get('/api/diagnostics/competitions-without-plays'),

@@ -3,8 +3,7 @@
     "SportsData.Producer.Tests.Integration": {
       "commandName": "Project",
       "environmentVariables": {
-        "APPCONFIG_LABEL": "Local",
-        "APPCONFIG_CONNSTR": "Endpoint=https://sportdeetsappconfig.azconfig.io;Id=xfrk;Secret=1znEmIBeNVv0xGoE426oYdrvQOCbfKMqG9F55bMvBaTGKhlL9CKgJQQJ99BEACYeBjFVhdrZAAACAZAC3oYv"
+        "APPCONFIG_LABEL": "Local"
       }
     }
   }

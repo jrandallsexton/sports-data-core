@@ -33,32 +33,32 @@ export interface RememberedStandingsLeague {
  * existing default: a failed read behaves as "nothing remembered".
  */
 export function useRememberedStandingsLeague(userId: string | null | undefined): RememberedStandingsLeague {
-  const [rememberedLeagueId, setRememberedLeagueId] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  // Skip redundant writes: the screen calls remember() on every render path
-  // that changes the selection, and the same id repeats across re-renders.
-  const lastWrittenRef = useRef<string | null>(null);
+  // The stored value tagged with the user it was read for. hydrated and
+  // rememberedLeagueId are DERIVED from it, never reset in an effect: on the
+  // render where userId changes, an effect-based reset would still be pending,
+  // so the previous user's value (and hydrated: true) would be visible for
+  // that render and remember() could write the old selection under the new
+  // user's key. Deriving makes the switch atomic.
+  const [loaded, setLoaded] = useState<{ userId: string; leagueId: string | null } | null>(null);
+  const isLoadedForUser = !!userId && loaded?.userId === userId;
+  const hydrated = !userId || isLoadedForUser;
+  const rememberedLeagueId = isLoadedForUser ? loaded!.leagueId : null;
+
+  // Skip redundant writes: the screen calls remember() whenever the selection
+  // changes, and the same id repeats. Tagged by user like the loaded value.
+  const lastWrittenRef = useRef<{ userId: string; leagueId: string } | null>(null);
 
   useEffect(() => {
+    if (!userId) return;
     let cancelled = false;
-    setRememberedLeagueId(null);
-    lastWrittenRef.current = null;
 
-    if (!userId) {
-      setHydrated(true);
-      return;
-    }
-
-    setHydrated(false);
     AsyncStorage.getItem(KEY_PREFIX + userId)
       .then((v) => {
-        if (cancelled) return;
-        setRememberedLeagueId(v);
-        lastWrittenRef.current = v;
-        setHydrated(true);
+        if (!cancelled) setLoaded({ userId, leagueId: v });
       })
       .catch(() => {
-        if (!cancelled) setHydrated(true);
+        // A failed read behaves as "nothing remembered".
+        if (!cancelled) setLoaded({ userId, leagueId: null });
       });
 
     return () => {
@@ -68,13 +68,16 @@ export function useRememberedStandingsLeague(userId: string | null | undefined):
 
   const remember = useCallback(
     (leagueId: string) => {
-      if (!userId || !hydrated) return;
-      if (lastWrittenRef.current === leagueId) return;
-      lastWrittenRef.current = leagueId;
+      // Not until THIS user's stored value has loaded (see above).
+      if (!userId || loaded?.userId !== userId) return;
+      const previous =
+        lastWrittenRef.current?.userId === userId ? lastWrittenRef.current.leagueId : loaded.leagueId;
+      if (previous === leagueId) return;
+      lastWrittenRef.current = { userId, leagueId };
       // A failed write only means the next cold start uses the default.
       AsyncStorage.setItem(KEY_PREFIX + userId, leagueId).catch(() => {});
     },
-    [userId, hydrated],
+    [userId, loaded],
   );
 
   return { rememberedLeagueId, hydrated, remember };

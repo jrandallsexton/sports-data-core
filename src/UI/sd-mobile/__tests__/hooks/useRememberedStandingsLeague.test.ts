@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRememberedStandingsLeague } from '@/src/hooks/useRememberedStandingsLeague';
@@ -64,6 +65,48 @@ describe('useRememberedStandingsLeague', () => {
     act(() => result.current.remember('league-7'));
     expect(mockedStorage.setItem).toHaveBeenCalledTimes(1);
     expect(mockedStorage.setItem).toHaveBeenCalledWith('standings-last-league:user-1', 'league-7');
+  });
+
+  it("does not expose or write the previous user's league on an account switch", async () => {
+    // uid A -> B without unmounting (in-place account switch). Mirrors the
+    // Standings screen: remember() is called from an effect in the SAME commit
+    // as the uid change, and every render's values are recorded. renderHook's
+    // rerender flushes effects inside act(), so checking result.current
+    // afterwards would miss the switch render entirely.
+    const renders: Array<{ uid: string; hydrated: boolean; remembered: string | null }> = [];
+    mockedStorage.getItem.mockResolvedValueOnce('league-a');
+    const { result, rerender } = renderHook(
+      ({ uid, selected }: { uid: string; selected: string }) => {
+        const r = useRememberedStandingsLeague(uid);
+        renders.push({ uid, hydrated: r.hydrated, remembered: r.rememberedLeagueId });
+        const { remember } = r;
+        useEffect(() => {
+          remember(selected);
+        }, [selected, remember]);
+        return r;
+      },
+      { initialProps: { uid: 'user-a', selected: 'league-a' } },
+    );
+    await waitFor(() => expect(result.current.rememberedLeagueId).toBe('league-a'));
+    expect(mockedStorage.setItem).not.toHaveBeenCalled(); // already stored for A
+
+    let resolveB: (v: string | null) => void = () => {};
+    mockedStorage.getItem.mockReturnValueOnce(new Promise((r) => { resolveB = r; }));
+    rerender({ uid: 'user-b', selected: 'league-a' });
+
+    // Every render for B before its read resolves: nothing of A's visible.
+    const userBRenders = renders.filter((r) => r.uid === 'user-b');
+    expect(userBRenders.length).toBeGreaterThan(0);
+    for (const r of userBRenders) {
+      expect(r.hydrated).toBe(false);
+      expect(r.remembered).toBeNull();
+    }
+    // ...and A's selection was not written under B's key.
+    expect(mockedStorage.setItem).not.toHaveBeenCalled();
+
+    await act(async () => resolveB('league-b'));
+    expect(result.current.hydrated).toBe(true);
+    expect(result.current.rememberedLeagueId).toBe('league-b');
   });
 
   it('treats a failed read as nothing remembered', async () => {

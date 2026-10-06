@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -19,9 +19,15 @@ import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
 import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
+import { useRememberedStandingsLeague } from '@/src/hooks/useRememberedStandingsLeague';
 import type { Standing } from '@/src/types/models';
 
 type StandingsPane = 'standings' | 'byWeek';
+
+// Selection nonce for the league remembered from a previous session. Real
+// store nonces start at 1, so this can never collide with one; the selection
+// hook consumes it once like any other choice.
+const REMEMBERED_LEAGUE_NONCE = -1;
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
@@ -104,6 +110,23 @@ export default function StandingsScreen() {
   const storeNonce = useLeagueSelectionStore((s) => s.selectionNonce);
   const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
+  // Cold start: Standings reopens on the league it last showed (persisted
+  // per user). Once the user makes an explicit choice anywhere this session
+  // (store nonce > 0) that choice wins, exactly as before; the remembered
+  // league is only the opening preference.
+  const {
+    rememberedLeagueId,
+    hydrated: rememberedHydrated,
+    remember: rememberLeague,
+  } = useRememberedStandingsLeague(user?.uid);
+  const hasSessionChoice = storeNonce > 0;
+  const preferredLeagueId = hasSessionChoice ? storeLeagueId : rememberedLeagueId;
+  const preferredNonce = hasSessionChoice
+    ? storeNonce
+    : rememberedLeagueId
+      ? REMEMBERED_LEAGUE_NONCE
+      : undefined;
+
   // Season/league selection state machine (derivation + reconciliation).
   const {
     seasons,
@@ -115,7 +138,15 @@ export default function StandingsScreen() {
     canFilterEnded,
     showEnded,
     setShowEnded,
-  } = useSeasonLeagueSelection(allLeagues, storeLeagueId, storeNonce);
+  } = useSeasonLeagueSelection(allLeagues, preferredLeagueId, preferredNonce);
+
+  // Remember whatever Standings is showing (taps, adoptions from other tabs,
+  // season snaps alike: it is the league they were last viewing). The hook
+  // ignores writes until the stored value has loaded, so the first-league
+  // default can't overwrite it.
+  useEffect(() => {
+    if (selectedLeagueId) rememberLeague(selectedLeagueId);
+  }, [selectedLeagueId, rememberLeague]);
 
   // Explicit league taps write the app-wide selection; reconciliation snaps
   // and defaults never do (see leagueSelectionStore contract).
@@ -141,20 +172,22 @@ export default function StandingsScreen() {
     if (selectedLeagueId) setWeekByLeague((prev) => ({ ...prev, [selectedLeagueId]: w }));
   };
 
+  // Held until the remembered league has loaded, so a cold start doesn't
+  // fetch the first league's standings only to switch away from them.
   const {
     data: standings = [],
     isLoading,
     refetch,
     isRefetching,
     isError,
-  } = useStandings(selectedLeagueId);
+  } = useStandings(rememberedHydrated ? selectedLeagueId : null);
 
   const visibleStandings = useMemo(
     () => (showBots ? standings : standings.filter((s) => !s.isSynthetic)),
     [standings, showBots],
   );
 
-  if (leaguesLoading) {
+  if (leaguesLoading || !rememberedHydrated) {
     return <LoadingSpinner message="Loading standings…" fullScreen />;
   }
 

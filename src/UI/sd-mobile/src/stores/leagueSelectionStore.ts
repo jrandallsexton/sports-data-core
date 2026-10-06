@@ -18,6 +18,9 @@ import { create } from 'zustand';
  *    then re-tapped the same league on another would produce no signal at
  *    all. Consumers key adoption on the nonce and consume each one once.
  *  - Session-scoped (in-memory): an app restart re-defaults every surface.
+ *    Standings layers its own per-user persisted league on top
+ *    (useRememberedStandingsLeague) as its cold-start opening preference;
+ *    this store itself stays in-memory, so Picks and Home are unaffected.
  */
 interface LeagueSelectionState {
   selectedLeagueId: string | null;

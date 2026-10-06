@@ -169,4 +169,34 @@ describe('useSeasonLeagueSelection', () => {
       expect(result.current.selectedLeagueId).toBe('a-2026');
     });
   });
+  describe('remembered Standings league (cold start, nonce -1)', () => {
+    const leagues = [
+      league({ id: 'a-2026', seasonYear: 2026 }),
+      league({ id: 'b-2026', seasonYear: 2026 }),
+      league({ id: 'old-2025', seasonYear: 2025 }),
+    ];
+
+    it('opens on the remembered league, then yields to an explicit choice made elsewhere', () => {
+      // Standings passes the persisted league with a sentinel nonce (-1) until
+      // the user makes an explicit choice this session; real nonces start at 1.
+      const { result, rerender } = renderHook(
+        ({ pref, nonce }: { pref: string | null; nonce: number | undefined }) =>
+          useSeasonLeagueSelection(leagues, pref, nonce),
+        { initialProps: { pref: 'old-2025' as string | null, nonce: -1 as number | undefined } },
+      );
+      expect(result.current.selectedLeagueId).toBe('old-2025');
+      expect(result.current.selectedSeason).toBe(2025);
+
+      // A league chosen on Picks/Home (store nonce 1) takes over, as before.
+      rerender({ pref: 'b-2026', nonce: 1 });
+      expect(result.current.selectedLeagueId).toBe('b-2026');
+      expect(result.current.selectedSeason).toBe(2026);
+    });
+
+    it('falls back to the first league when the remembered one is gone', () => {
+      // e.g. the user left that league since their last session.
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'left-league', -1));
+      expect(result.current.selectedLeagueId).toBe('a-2026');
+    });
+  });
 });

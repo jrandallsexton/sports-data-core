@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GiAmericanFootballHelmet } from "react-icons/gi";
 import LeaguesApi from "api/leagues/leaguesApi";
 import JoinClosesLabel from "./JoinClosesLabel";
 import JoinLeagueConfirmDialog from "./JoinLeagueConfirmDialog";
@@ -90,7 +91,12 @@ function LeagueDiscoverPage() {
               </div>
               <div className="league-sport">
                 <span className="league-sport-icon" aria-hidden="true">
-                  {SPORT_ICON[league.sport] ?? "🏆"}
+                  {/* Player Pick'em gets the helmet, as on YourLeaguesCard. */}
+                  {league.groupType === "PlayerPickem" ? (
+                    <GiAmericanFootballHelmet />
+                  ) : (
+                    SPORT_ICON[league.sport] ?? "🏆"
+                  )}
                 </span>{" "}
                 {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear}
               </div>

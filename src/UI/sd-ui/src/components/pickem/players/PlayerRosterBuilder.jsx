@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useUserDto } from '../../../contexts/UserContext';
+import { useLeagueContext } from '../../../contexts/LeagueContext';
+import LeagueWeekSelector from '../../picks/LeagueWeekSelector.jsx';
+import { leaguePicksPath } from '../../../routes/paths';
 import { useContestUpdates } from '../../../contexts/ContestUpdatesContext';
 import PlayerPickemApi from '../../../api/playerPickemApi';
 import LeaguesApi from '../../../api/leagues/leaguesApi';
@@ -72,7 +76,8 @@ function errorMessage(err, fallback) {
 }
 
 /**
- * Player Pick'em roster builder (admin-gated, v1 exploration).
+ * Player Pick'em roster builder (open to league members; creating a
+ * Player Pick'em league is admin-only during the alpha).
  *
  * Teaser-style slot row up top (fixed v1 shape, DEF disabled); selecting
  * a slot loads the athlete grid below filtered to that slot's eligible
@@ -98,6 +103,39 @@ function PlayerRosterBuilder() {
   const routeWeekNum = Number(routeWeekParam);
   const seasonWeek = Number.isInteger(routeWeekNum) && routeWeekNum > 0 ? routeWeekNum : WEEK;
   const seasonPhase = routePhaseParam ?? 'regular';
+
+  // League/week selector — the same control and wiring as PicksPage (copied,
+  // not shared), so a player league isn't a dead end: switching to a team
+  // league lands on PicksPage via LeaguePicksRouter's GroupType branch.
+  const navigate = useNavigate();
+  const { userDto } = useUserDto();
+  const { setSelectedLeagueId: setGlobalLeagueId } = useLeagueContext();
+  const selectorLeagues = useMemo(
+    () => Object.values(userDto?.leagues || {}),
+    [userDto]
+  );
+  const selectorLeague = selectorLeagues.find((l) => l.id === routeLeagueId) ?? null;
+  const selectorSeasonWeeks = useMemo(
+    () => selectorLeague?.seasonWeeks ?? [],
+    [selectorLeague]
+  );
+  // Phase-qualified weeks; legacy int-list payloads map to regular season.
+  const selectorWeekDetails = useMemo(() => {
+    const details = selectorLeague?.seasonWeekDetails;
+    if (details && details.length > 0) return details;
+    return selectorSeasonWeeks.map((w) => ({ seasonWeekId: null, week: w, phase: 'regular' }));
+  }, [selectorLeague, selectorSeasonWeeks]);
+  const handleLeagueChange = (newLeagueId) => {
+    if (!newLeagueId || newLeagueId === routeLeagueId) return;
+    setGlobalLeagueId(newLeagueId);
+    navigate(leaguePicksPath(newLeagueId), { replace: true });
+  };
+  const handleWeekChange = (newWeek, newPhase) => {
+    if (!routeLeagueId || newWeek == null) return;
+    const phase = newPhase ?? 'regular';
+    if (newWeek === seasonWeek && phase === seasonPhase) return;
+    navigate(leaguePicksPath(routeLeagueId, newWeek, phase), { replace: true });
+  };
   const [roster, setRoster] = useState({});
   // Live lineup total from the server's read-time scoring (matrix-priced
   // statlines, refreshed with the play-driven stat pipeline). Null until
@@ -106,10 +144,6 @@ function PlayerRosterBuilder() {
   // Live-refresh tickle: bumping this re-runs the lineup fetch WITHOUT
   // the loading/reset churn of a league change (see the effect below).
   const [refreshTick, setRefreshTick] = useState(0);
-  // League standings (cumulative points + weekly winners) — persisted
-  // totals from the scoring consumers; refreshed with the same tickle
-  // as the lineup so the two surfaces never disagree for long.
-  const [standings, setStandings] = useState(null);
   // The user's PlayerPickem-type leagues (null = still loading). The
   // SPORT isn't a free choice — it's a fact of these leagues: the page
   // auto-selects the first sport with a player league, and the toggle
@@ -189,14 +223,6 @@ function PlayerRosterBuilder() {
       setRosterLoading(false);
       return undefined;
     }
-
-    PlayerPickemApi.getStandings(target.id, target.seasonYear ?? SEASON_YEAR)
-      .then((response) => {
-        if (!ignore) setStandings(response.data);
-      })
-      .catch(() => {
-        if (!ignore) setStandings(null); // standings are enrichment; never block the roster
-      });
 
     PlayerPickemApi.getMyLineup(target.id, target.seasonYear ?? SEASON_YEAR, seasonWeek)
       .then((response) => {
@@ -406,6 +432,18 @@ function PlayerRosterBuilder() {
 
   return (
     <div className="roster-builder">
+      {routeLeagueId ? (
+        <LeagueWeekSelector
+          leagues={selectorLeagues}
+          selectedLeagueId={routeLeagueId}
+          setSelectedLeagueId={handleLeagueChange}
+          selectedWeek={seasonWeek}
+          selectedPhase={seasonPhase}
+          setSelectedWeek={handleWeekChange}
+          seasonWeeks={selectorSeasonWeeks}
+          weekDetails={selectorWeekDetails}
+        />
+      ) : null}
       <h2 className="roster-builder-title">Player Pick&rsquo;em Roster</h2>
       <p className="roster-builder-sub">
         {seasonPhase === 'preseason' ? 'Preseason ' : seasonPhase === 'postseason' ? 'Postseason ' : ''}Week {seasonWeek} &middot; {pickemLeague?.seasonYear ?? SEASON_YEAR} &middot;{' '}
@@ -441,32 +479,6 @@ function PlayerRosterBuilder() {
           </div>
         ) : null;
       })()}
-
-      {standings && standings.rows && standings.rows.length > 0 ? (
-        <div className="roster-standings" aria-label="League standings">
-          <h3 className="roster-standings-title">Standings</h3>
-          <ol className="roster-standings-list">
-            {standings.rows.map((row) => (
-              <li key={row.userId} className="roster-standings-row">
-                <span className="roster-standings-name">
-                  {row.displayName}
-                  {row.weeklyWins > 0 ? (
-                    <span
-                      className="roster-standings-wins"
-                      title={`${row.weeklyWins} weekly win${row.weeklyWins === 1 ? '' : 's'}`}
-                    >
-                      {' '}&#127942;{row.weeklyWins > 1 ? `×${row.weeklyWins}` : ''}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="roster-standings-points">
-                  {row.totalPoints.toFixed(1)}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : null}
 
       {rosterLoading ? (
         <div className="roster-grid-status">Loading your roster&hellip;</div>

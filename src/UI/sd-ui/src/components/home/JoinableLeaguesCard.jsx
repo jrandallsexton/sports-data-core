@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GiAmericanFootballHelmet } from "react-icons/gi";
 import LeaguesApi from "api/leagues/leaguesApi";
 import JoinClosesLabel from "../leagues/JoinClosesLabel";
 import JoinLeagueConfirmDialog from "../leagues/JoinLeagueConfirmDialog";
@@ -69,7 +70,14 @@ function JoinableLeaguesCard() {
             <div className="joinable-league-info">
               <span className="joinable-league-name">{league.name}</span>
               <span className="joinable-league-meta">
-                <span aria-hidden="true">{SPORT_ICON[league.sport] ?? "🏆"}</span>{" "}
+                {/* Player Pick'em gets the helmet, as on YourLeaguesCard. */}
+                <span aria-hidden="true">
+                  {league.groupType === "PlayerPickem" ? (
+                    <GiAmericanFootballHelmet />
+                  ) : (
+                    SPORT_ICON[league.sport] ?? "🏆"
+                  )}
+                </span>{" "}
                 {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear} ·{" "}
                 {league.memberCount} {league.memberCount === 1 ? "member" : "members"}
                 {" · "}

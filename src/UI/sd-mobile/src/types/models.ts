@@ -31,6 +31,12 @@ export interface League {
    * don't carry it, in which case latest-week is the fallback.
    */
   currentSeasonWeek?: number | null;
+  /**
+   * Which game the league plays ("TeamPickem" | "PlayerPickem"). Player
+   * Pick'em leagues render the roster builder on the Picks tab instead of
+   * a matchup slate. Optional for older payloads (treated as team pick'em).
+   */
+  groupType?: 'TeamPickem' | 'PlayerPickem';
 }
 
 // ─── Probable Pitcher (MLB only) ─────────────────────────────────────────────

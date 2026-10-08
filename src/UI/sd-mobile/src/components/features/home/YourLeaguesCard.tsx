@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
@@ -84,7 +85,18 @@ export function YourLeaguesCard({ leagues }: Props) {
                 { backgroundColor: theme.background, borderColor: theme.border },
               ]}
             >
-              {icon && (
+              {/* Player Pick'em is a different game: a helmet instead of the
+                  sport-ball glyph (web YourLeaguesCard parity). */}
+              {league.groupType === 'PlayerPickem' ? (
+                <MaterialCommunityIcons
+                  name="football-helmet"
+                  size={15}
+                  color={theme.text}
+                  style={styles.pillIcon}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                />
+              ) : icon && (
                 <Text
                   style={styles.pillIcon}
                   accessibilityElementsHidden

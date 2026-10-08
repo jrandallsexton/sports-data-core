@@ -207,6 +207,8 @@ export interface LeagueSummary {
   league: 'NCAAF' | 'NFL' | 'MLB' | 'NBA';
   /** PickType by name — the BE projects `PickType.ToString()` into this field. */
   leagueType: PickType;
+  /** Which game the league plays; past Player Pick'em leagues need it too. */
+  groupType?: 'TeamPickem' | 'PlayerPickem';
   useConfidencePoints: boolean;
   memberCount: number;
   avatarUrl: string | null;

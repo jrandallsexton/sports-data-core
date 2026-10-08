@@ -472,6 +472,60 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         row.PreviousSeason.Stats["passYds"].Should().Be(3163);
     }
 
+    private void SeedFranchise(Guid franchiseId, string displayNameShort)
+    {
+        FootballDataContext.Franchises.Add(new Franchise
+        {
+            Id = franchiseId,
+            Sport = Sport.FootballNcaa,
+            Name = displayNameShort,
+            Location = displayNameShort,
+            DisplayName = displayNameShort,
+            DisplayNameShort = displayNameShort,
+            ColorCodeHex = "000000",
+            Slug = displayNameShort.ToLowerInvariant(),
+        });
+    }
+
+    [Fact]
+    public async Task ShortNames_ComeFromFranchiseDisplayNameShort()
+    {
+        SeedPositionAndStatus();
+        var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
+        var opponent = SeedFranchiseSeason(2026, "oklahoma-sooners", "Oklahoma Sooners");
+        SeedFranchise(texas.FranchiseId, "Texas");
+        SeedFranchise(opponent.FranchiseId, "Oklahoma");
+        var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        SeedStatDoc(season.Id, new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 4, passYds: 1247);
+        SeedWeekContest(home: opponent, away: texas, seasonYear: 2026, week: 6);
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 6));
+
+        var row = result.Value.Athletes.Should().ContainSingle().Subject;
+        row.TeamName.Should().Be("Texas Longhorns"); // web keeps the full name
+        row.TeamShortName.Should().Be("Texas");
+        row.OpponentShortName.Should().Be("Oklahoma");
+    }
+
+    [Fact]
+    public async Task ShortNames_AreNull_WhenTheFranchiseRowIsMissing()
+    {
+        SeedPositionAndStatus();
+        var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
+        var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        SeedStatDoc(season.Id, new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 4, passYds: 1247);
+        SeedWeekContest(home: texas, away: SeedFranchiseSeason(2026, "rice-owls", "Rice Owls"), seasonYear: 2026, week: 6);
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 6));
+
+        var row = result.Value.Athletes.Should().ContainSingle().Subject; // not dropped
+        row.TeamShortName.Should().BeNull();
+    }
+
     [Fact]
     public async Task WeekOne_NoCurrentDoc_NullBlock_AndPriorSeasonAllowanceFallback()
     {
@@ -513,6 +567,8 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         SeedStatDoc(season.Id, new DateTime(2026, 9, 1, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 3, passYds: 900);
         SeedStatDoc(season.Id, new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 4, passYds: 1247);
 
+        SeedWeekContest(home: texas, away: SeedFranchiseSeason(2026, "rice-owls", "Rice Owls"), seasonYear: 2026, week: 1);
+
         await FootballDataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
@@ -523,7 +579,7 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         row.CurrentSeason.Stats["passYds"].Should().Be(1247);
     }
 
-    private void SeedQbRoomWithOneStarter()
+    private void SeedQbRoomWithOneStarter(int week, int phaseTypeCode = 2)
     {
         SeedPositionAndStatus();
         var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
@@ -539,12 +595,18 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         // out entirely, so the sourcing gap shows.
         var bama = SeedFranchiseSeason(2026, "alabama-crimson-tide", "Alabama Crimson Tide");
         SeedAthleteSeason(Guid.NewGuid(), bama, "Ty", "Simpson");
+
+        // Both teams play the requested week (bye-week athletes are excluded).
+        SeedWeekContest(home: texas, away: SeedFranchiseSeason(2026, "rice-owls", "Rice Owls"),
+            seasonYear: 2026, week: week, phaseTypeCode: phaseTypeCode);
+        SeedWeekContest(home: bama, away: SeedFranchiseSeason(2026, "auburn-tigers", "Auburn Tigers"),
+            seasonYear: 2026, week: week, phaseTypeCode: phaseTypeCode);
     }
 
     [Fact]
     public async Task AfterFirstWeek_ZeroStatAthletesAreDropped()
     {
-        SeedQbRoomWithOneStarter();
+        SeedQbRoomWithOneStarter(7);
         await FootballDataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
@@ -563,6 +625,7 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
         var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
         SeedStatDoc(season.Id, new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 0, passYds: 500);
+        SeedWeekContest(home: texas, away: SeedFranchiseSeason(2026, "rice-owls", "Rice Owls"), seasonYear: 2026, week: 7);
         await FootballDataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
@@ -576,7 +639,7 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
     [InlineData(3, 1)] // preseason phase: no current-season games, nothing to filter on
     public async Task FirstWeekOrPreseason_ReturnsEveryone(int week, int phaseTypeCode)
     {
-        SeedQbRoomWithOneStarter();
+        SeedQbRoomWithOneStarter(week, phaseTypeCode);
         await FootballDataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
@@ -587,24 +650,24 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
     }
 
     [Fact]
-    public async Task ByeWeek_OpponentFieldsAreNull()
+    public async Task ByeWeek_AthletesAreExcluded()
     {
         SeedPositionAndStatus();
+        // Texas has no game in week 9 (bye); Alabama does.
         var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
-        var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
-        // Week 9 is past week 1, so a zero-stat QB would be filtered out.
-        SeedStatDoc(season.Id, new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 8, passYds: 2100);
-        // No contest for the requested week.
+        var texasQb = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        SeedStatDoc(texasQb.Id, new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 8, passYds: 2100);
+        var bama = SeedFranchiseSeason(2026, "alabama-crimson-tide", "Alabama Crimson Tide");
+        var bamaQb = SeedAthleteSeason(Guid.NewGuid(), bama, "Ty", "Simpson");
+        SeedStatDoc(bamaQb.Id, new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 8, passYds: 1900);
+        SeedWeekContest(home: bama, away: SeedFranchiseSeason(2026, "auburn-tigers", "Auburn Tigers"), seasonYear: 2026, week: 9);
 
         await FootballDataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
         var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 9));
 
-        var row = result.Value.Athletes.Should().ContainSingle().Subject;
-        row.OpponentName.Should().BeNull();
-        row.OpponentSlug.Should().BeNull();
-        row.OpponentDefPerGame.Should().BeNull();
+        result.Value.Athletes.Should().ContainSingle().Which.LastName.Should().Be("Simpson");
     }
 
     [Fact]
@@ -616,6 +679,10 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         SeedPositionAndStatus();
         var texans = SeedFranchiseSeason(2026, "houston-texans", "Houston Texans", groupSeasonMap: string.Empty);
         SeedAthleteSeason(Guid.NewGuid(), texans, "C.J.", "Stroud");
+
+        SeedWeekContest(home: texans,
+            away: SeedFranchiseSeason(2026, "tennessee-titans", "Tennessee Titans", groupSeasonMap: string.Empty),
+            seasonYear: 2026, week: 1);
 
         await FootballDataContext.SaveChangesAsync();
 

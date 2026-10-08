@@ -540,10 +540,6 @@ export default function ProfileScreen() {
             label="Push Token (FCM)"
             onPress={() => router.push('/admin/push-token')}
           />
-          <SettingsRow
-            label="Player Pick'em (Preview)"
-            onPress={() => router.push('/admin/player-pickem')}
-          />
         </View>
       ) : null}
 

@@ -30,13 +30,13 @@ namespace SportsData.Core.Dtos.Canonical
         /// <summary>"QB" | "RB" | "WR" | "TE" | "K" (position abbreviation).</summary>
         public required string Position { get; set; }
 
-        /// <summary>Null on a bye week.</summary>
+        /// <summary>Null when the opponent's franchise season isn't sourced. Bye-week athletes are not returned.</summary>
         public string? OpponentName { get; set; }
         public string? OpponentSlug { get; set; }
-        /// <summary>Franchise.DisplayNameShort of the opponent; null on a bye.</summary>
+        /// <summary>Franchise.DisplayNameShort of the opponent; null when its franchise row is missing.</summary>
         public string? OpponentShortName { get; set; }
 
-        /// <summary>The athlete's team's contest for the requested week; null on a bye.</summary>
+        /// <summary>The athlete's team's contest for the requested week (bye-week athletes are not returned).</summary>
         public Guid? ContestId { get; set; }
 
         /// <summary>

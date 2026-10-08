@@ -18,6 +18,7 @@ import { MatchupCard } from '@/src/components/features/games/MatchupCard';
 import { LeagueWeekSelector } from '@/src/components/features/selectors/LeagueWeekSelector';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
+import { Button } from '@/src/components/ui/Button';
 import { usePicks, useSubmitPick } from '@/src/hooks/useContest';
 import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
@@ -126,7 +127,14 @@ export default function PicksScreen() {
     // active league merely missing from a stale /user/me snapshot must not be.
     const found = allLeagues.find((l) => l.id === candidatePastId && l.deactivatedUtc);
     return found
-      ? { id: found.id, name: found.name, sport: found.sport, seasonWeeks: found.seasonWeeks }
+      ? {
+          id: found.id,
+          name: found.name,
+          sport: found.sport,
+          seasonWeeks: found.seasonWeeks,
+          // A past Player Pick'em league must still render the roster builder.
+          groupType: found.groupType,
+        }
       : null;
   }, [candidatePastId, allLeagues]);
 
@@ -240,7 +248,11 @@ export default function PicksScreen() {
   // team picks/matchups queries stay off. /user/me carries no season year, so
   // it comes from the user-leagues list.
   const isPlayerLeague = selectedLeague?.groupType === 'PlayerPickem';
-  const { data: userLeagues } = useUserLeagues();
+  const {
+    data: userLeagues,
+    isLoading: userLeaguesLoading,
+    refetch: refetchUserLeagues,
+  } = useUserLeagues();
   const playerSeasonYear = isPlayerLeague
     ? (userLeagues?.find((l) => l.id === leagueId)?.seasonYear ?? null)
     : null;
@@ -774,8 +786,19 @@ export default function PicksScreen() {
           seasonWeeks={seasonWeeks}
           onWeekChange={setSelectedWeek}
         />
-        {playerSeasonYear === null || !selectedLeague?.sport ? (
+        {userLeaguesLoading ? (
           <LoadingSpinner message="Loading your roster…" />
+        ) : playerSeasonYear === null || !selectedLeague?.sport ? (
+          // The user-leagues request failed, or came back without this
+          // league: say so and offer a retry rather than spinning forever.
+          <View style={styles.setupContent}>
+            <EmptyState
+              icon="⚠️"
+              title="Couldn't load this league"
+              subtitle="Check your connection and try again."
+            />
+            <Button title="Retry" variant="secondary" size="sm" onPress={() => refetchUserLeagues()} />
+          </View>
         ) : (
           <PlayerRosterBuilder
             leagueId={leagueId}

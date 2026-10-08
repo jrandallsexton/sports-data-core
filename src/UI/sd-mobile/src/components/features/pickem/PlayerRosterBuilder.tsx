@@ -93,6 +93,9 @@ export function PlayerRosterBuilder({ leagueId, seasonYear, week, sport }: Playe
   const [activeSlotId, setActiveSlotId] = useState('QB');
   const [athletes, setAthletes] = useState<PickemAthlete[]>([]);
   const [loading, setLoading] = useState(false);
+  // A failed athlete load must not read as an empty position.
+  const [athletesError, setAthletesError] = useState(false);
+  const [athletesTick, setAthletesTick] = useState(0);
   const [sort, setSort] = useState<SortDescriptor>(NAME_SORT);
   const [filterText, setFilterText] = useState('');
   const [opponentText, setOpponentText] = useState('');
@@ -138,6 +141,7 @@ export function PlayerRosterBuilder({ leagueId, seasonYear, week, sport }: Playe
     if (positions.length === 0 || !sportLeague) return;
     let ignore = false;
     setLoading(true);
+    setAthletesError(false);
     Promise.all(
       positions.map((pos) =>
         getAthletesByPosition(pos, seasonYear, week, sportLeague.sport, sportLeague.league),
@@ -147,7 +151,9 @@ export function PlayerRosterBuilder({ leagueId, seasonYear, week, sport }: Playe
         if (!ignore) setAthletes(responses.flatMap((r) => r.athletes));
       })
       .catch(() => {
-        if (!ignore) setAthletes([]);
+        if (ignore) return;
+        setAthletes([]);
+        setAthletesError(true);
       })
       .finally(() => {
         if (!ignore) setLoading(false);
@@ -155,7 +161,7 @@ export function PlayerRosterBuilder({ leagueId, seasonYear, week, sport }: Playe
     return () => {
       ignore = true;
     };
-  }, [positions, sportLeague?.sport, sportLeague?.league, seasonYear, week]);
+  }, [positions, sportLeague?.sport, sportLeague?.league, seasonYear, week, athletesTick]);
 
   const sorted = useMemo(
     () =>
@@ -412,6 +418,19 @@ export function PlayerRosterBuilder({ leagueId, seasonYear, week, sport }: Playe
 
       {loading ? (
         <Text style={[styles.status, { color: theme.textMuted }]}>Loading athletes…</Text>
+      ) : athletesError ? (
+        <View style={styles.statusRow}>
+          <Text style={{ color: theme.error }} accessibilityRole="alert">
+            Could not load athletes.
+          </Text>
+          <TouchableOpacity
+            onPress={() => setAthletesTick((t) => t + 1)}
+            accessibilityRole="button"
+            style={[styles.sortChip, { borderColor: theme.tint }]}
+          >
+            <Text style={{ color: theme.tint, fontSize: 12, fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={sorted}
@@ -501,4 +520,11 @@ const styles = StyleSheet.create({
   seasonTag: { fontSize: 11, fontWeight: '700', width: 70 },
   seasonStats: { fontSize: 12, flexShrink: 1 },
   status: { paddingHorizontal: 16, paddingTop: 8 },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
 });

@@ -125,4 +125,15 @@ describe('PlayerRosterBuilder (mobile)', () => {
     expect(await screen.findByText('Texas Longhorns')).toBeTruthy();
     expect(screen.getByText(/vs Oklahoma Sooners/)).toBeTruthy();
   });
+
+  it('shows a load error with a retry instead of an empty position', async () => {
+    mocked.getAthletesByPosition.mockRejectedValueOnce(new Error('network'));
+    renderBuilder();
+
+    expect(await screen.findByText('Could not load athletes.')).toBeTruthy();
+    expect(screen.queryByText('No athletes for this position.')).toBeNull();
+
+    fireEvent.press(screen.getByText('Retry'));
+    expect(await screen.findByLabelText('Add Trey Owens')).toBeTruthy();
+  });
 });

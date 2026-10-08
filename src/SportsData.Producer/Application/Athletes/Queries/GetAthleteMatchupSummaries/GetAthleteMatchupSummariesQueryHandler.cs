@@ -389,14 +389,14 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         var droppedBye = 0;
         foreach (var a in athletes.OrderBy(x => x.LastName ?? string.Empty).ThenBy(x => x.FirstName ?? string.Empty))
         {
-            var hasMatchup = opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var matchup);
-            if (!hasMatchup)
+            if (!opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var matchup))
             {
                 droppedBye++;
                 continue;
             }
-            Guid? oppId = hasMatchup ? matchup.OpponentFsId : null;
-            var opp = oppId.HasValue && opponentById.TryGetValue(oppId.Value, out var info) ? info : null;
+            // The opponent's franchise season can still be unsourced, so its
+            // display fields stay nullable.
+            var opp = opponentById.TryGetValue(matchup.OpponentFsId, out var info) ? info : null;
 
             rows.Add(new AthleteMatchupSummaryDto
             {
@@ -411,9 +411,9 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                 OpponentName = opp?.Name,
                 OpponentSlug = opp?.Slug,
                 OpponentShortName = opp?.ShortName,
-                ContestId = hasMatchup ? matchup.ContestId : null,
-                ContestStartUtc = hasMatchup ? matchup.StartUtc : null,
-                OpponentDefPerGame = oppId.HasValue && allowedByOpponent.TryGetValue(oppId.Value, out var allowed)
+                ContestId = matchup.ContestId,
+                ContestStartUtc = matchup.StartUtc,
+                OpponentDefPerGame = allowedByOpponent.TryGetValue(matchup.OpponentFsId, out var allowed)
                     ? allowed
                     : null,
                 CurrentSeason = BuildSeasonBlock(a.AthleteSeasonId, query.SeasonYear, statKeys, statLookup),

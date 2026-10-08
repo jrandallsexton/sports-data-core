@@ -196,6 +196,13 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                     // NCAAFB has ten different Tigers.
                     TeamName = fs.DisplayName,
                     TeamSlug = fs.Slug,
+                    // Franchise.DisplayNameShort for compact (mobile) labels.
+                    // Correlated lookup, not a join, so a missing franchise
+                    // row can't drop the athlete.
+                    TeamShortName = _dataContext.Franchises
+                        .Where(f => f.Id == fs.FranchiseId)
+                        .Select(f => f.DisplayNameShort)
+                        .FirstOrDefault(),
                 })
             .ToListAsync(cancellationToken);
 
@@ -312,7 +319,17 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
             .AsNoTracking()
             .Where(f => opponentFsIds.Contains(f.Id))
             // DisplayName, not Name — same ten-Tigers problem as above.
-            .Select(f => new { f.Id, Name = f.DisplayName, f.Slug, f.FranchiseId })
+            .Select(f => new
+            {
+                f.Id,
+                Name = f.DisplayName,
+                f.Slug,
+                f.FranchiseId,
+                ShortName = _dataContext.Franchises
+                    .Where(fr => fr.Id == f.FranchiseId)
+                    .Select(fr => fr.DisplayNameShort)
+                    .FirstOrDefault(),
+            })
             .ToListAsync(cancellationToken);
         var opponentById = opponentInfo.ToDictionary(o => o.Id);
 
@@ -365,10 +382,19 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         }
 
         // ── 7. Assemble ───────────────────────────────────────────────────
+        // Athletes on a bye (no contest for their team in the requested week
+        // and phase) are left out: nobody can score for a team that isn't
+        // playing, so they're only noise in the picker.
         var rows = new List<AthleteMatchupSummaryDto>(athletes.Count);
+        var droppedBye = 0;
         foreach (var a in athletes.OrderBy(x => x.LastName ?? string.Empty).ThenBy(x => x.FirstName ?? string.Empty))
         {
             var hasMatchup = opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var matchup);
+            if (!hasMatchup)
+            {
+                droppedBye++;
+                continue;
+            }
             Guid? oppId = hasMatchup ? matchup.OpponentFsId : null;
             var opp = oppId.HasValue && opponentById.TryGetValue(oppId.Value, out var info) ? info : null;
 
@@ -380,9 +406,11 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                 LastName = a.LastName ?? string.Empty,
                 TeamName = a.TeamName ?? a.TeamSlug ?? string.Empty,
                 TeamSlug = a.TeamSlug ?? string.Empty,
+                TeamShortName = a.TeamShortName,
                 Position = position,
                 OpponentName = opp?.Name,
                 OpponentSlug = opp?.Slug,
+                OpponentShortName = opp?.ShortName,
                 ContestId = hasMatchup ? matchup.ContestId : null,
                 ContestStartUtc = hasMatchup ? matchup.StartUtc : null,
                 OpponentDefPerGame = oppId.HasValue && allowedByOpponent.TryGetValue(oppId.Value, out var allowed)
@@ -426,10 +454,11 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         }
 
         _logger.LogInformation(
-            "Athlete matchup summaries: {Count} {Position} rows for {SeasonYear} week {Week}; {WithOpp} with opponents, {WithAllowed} with allowance data; {Dropped} zero-stat athletes dropped.",
+            "Athlete matchup summaries: {Count} {Position} rows for {SeasonYear} week {Week}; {WithOpp} with opponents, {WithAllowed} with allowance data; {DroppedBye} bye-week and {Dropped} zero-stat athletes dropped.",
             dto.Athletes.Count, position, query.SeasonYear, query.Week,
             dto.Athletes.Count(x => x.OpponentName != null),
             dto.Athletes.Count(x => x.OpponentDefPerGame != null),
+            droppedBye,
             droppedZeroStat);
 
         return new Success<AthleteMatchupSummariesDto>(dto);

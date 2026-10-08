@@ -22,12 +22,19 @@ namespace SportsData.Core.Dtos.Canonical
         public required string LastName { get; set; }
         public required string TeamName { get; set; }
         public required string TeamSlug { get; set; }
+        /// <summary>
+        /// Franchise.DisplayNameShort ("Texas"): the compact team label for
+        /// narrow (mobile) layouts. Null when the franchise row is missing.
+        /// </summary>
+        public string? TeamShortName { get; set; }
         /// <summary>"QB" | "RB" | "WR" | "TE" | "K" (position abbreviation).</summary>
         public required string Position { get; set; }
 
         /// <summary>Null on a bye week.</summary>
         public string? OpponentName { get; set; }
         public string? OpponentSlug { get; set; }
+        /// <summary>Franchise.DisplayNameShort of the opponent; null on a bye.</summary>
+        public string? OpponentShortName { get; set; }
 
         /// <summary>The athlete's team's contest for the requested week; null on a bye.</summary>
         public Guid? ContestId { get; set; }

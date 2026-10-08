@@ -22,6 +22,7 @@ function qb(
 ): PickemAthlete {
   return {
     athleteId: `qb-${lastName}`,
+    athleteSeasonId: `qb-season-${lastName}`,
     firstName: 'Test',
     lastName,
     teamName: 'Team',

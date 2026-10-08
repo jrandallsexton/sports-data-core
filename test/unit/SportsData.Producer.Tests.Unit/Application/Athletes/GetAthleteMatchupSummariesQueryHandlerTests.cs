@@ -523,12 +523,60 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         row.CurrentSeason.Stats["passYds"].Should().Be(1247);
     }
 
+    private void SeedQbRoomWithOneStarter()
+    {
+        SeedPositionAndStatus();
+        var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
+        var starter = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        SeedStatDoc(starter.Id, new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 4, passYds: 1247);
+        // Appeared (e.g. as holder) but recorded no passing stats: gamesPlayed
+        // alone doesn't count.
+        var holder = SeedAthleteSeason(Guid.NewGuid(), texas, "Trey", "Owens");
+        SeedStatDoc(holder.Id, new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 2, passYds: 0);
+        // Never appeared: no stat doc at all.
+        SeedAthleteSeason(Guid.NewGuid(), texas, "Matthew", "Caldwell");
+        // A team whose athlete stats were never sourced: after week 1 it drops
+        // out entirely, so the sourcing gap shows.
+        var bama = SeedFranchiseSeason(2026, "alabama-crimson-tide", "Alabama Crimson Tide");
+        SeedAthleteSeason(Guid.NewGuid(), bama, "Ty", "Simpson");
+    }
+
+    [Fact]
+    public async Task AfterFirstWeek_ZeroStatAthletesAreDropped()
+    {
+        SeedQbRoomWithOneStarter();
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 7));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Athletes.Should().ContainSingle().Which.LastName.Should().Be("Manning");
+    }
+
+    [Theory]
+    [InlineData(1, 2)] // regular-season week 1 (ESPN files NCAA week-0 games here too)
+    [InlineData(3, 1)] // preseason phase: no current-season games, nothing to filter on
+    public async Task FirstWeekOrPreseason_ReturnsEveryone(int week, int phaseTypeCode)
+    {
+        SeedQbRoomWithOneStarter();
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, week, phaseTypeCode));
+
+        result.Value.Athletes.Select(a => a.LastName)
+            .Should().BeEquivalentTo(["Manning", "Owens", "Caldwell", "Simpson"]);
+    }
+
     [Fact]
     public async Task ByeWeek_OpponentFieldsAreNull()
     {
         SeedPositionAndStatus();
         var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
-        SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        // Week 9 is past week 1, so a zero-stat QB would be filtered out.
+        SeedStatDoc(season.Id, new DateTime(2026, 10, 20, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 8, passYds: 2100);
         // No contest for the requested week.
 
         await FootballDataContext.SaveChangesAsync();

@@ -122,14 +122,25 @@ function JoinLeagueConfirmDialog({ league, onCancel, onConfirm, closesVerb = "Cl
             <strong>Sport:</strong>{" "}
             {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear}
           </li>
-          <li>
-            <strong>Pick Type:</strong> {PICK_TYPE_LABEL[league.pickType] ?? "—"}
-            {league.useConfidencePoints ? " with Confidence Points" : ""}
-          </li>
-          <li>
-            <strong>Tiebreaker:</strong>{" "}
-            {TIEBREAKER_LABEL[league.tiebreakerType] ?? league.tiebreakerType}
-          </li>
+          {/* Player Pick'em has no team picks: PickType/Tiebreaker carry the
+              team defaults and mean nothing for it. */}
+          {league.groupType === "PlayerPickem" ? (
+            <li>
+              <strong>Game:</strong> Player Pick&rsquo;em &mdash; pick a weekly
+              roster; players score from their stats
+            </li>
+          ) : (
+            <>
+              <li>
+                <strong>Pick Type:</strong> {PICK_TYPE_LABEL[league.pickType] ?? "—"}
+                {league.useConfidencePoints ? " with Confidence Points" : ""}
+              </li>
+              <li>
+                <strong>Tiebreaker:</strong>{" "}
+                {TIEBREAKER_LABEL[league.tiebreakerType] ?? league.tiebreakerType}
+              </li>
+            </>
+          )}
           <li>
             <strong>Drop Low Weeks:</strong>{" "}
             {league.dropLowWeeksCount > 0

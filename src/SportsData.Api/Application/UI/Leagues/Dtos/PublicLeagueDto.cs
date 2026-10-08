@@ -11,6 +11,13 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         public string Commissioner { get; set; } = default!;
         public int RankingFilter { get; set; }
         public int PickType { get; set; }
+
+        /// <summary>
+        /// Which game the league plays. Player Pick'em leagues carry the team
+        /// defaults for PickType/Tiebreaker, which mean nothing to them, so
+        /// clients branch on this before showing those.
+        /// </summary>
+        public GroupType GroupType { get; set; }
         public bool UseConfidencePoints { get; set; }
         public int DropLowWeeksCount { get; set; }
 

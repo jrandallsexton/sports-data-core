@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GiAmericanFootballHelmet } from "react-icons/gi";
 import LeaguesApi from "api/leagues/leaguesApi";
 import { useUserDto } from "../../contexts/UserContext";
 import JoinClosesLabel from "../leagues/JoinClosesLabel";
@@ -112,7 +113,14 @@ function PendingInvitesCard() {
               <div className="pending-invite-info">
                 <span className="pending-invite-name">{league.name}</span>
                 <span className="pending-invite-meta">
-                  <span aria-hidden="true">{SPORT_ICON[league.sport] ?? "🏆"}</span>{" "}
+                  {/* Player Pick'em gets the helmet, as on YourLeaguesCard. */}
+                  <span aria-hidden="true">
+                    {league.groupType === "PlayerPickem" ? (
+                      <GiAmericanFootballHelmet />
+                    ) : (
+                      SPORT_ICON[league.sport] ?? "🏆"
+                    )}
+                  </span>{" "}
                   {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear} ·
                   Invited by {invite.invitedBy}
                   {" · "}

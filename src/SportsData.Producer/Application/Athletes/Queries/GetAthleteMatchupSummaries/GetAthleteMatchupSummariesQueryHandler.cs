@@ -36,11 +36,20 @@ public interface IGetAthleteMatchupSummariesQueryHandler
 ///   - Athlete statistic docs are duplicated per re-source (~162k
 ///     athlete-seasons carry more than one); the NEWEST doc per
 ///     athlete-season wins.
+///
+/// Zero-stat athletes are dropped after the first week of the season (see
+/// step 8): a depth-chart player who hasn't touched the ball is not a
+/// realistic pick, and the grid was mostly em-dash rows.
 /// </summary>
 public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummariesQueryHandler
 {
     private const string GamesPlayedKey = "gamesPlayed";
     private const string GeneralCategory = "general";
+
+    // SeasonPhase.TypeCode values (the API maps preseason/regular/postseason
+    // to 1/2/3 before relaying).
+    private const int PreseasonPhaseTypeCode = 1;
+    private const int RegularSeasonPhaseTypeCode = 2;
 
     // Consumer-contract stat keys (the serialized shape downstream UIs
     // depend on — see AthleteMatchupSummaryDto) → the ESPN category/stat
@@ -356,14 +365,14 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         }
 
         // ── 7. Assemble ───────────────────────────────────────────────────
-        var dto = new AthleteMatchupSummariesDto();
+        var rows = new List<AthleteMatchupSummaryDto>(athletes.Count);
         foreach (var a in athletes.OrderBy(x => x.LastName ?? string.Empty).ThenBy(x => x.FirstName ?? string.Empty))
         {
             var hasMatchup = opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var matchup);
             Guid? oppId = hasMatchup ? matchup.OpponentFsId : null;
             var opp = oppId.HasValue && opponentById.TryGetValue(oppId.Value, out var info) ? info : null;
 
-            dto.Athletes.Add(new AthleteMatchupSummaryDto
+            rows.Add(new AthleteMatchupSummaryDto
             {
                 AthleteId = a.AthleteId,
                 AthleteSeasonId = a.AthleteSeasonId,
@@ -386,11 +395,42 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
             });
         }
 
+        // ── 8. Drop zero-stat athletes after the first week ───────────────
+        // "Zero stats" = none of the position's contract stats is non-zero
+        // this season (gamesPlayed alone doesn't count: a holder who never
+        // threw a pass recorded nothing the grid shows).
+        //
+        // Not applied in regular-season week 1 (nobody has current-season
+        // stats yet; ESPN files NCAA "week 0" games under week 1 too) or in
+        // the preseason phase (no current-season games at all — the rule
+        // would drop everyone). From week 2 on, a team whose athlete stats
+        // were never sourced drops out of the grid entirely: deliberate, so
+        // the sourcing gap shows instead of hiding behind em-dash rows.
+        //
+        // An injury replacement is not a concern: a backup who comes in
+        // records stats that game. A future "show all players" option would
+        // bypass this step.
+        var isFirstWeek = query.SeasonPhaseTypeCode == PreseasonPhaseTypeCode ||
+                          (query.SeasonPhaseTypeCode == RegularSeasonPhaseTypeCode && query.Week <= 1);
+
+        var dto = new AthleteMatchupSummariesDto();
+        var droppedZeroStat = 0;
+        foreach (var row in rows)
+        {
+            if (!isFirstWeek && !HasRecordedStats(row.CurrentSeason))
+            {
+                droppedZeroStat++;
+                continue;
+            }
+            dto.Athletes.Add(row);
+        }
+
         _logger.LogInformation(
-            "Athlete matchup summaries: {Count} {Position} rows for {SeasonYear} week {Week}; {WithOpp} with opponents, {WithAllowed} with allowance data.",
+            "Athlete matchup summaries: {Count} {Position} rows for {SeasonYear} week {Week}; {WithOpp} with opponents, {WithAllowed} with allowance data; {Dropped} zero-stat athletes dropped.",
             dto.Athletes.Count, position, query.SeasonYear, query.Week,
             dto.Athletes.Count(x => x.OpponentName != null),
-            dto.Athletes.Count(x => x.OpponentDefPerGame != null));
+            dto.Athletes.Count(x => x.OpponentDefPerGame != null),
+            droppedZeroStat);
 
         return new Success<AthleteMatchupSummariesDto>(dto);
     }
@@ -427,6 +467,13 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
 
         return block;
     }
+
+    /// <summary>
+    /// Whether a current-season block carries any non-zero contract stat.
+    /// A null block (no doc, or zero games played) has none.
+    /// </summary>
+    private static bool HasRecordedStats(AthleteSeasonStatBlockDto? block) =>
+        block is not null && block.Stats.Values.Any(v => v != 0);
 
     /// <summary>
     /// Per-game average of a stat gained AGAINST each franchise season —

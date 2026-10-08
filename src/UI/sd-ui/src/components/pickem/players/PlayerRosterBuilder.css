@@ -2,11 +2,19 @@
    borrows the teaser's visual language (dashed empty / accent filled);
    the grid is a plain data table with a muted previous-season sub-row. */
 
+/* Same box as .picks-page-container (PicksPage.css) so the league/week
+   selector stays put when switching between team and player leagues. */
 .roster-builder {
-  max-width: 980px;
+  width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
-  padding: 1rem 1.25rem 2rem;
+  padding: 20px 20px 2rem;
   color: var(--text-primary);
+}
+
+/* The league/week selector sits above the title; give them room. */
+.roster-builder > .league-week-selector {
+  margin-bottom: 1rem;
 }
 
 .roster-builder-title {
@@ -358,34 +366,3 @@
   color: var(--accent, #e0a52e);
 }
 
-/* League standings — cumulative points + weekly-winner trophies. */
-.roster-standings {
-  margin: 0.75rem 0;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-input, #444);
-  border-radius: 8px;
-  max-width: 28rem;
-}
-
-.roster-standings-title {
-  margin: 0 0 0.35rem;
-  font-size: 0.9rem;
-}
-
-.roster-standings-list {
-  margin: 0;
-  padding-left: 1.25rem;
-}
-
-.roster-standings-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.roster-standings-points {
-  font-weight: 700;
-  color: var(--accent, #e0a52e);
-}

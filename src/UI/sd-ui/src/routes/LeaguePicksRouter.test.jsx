@@ -1,5 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import LeaguePicksRouter from "./LeaguePicksRouter";
 
 // /user/me as the router sees it; tests swap it between renders.
@@ -94,6 +94,44 @@ describe("LeaguePicksRouter, new Player Pick'em league", () => {
     expect(screen.getByTestId("path")).toHaveTextContent(
       `/app/league/${LEAGUE_ID}/picks/phase/regular/weeks/1`
     );
+  });
+});
+
+describe("LeaguePicksRouter, wait is per league", () => {
+  it("a second new league still waits after the first exhausted its retries", () => {
+    // One mounted router whose league changes (as in the app, where both
+    // URLs render the same LeaguePicksRouter instance), so per-instance
+    // state carries over unless it's keyed by league.
+    const OTHER_ID = "11111111-2222-3333-4444-555555555555";
+    userState.userDto = {
+      leagues: [playerLeague([]), { ...playerLeague([]), id: OTHER_ID }],
+    };
+    function GoToOther() {
+      const navigate = useNavigate();
+      return (
+        <button type="button" onClick={() => navigate(`/app/league/${OTHER_ID}/picks`)}>
+          other
+        </button>
+      );
+    }
+    render(
+      <MemoryRouter initialEntries={[`/app/league/${LEAGUE_ID}/picks`]}>
+        <GoToOther />
+        <Routes>
+          <Route path="/app/league/:leagueId/picks" element={<LeaguePicksRouter />} />
+          <Route
+            path="/app/league/:leagueId/picks/phase/:phase/weeks/:week"
+            element={<LeaguePicksRouter />}
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+    act(() => vi.advanceTimersByTime(10_000)); // first league gives up
+    expect(screen.getByText("roster builder")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "other" }));
+
+    expect(screen.getByText("Setting up your league...")).toBeInTheDocument();
   });
 });
 

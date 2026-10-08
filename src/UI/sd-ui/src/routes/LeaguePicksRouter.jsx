@@ -47,7 +47,10 @@ function LeaguePicksRouter() {
     pendingLeague?.groupType === "PlayerPickem" &&
     Array.isArray(pendingLeague.seasonWeekDetails) &&
     pendingLeague.seasonWeekDetails.length === 0;
-  const [weeksWaitExpired, setWeeksWaitExpired] = useState(false);
+  // Keyed by league: one league exhausting its wait must not skip the wait
+  // for the next new league.
+  const [waitExpiredFor, setWaitExpiredFor] = useState(null);
+  const weeksWaitExpired = waitExpiredFor === leagueId;
   useEffect(() => {
     if (!awaitingWeeks) return undefined;
     let attempts = 0;
@@ -56,11 +59,11 @@ function LeaguePicksRouter() {
       refreshUserDto();
       if (attempts >= WEEKS_WAIT_MAX_ATTEMPTS) {
         clearInterval(timer);
-        setWeeksWaitExpired(true);
+        setWaitExpiredFor(leagueId);
       }
     }, WEEKS_WAIT_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [awaitingWeeks, refreshUserDto]);
+  }, [awaitingWeeks, leagueId, refreshUserDto]);
 
   if (loading) {
     return <div className="route-loading">Loading...</div>;

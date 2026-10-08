@@ -417,7 +417,7 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         var droppedZeroStat = 0;
         foreach (var row in rows)
         {
-            if (!isFirstWeek && !HasRecordedStats(row.CurrentSeason))
+            if (!isFirstWeek && !HasRecordedStats(row.AthleteSeasonId, statKeys, statLookup))
             {
                 droppedZeroStat++;
                 continue;
@@ -469,11 +469,17 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
     }
 
     /// <summary>
-    /// Whether a current-season block carries any non-zero contract stat.
-    /// A null block (no doc, or zero games played) has none.
+    /// Whether the athlete-season has any non-zero contract stat, read from
+    /// the stat lookup directly rather than the rendered block: the block is
+    /// null when gamesPlayed is missing or zero, which must not hide stats a
+    /// doc actually records.
     /// </summary>
-    private static bool HasRecordedStats(AthleteSeasonStatBlockDto? block) =>
-        block is not null && block.Stats.Values.Any(v => v != 0);
+    private static bool HasRecordedStats(
+        Guid athleteSeasonId,
+        Dictionary<string, (string Category, string Stat)> statKeys,
+        Dictionary<(Guid, string, string), decimal> statLookup) =>
+        statKeys.Values.Any(k =>
+            statLookup.TryGetValue((athleteSeasonId, k.Category, k.Stat), out var value) && value != 0);
 
     /// <summary>
     /// Per-game average of a stat gained AGAINST each franchise season —

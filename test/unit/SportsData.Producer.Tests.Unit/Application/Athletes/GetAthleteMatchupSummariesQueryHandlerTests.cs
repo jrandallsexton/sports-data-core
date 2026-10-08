@@ -554,6 +554,23 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         result.Value.Athletes.Should().ContainSingle().Which.LastName.Should().Be("Manning");
     }
 
+    [Fact]
+    public async Task AfterFirstWeek_RecordedStatsKeepTheAthlete_EvenWithoutGamesPlayed()
+    {
+        // A doc with real stats but a missing/zero gamesPlayed renders no
+        // block; the filter must still see the stats.
+        SeedPositionAndStatus();
+        var texas = SeedFranchiseSeason(2026, "texas-longhorns", "Texas Longhorns");
+        var season = SeedAthleteSeason(Guid.NewGuid(), texas, "Arch", "Manning");
+        SeedStatDoc(season.Id, new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc), gamesPlayed: 0, passYds: 500);
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 7));
+
+        result.Value.Athletes.Should().ContainSingle().Which.LastName.Should().Be("Manning");
+    }
+
     [Theory]
     [InlineData(1, 2)] // regular-season week 1 (ESPN files NCAA week-0 games here too)
     [InlineData(3, 1)] // preseason phase: no current-season games, nothing to filter on

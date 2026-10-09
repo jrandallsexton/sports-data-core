@@ -4,9 +4,12 @@ import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
 import apiWrapper from "../../api/apiWrapper";
 import LeaguesApi from '../../api/leagues/leaguesApi';
+import PlayerPickemApi from "../../api/playerPickemApi";
 import LeaderboardStandingsTable from "./LeaderboardStandingsTable";
 import LeagueWeekOverviewTable from "./LeagueWeekOverviewTable";
 import WeeklyScoresTable from "./WeeklyScoresTable";
+import PlayerStandingsTable from "./PlayerStandingsTable";
+import PlayerWeekLineupsTable from "./PlayerWeekLineupsTable";
 import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
@@ -18,6 +21,9 @@ function LeaderboardPage() {
   // leagues never appear. This call carries seasonYear + seasonWeeks per league,
   // so the season filter and week selector work for every season.
   const [allLeagues, setAllLeagues] = useState([]);
+  // The league list decides which standings/week endpoints a league uses
+  // (team vs Player Pick'em), so those requests wait for it.
+  const [leaguesLoaded, setLeaguesLoaded] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(null);
   // Active-only by default to keep the League selector short (important on
   // mobile). The pill reveals ended/deactivated leagues on demand.
@@ -32,8 +38,20 @@ function LeaderboardPage() {
   const [weeklyScores, setWeeklyScores] = useState(null);
   const [activeTab, setActiveTab] = useState("standings");
   const [showBots, setShowBots] = useState(true);
+  // Player Pick'em data: season standings and one week's lineups.
+  const [playerStandings, setPlayerStandings] = useState(null);
+  const [weekLineups, setWeekLineups] = useState(null);
+  const [weekLineupsLoading, setWeekLineupsLoading] = useState(false);
+  const [weekLineupsError, setWeekLineupsError] = useState(false);
 
   const currentUserId = userDto?.id ?? null;
+
+  // Player Pick'em leagues read their own endpoints (players and points
+  // instead of games and picks). Known once the league list loads; the
+  // summaries carry groupType and seasonYear.
+  const selectedLeagueSummary = allLeagues.find((l) => l.id === selectedLeagueId) ?? null;
+  const isPlayerLeague = selectedLeagueSummary?.groupType === "PlayerPickem";
+  const playerSeasonYear = selectedLeagueSummary?.seasonYear ?? null;
 
   // Fetch every league the user belongs to, including deactivated ones.
   useEffect(() => {
@@ -45,6 +63,9 @@ function LeaderboardPage() {
       .catch((err) => {
         console.error("Failed to load leagues", err);
         if (!cancelled) setAllLeagues([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLeaguesLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -113,26 +134,48 @@ function LeaderboardPage() {
     if (!inSeason) setSelectedLeagueId(seasonLeagues[0].id);
   }, [selectedSeason, seasonLeagues, selectedLeagueId, setSelectedLeagueId]);
 
+  // Standings. Waits for the league list (it decides which endpoint), and
+  // ignores a response for a selection that has since changed, so a slow
+  // earlier request can't overwrite the current league or clear `loading`.
   useEffect(() => {
+    if (!selectedLeagueId || !leaguesLoaded) return undefined;
+    let cancelled = false;
     const fetchLeaderboard = async () => {
-      if (!selectedLeagueId) return;
+      if (isPlayerLeague) {
+        if (!playerSeasonYear) return;
+        setLoading(true);
+        try {
+          const response = await PlayerPickemApi.getStandings(selectedLeagueId, playerSeasonYear);
+          if (!cancelled) setPlayerStandings(response.data);
+        } catch (err) {
+          console.error("Failed to load player standings", err);
+          if (!cancelled) setPlayerStandings(null);
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+        return;
+      }
       setLoading(true);
       try {
         const data = await apiWrapper.Leaderboard.getByGroupAndWeek(
           selectedLeagueId
         );
+        if (cancelled) return;
         // Extract the actual leaderboard array from the response
         const leaderboardArray = data.data || data || [];
         setLeaderboard(Array.isArray(leaderboardArray) ? leaderboardArray : []);
       } catch (err) {
         console.error("Failed to load leaderboard", err);
-        setLeaderboard([]);
+        if (!cancelled) setLeaderboard([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchLeaderboard();
-  }, [selectedLeagueId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLeagueId, leaguesLoaded, isPlayerLeague, playerSeasonYear]);
 
   // Find the selected league and its ascending week list. Search across all
   // leagues (not just the season subset) so seasonWeeks still resolves during
@@ -163,19 +206,41 @@ function LeaderboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueId, latestSeasonWeek]);
 
-  // Add the API call for week overview using the selectedLeagueId from context
-  // Only run when selectedWeek is properly set (not null)
+  // By Week data: the player league's lineups, or the team overview. Waits
+  // for the league list, and ignores responses for a superseded selection.
   useEffect(() => {
-    if (selectedLeagueId && selectedWeek !== null) {
+    if (!selectedLeagueId || selectedWeek === null || !leaguesLoaded) return undefined;
+    let cancelled = false;
+    if (isPlayerLeague) {
+      if (!playerSeasonYear) return undefined;
+      setWeekLineupsLoading(true);
+      setWeekLineupsError(false);
+      PlayerPickemApi.getLeagueWeekLineups(selectedLeagueId, playerSeasonYear, selectedWeek)
+        .then((response) => {
+          if (!cancelled) setWeekLineups(response.data);
+        })
+        .catch((err) => {
+          console.error("Failed to load week lineups", err);
+          if (cancelled) return;
+          setWeekLineups(null);
+          setWeekLineupsError(true);
+        })
+        .finally(() => {
+          if (!cancelled) setWeekLineupsLoading(false);
+        });
+    } else {
       LeaguesApi.getLeagueWeekOverview(selectedLeagueId, selectedWeek)
         .then(response => {
-          setOverview(response.data);
+          if (!cancelled) setOverview(response.data);
         })
         .catch(err => {
           // Optionally log error
         });
     }
-  }, [selectedLeagueId, selectedWeek]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLeagueId, selectedWeek, leaguesLoaded, isPlayerLeague, playerSeasonYear]);
 
   // Fetch weekly scores when league changes
   useEffect(() => {
@@ -218,6 +283,16 @@ function LeaderboardPage() {
     const filteredUserPicks = data.userPicks.filter(pick => !pick.isSynthetic);
     const filteredMembers = data.members?.filter(member => !member.isSynthetic);
     return { ...data, userPicks: filteredUserPicks, members: filteredMembers };
+  };
+
+  const filterPlayerStandings = (data) => {
+    if (!data || showBots) return data;
+    return { ...data, rows: data.rows.filter((r) => !r.isSynthetic) };
+  };
+
+  const filterWeekLineups = (data) => {
+    if (!data || showBots) return data;
+    return { ...data, members: data.members.filter((m) => !m.isSynthetic) };
   };
 
   function handleSort(column) {
@@ -307,7 +382,13 @@ function LeaderboardPage() {
       {/* Standings Tab */}
       {activeTab === "standings" && (
         <>
-          {loading ? (
+          {isPlayerLeague ? (
+            <PlayerStandingsTable
+              standings={filterPlayerStandings(playerStandings)}
+              currentUserId={currentUserId}
+              loading={loading}
+            />
+          ) : loading ? (
             <div className="loading">Loading leaderboard...</div>
           ) : (
             <LeaderboardStandingsTable
@@ -349,9 +430,18 @@ function LeaderboardPage() {
             </div>
           )}
 
-          <LeagueWeekOverviewTable
-            overview={filterOverview(overview)}
-          />
+          {isPlayerLeague ? (
+            <PlayerWeekLineupsTable
+              data={filterWeekLineups(weekLineups)}
+              currentUserId={currentUserId}
+              loading={weekLineupsLoading}
+              error={weekLineupsError}
+            />
+          ) : (
+            <LeagueWeekOverviewTable
+              overview={filterOverview(overview)}
+            />
+          )}
         </>
       )}
     </div>

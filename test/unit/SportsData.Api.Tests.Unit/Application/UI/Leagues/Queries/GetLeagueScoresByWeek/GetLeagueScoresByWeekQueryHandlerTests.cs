@@ -243,4 +243,99 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
     }
 
     #endregion
+
+    [Fact]
+    public async Task ExecuteAsync_PlayerPickemLeague_BuildsWeeksFromLineupPoints()
+    {
+        // Week 5: Ann 31.5 (3 players) and Ben 31.5 (2) tie for the win and
+        // share rank 1; Cal 0 (no slots) is never a weekly winner.
+        var leagueId = Guid.NewGuid();
+        DataContext.PickemGroups.Add(new PickemGroup
+        {
+            Id = leagueId,
+            Name = "PP",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF,
+            CommissionerUserId = Guid.NewGuid(),
+            SeasonYear = 2026,
+            GroupType = GroupType.PlayerPickem,
+        });
+        var ann = AddUser("Ann");
+        var ben = AddUser("Ben");
+        var cal = AddUser("Cal");
+        AddLineup(leagueId, ann, 31.5m, players: 3);
+        AddLineup(leagueId, ben, 31.5m, players: 2);
+        AddLineup(leagueId, cal, 0m, players: 0);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetLeagueScoresByWeekQuery { LeagueId = leagueId, UserId = ann });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.GroupType.Should().Be("PlayerPickem");
+        var week = result.Value.Weeks.Should().ContainSingle().Subject;
+        week.WeekNumber.Should().Be(5);
+
+        var annScore = week.UserScores.Single(s => s.UserId == ann);
+        annScore.Points.Should().Be(31.5m);
+        annScore.PlayerCount.Should().Be(3);
+        annScore.Rank.Should().Be(1);
+        annScore.IsWeeklyWinner.Should().BeTrue();
+        annScore.Score.Should().Be(32); // rounded, for clients not branching on GroupType
+
+        var benScore = week.UserScores.Single(s => s.UserId == ben);
+        benScore.Rank.Should().Be(1);
+        benScore.IsWeeklyWinner.Should().BeTrue();
+
+        var calScore = week.UserScores.Single(s => s.UserId == cal);
+        calScore.Rank.Should().Be(3);
+        calScore.IsWeeklyWinner.Should().BeFalse();
+    }
+
+    private Guid AddUser(string name)
+    {
+        var id = Guid.NewGuid();
+        DataContext.Users.Add(new UserEntity
+        {
+            Id = id,
+            FirebaseUid = $"fb-{id:N}",
+            Email = $"{name}@x.com",
+            SignInProvider = "password",
+            DisplayName = name,
+            Username = name.ToLowerInvariant(),
+        });
+        return id;
+    }
+
+    private void AddLineup(Guid leagueId, Guid userId, decimal total, int players)
+    {
+        var lineup = new PlayerLineup
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = leagueId,
+            UserId = userId,
+            SeasonYear = 2026,
+            SeasonWeek = 5,
+            TotalPoints = total,
+            CreatedBy = userId,
+        };
+        for (var i = 0; i < players; i++)
+        {
+            lineup.Slots.Add(new PlayerLineupSlot
+            {
+                Id = Guid.NewGuid(),
+                PlayerLineupId = lineup.Id,
+                SlotId = $"S{i}",
+                AthleteId = Guid.NewGuid(),
+                AthleteSeasonId = Guid.NewGuid(),
+                Position = "QB",
+                FirstName = "F",
+                LastName = "L",
+                TeamName = "T",
+                TeamSlug = "t",
+                CreatedBy = userId,
+            });
+        }
+        DataContext.PlayerLineups.Add(lineup);
+    }
 }

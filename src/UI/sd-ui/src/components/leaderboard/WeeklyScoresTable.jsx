@@ -8,6 +8,9 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
   }
 
   const { weeks = [] } = scoresData;
+  // Player Pick'em weeks carry lineup points and player counts instead of
+  // correct-pick scores.
+  const isPlayerLeague = scoresData.groupType === "PlayerPickem";
 
   if (weeks.length === 0) {
     return (
@@ -36,6 +39,8 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
       userMap.get(userScore.userId).weekScores.set(week.weekNumber, {
         score: userScore.score,
         pickCount: userScore.pickCount,
+        points: userScore.points,
+        playerCount: userScore.playerCount,
         isDropWeek: userScore.isDropWeek,
         isWeeklyWinner: userScore.isWeeklyWinner
       });
@@ -52,7 +57,7 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
       <table className="leaderboard-table">
         <thead>
           <tr>
-            <th>Player</th>
+            <th>{isPlayerLeague ? "Member" : "Player"}</th>
             {sortedWeeks.map(week => (
               <th key={week.weekNumber}>Week {week.weekNumber}</th>
             ))}
@@ -75,9 +80,13 @@ function WeeklyScoresTable({ scoresData, currentUserId }) {
               </td>
               {sortedWeeks.map(week => {
                 const weekData = user.weekScores.get(week.weekNumber);
-                const displayValue = weekData && weekData.pickCount > 0 
-                  ? weekData.score 
-                  : '-';
+                const displayValue = isPlayerLeague
+                  ? (weekData && weekData.playerCount > 0 && weekData.points != null
+                      ? weekData.points.toFixed(1)
+                      : '-')
+                  : (weekData && weekData.pickCount > 0
+                      ? weekData.score
+                      : '-');
                 const isWeeklyWinner = weekData && weekData.isWeeklyWinner;
                 const isDropWeek = weekData && weekData.isDropWeek;
                 

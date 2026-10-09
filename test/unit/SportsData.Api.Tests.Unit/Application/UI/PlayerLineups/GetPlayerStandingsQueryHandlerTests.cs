@@ -128,6 +128,23 @@ public class GetPlayerStandingsQueryHandlerTests : ApiTestBase<GetPlayerStanding
         // Finality flags flow through.
         rows[0].Weeks.Single(w => w.Week == 1).IsFinal.Should().BeTrue();
         rows[0].Weeks.Single(w => w.Week == 2).IsFinal.Should().BeFalse();
+        // Neither seeded member is a bot.
+        rows.Should().OnlyContain(r => !r.IsSynthetic);
+    }
+
+    [Fact]
+    public async Task BotMembers_AreFlagged_SoClientsCanFilterThem()
+    {
+        await SeedAsync();
+        var bob = await DataContext.Users.FindAsync(Bob);
+        bob!.IsSynthetic = true;
+        await DataContext.SaveChangesAsync();
+        var handler = Mocker.CreateInstance<GetPlayerStandingsQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetPlayerStandingsQuery(LeagueId, Alice, 2026));
+
+        result.Value.Rows.Single(r => r.UserId == Bob).IsSynthetic.Should().BeTrue();
+        result.Value.Rows.Single(r => r.UserId == Alice).IsSynthetic.Should().BeFalse();
     }
 
     [Fact]

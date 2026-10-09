@@ -15,7 +15,15 @@ const points = (value) => (value == null ? "–" : value.toFixed(1));
  * slot stays hidden until its game locks; the header says how many.
  * Data: PlayerPickemApi.getLeagueWeekLineups.
  */
-function PlayerWeekLineupsTable({ data, currentUserId }) {
+function PlayerWeekLineupsTable({ data, currentUserId, loading = false, error = false }) {
+  // Loading and failure are told apart from a genuinely empty week.
+  if (loading) {
+    return <div className="loading">Loading lineups...</div>;
+  }
+  if (error) {
+    return <p>Couldn&rsquo;t load lineups for this week. Try again shortly.</p>;
+  }
+
   const members = data?.members ?? [];
   if (members.length === 0) {
     return <p>No lineups for this week.</p>;

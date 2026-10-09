@@ -37,5 +37,9 @@ export function useLeagueWeekLineups(
     queryFn: () => getLeagueWeekLineups(leagueId!, seasonYear!, week!),
     enabled: isInitialized && !!user && !!leagueId && !!seasonYear && !!week,
     staleTime: 1000 * 30,
+    // Others' slots unlock at their game's kickoff-5; staleTime alone never
+    // refetches an open pane, so poll while anything is still hidden.
+    refetchInterval: (query) =>
+      query.state.data?.members.some((m) => m.hiddenSlotCount > 0) ? 60_000 : false,
   });
 }

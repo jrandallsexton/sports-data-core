@@ -255,6 +255,7 @@ export default function StandingsScreen() {
             leagueId={selectedLeagueId}
             seasonYear={selectedLeague.seasonYear}
             currentUserId={me?.id}
+            showBots={showBots}
           />
         )
       ) : pane === 'byWeek' && selectedLeagueId ? (

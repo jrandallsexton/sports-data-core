@@ -145,6 +145,8 @@ export type PlayerStandings = {
   rows: {
     userId: string;
     displayName: string;
+    // Bot member: the Show Bots toggle filters on it.
+    isSynthetic: boolean;
     totalPoints: number;
     weeklyWins: number;
     weeks: { week: number; points: number; isFinal: boolean; isWeeklyWinner: boolean }[];

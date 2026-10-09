@@ -86,3 +86,15 @@ describe("PlayerWeekLineupsTable", () => {
     expect(screen.getByText("275 pass yds, 2 TD, 0 INT")).toBeInTheDocument();
   });
 });
+
+describe("PlayerWeekLineupsTable states", () => {
+  it("tells loading and failure apart from an empty week", () => {
+    const { rerender } = render(<PlayerWeekLineupsTable data={null} currentUserId={ME} loading />);
+    expect(screen.getByText("Loading lineups...")).toBeInTheDocument();
+    expect(screen.queryByText("No lineups for this week.")).not.toBeInTheDocument();
+
+    rerender(<PlayerWeekLineupsTable data={null} currentUserId={ME} error />);
+    expect(screen.getByText(/load lineups for this week/)).toBeInTheDocument();
+    expect(screen.queryByText("No lineups for this week.")).not.toBeInTheDocument();
+  });
+});

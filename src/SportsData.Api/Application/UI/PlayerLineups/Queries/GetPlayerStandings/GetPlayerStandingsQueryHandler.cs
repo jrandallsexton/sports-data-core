@@ -32,6 +32,8 @@ public class PlayerStandingRowDto
 {
     public Guid UserId { get; set; }
     public required string DisplayName { get; set; }
+    /// <summary>Bot member: clients' "Show Bots" toggle filters on it.</summary>
+    public bool IsSynthetic { get; set; }
     public decimal TotalPoints { get; set; }
     public int WeeklyWins { get; set; }
     public List<PlayerStandingWeekDto> Weeks { get; set; } = [];
@@ -111,9 +113,9 @@ public class GetPlayerStandingsQueryHandler : IGetPlayerStandingsQueryHandler
         var memberNames = await _dataContext.PickemGroupMembers
             .AsNoTracking()
             .Where(m => m.PickemGroupId == query.LeagueId)
-            .Select(m => new { m.UserId, Name = m.User.DisplayName })
+            .Select(m => new { m.UserId, Name = m.User.DisplayName, m.User.IsSynthetic })
             .ToListAsync(cancellationToken);
-        var nameByUser = memberNames.ToDictionary(m => m.UserId, m => m.Name);
+        var memberByUser = memberNames.ToDictionary(m => m.UserId);
 
         // Weekly winner = top TotalPoints among that week's non-empty
         // lineups (ties share the badge; provisional until every lineup
@@ -132,7 +134,8 @@ public class GetPlayerStandingsQueryHandler : IGetPlayerStandingsQueryHandler
             .Select(g => new PlayerStandingRowDto
             {
                 UserId = g.Key,
-                DisplayName = nameByUser.TryGetValue(g.Key, out var n) ? n : "Member",
+                DisplayName = memberByUser.TryGetValue(g.Key, out var member) ? member.Name : "Member",
+                IsSynthetic = member?.IsSynthetic ?? false,
                 TotalPoints = g.Sum(l => l.TotalPoints),
                 Weeks = g.OrderBy(l => l.SeasonWeek)
                     .Select(l => new PlayerStandingWeekDto

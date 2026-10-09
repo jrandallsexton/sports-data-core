@@ -13,6 +13,7 @@ interface PlayerStandingsListProps {
   seasonYear: number;
   /** API user id (not the Firebase uid): the DTO rows carry API ids. */
   currentUserId: string | undefined;
+  showBots: boolean;
 }
 
 /**
@@ -20,7 +21,7 @@ interface PlayerStandingsListProps {
  * weekly wins. The team-league counterpart is the Standings screen's
  * StandingRow list (web parity: PlayerStandingsTable).
  */
-export function PlayerStandingsList({ leagueId, seasonYear, currentUserId }: PlayerStandingsListProps) {
+export function PlayerStandingsList({ leagueId, seasonYear, currentUserId, showBots }: PlayerStandingsListProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const { data, isLoading, isError, refetch, isRefetching } = usePlayerStandings(leagueId, seasonYear);
@@ -39,7 +40,7 @@ export function PlayerStandingsList({ leagueId, seasonYear, currentUserId }: Pla
     );
   }
 
-  const rows = data?.rows ?? [];
+  const rows = (data?.rows ?? []).filter((r) => showBots || !r.isSynthetic);
   // Competition rank by total points: ties share a rank, the next skips.
   const rankOf = (points: number) => 1 + rows.filter((r) => r.totalPoints > points).length;
 

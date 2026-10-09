@@ -24,12 +24,27 @@ describe('PlayerStandingsList', () => {
         ],
       }),
     );
-    render(<PlayerStandingsList leagueId="lg" seasonYear={2026} currentUserId="b" />);
+    render(<PlayerStandingsList leagueId="lg" seasonYear={2026} currentUserId="b" showBots />);
 
     expect(screen.getAllByText('1')).toHaveLength(2);
     expect(screen.getByText('3')).toBeTruthy();
     expect(screen.getByText(/Ben\s+\(you\)/)).toBeTruthy();
     expect(screen.getByText(/🏆 2/)).toBeTruthy();
+  });
+
+  it('leaves bots out of the standings when Show Bots is off', () => {
+    mocked.usePlayerStandings.mockReturnValue(
+      query({
+        rows: [
+          { userId: 'a', displayName: 'Ann', isSynthetic: false, totalPoints: 50, weeklyWins: 0, weeks: [{}] },
+          { userId: 'bot', displayName: 'StatBot', isSynthetic: true, totalPoints: 90, weeklyWins: 1, weeks: [{}] },
+        ],
+      }),
+    );
+    render(<PlayerStandingsList leagueId="lg" seasonYear={2026} currentUserId="a" showBots={false} />);
+
+    expect(screen.queryByText(/StatBot/)).toBeNull();
+    expect(screen.getByText('1')).toBeTruthy(); // Ann ranks first once the bot is out
   });
 });
 

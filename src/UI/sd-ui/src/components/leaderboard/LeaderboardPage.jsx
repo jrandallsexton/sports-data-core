@@ -4,9 +4,12 @@ import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
 import apiWrapper from "../../api/apiWrapper";
 import LeaguesApi from '../../api/leagues/leaguesApi';
+import PlayerPickemApi from "../../api/playerPickemApi";
 import LeaderboardStandingsTable from "./LeaderboardStandingsTable";
 import LeagueWeekOverviewTable from "./LeagueWeekOverviewTable";
 import WeeklyScoresTable from "./WeeklyScoresTable";
+import PlayerStandingsTable from "./PlayerStandingsTable";
+import PlayerWeekLineupsTable from "./PlayerWeekLineupsTable";
 import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
@@ -32,8 +35,18 @@ function LeaderboardPage() {
   const [weeklyScores, setWeeklyScores] = useState(null);
   const [activeTab, setActiveTab] = useState("standings");
   const [showBots, setShowBots] = useState(true);
+  // Player Pick'em data: season standings and one week's lineups.
+  const [playerStandings, setPlayerStandings] = useState(null);
+  const [weekLineups, setWeekLineups] = useState(null);
 
   const currentUserId = userDto?.id ?? null;
+
+  // Player Pick'em leagues read their own endpoints (players and points
+  // instead of games and picks). Known once the league list loads; the
+  // summaries carry groupType and seasonYear.
+  const selectedLeagueSummary = allLeagues.find((l) => l.id === selectedLeagueId) ?? null;
+  const isPlayerLeague = selectedLeagueSummary?.groupType === "PlayerPickem";
+  const playerSeasonYear = selectedLeagueSummary?.seasonYear ?? null;
 
   // Fetch every league the user belongs to, including deactivated ones.
   useEffect(() => {
@@ -116,6 +129,20 @@ function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       if (!selectedLeagueId) return;
+      if (isPlayerLeague) {
+        if (!playerSeasonYear) return;
+        setLoading(true);
+        try {
+          const response = await PlayerPickemApi.getStandings(selectedLeagueId, playerSeasonYear);
+          setPlayerStandings(response.data);
+        } catch (err) {
+          console.error("Failed to load player standings", err);
+          setPlayerStandings(null);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
       setLoading(true);
       try {
         const data = await apiWrapper.Leaderboard.getByGroupAndWeek(
@@ -132,7 +159,7 @@ function LeaderboardPage() {
       }
     };
     fetchLeaderboard();
-  }, [selectedLeagueId]);
+  }, [selectedLeagueId, isPlayerLeague, playerSeasonYear]);
 
   // Find the selected league and its ascending week list. Search across all
   // leagues (not just the season subset) so seasonWeeks still resolves during
@@ -166,6 +193,16 @@ function LeaderboardPage() {
   // Add the API call for week overview using the selectedLeagueId from context
   // Only run when selectedWeek is properly set (not null)
   useEffect(() => {
+    if (selectedLeagueId && selectedWeek !== null && isPlayerLeague) {
+      if (!playerSeasonYear) return;
+      PlayerPickemApi.getLeagueWeekLineups(selectedLeagueId, playerSeasonYear, selectedWeek)
+        .then((response) => setWeekLineups(response.data))
+        .catch((err) => {
+          console.error("Failed to load week lineups", err);
+          setWeekLineups(null);
+        });
+      return;
+    }
     if (selectedLeagueId && selectedWeek !== null) {
       LeaguesApi.getLeagueWeekOverview(selectedLeagueId, selectedWeek)
         .then(response => {
@@ -175,7 +212,7 @@ function LeaderboardPage() {
           // Optionally log error
         });
     }
-  }, [selectedLeagueId, selectedWeek]);
+  }, [selectedLeagueId, selectedWeek, isPlayerLeague, playerSeasonYear]);
 
   // Fetch weekly scores when league changes
   useEffect(() => {
@@ -218,6 +255,11 @@ function LeaderboardPage() {
     const filteredUserPicks = data.userPicks.filter(pick => !pick.isSynthetic);
     const filteredMembers = data.members?.filter(member => !member.isSynthetic);
     return { ...data, userPicks: filteredUserPicks, members: filteredMembers };
+  };
+
+  const filterWeekLineups = (data) => {
+    if (!data || showBots) return data;
+    return { ...data, members: data.members.filter((m) => !m.isSynthetic) };
   };
 
   function handleSort(column) {
@@ -307,7 +349,13 @@ function LeaderboardPage() {
       {/* Standings Tab */}
       {activeTab === "standings" && (
         <>
-          {loading ? (
+          {isPlayerLeague ? (
+            <PlayerStandingsTable
+              standings={playerStandings}
+              currentUserId={currentUserId}
+              loading={loading}
+            />
+          ) : loading ? (
             <div className="loading">Loading leaderboard...</div>
           ) : (
             <LeaderboardStandingsTable
@@ -349,9 +397,16 @@ function LeaderboardPage() {
             </div>
           )}
 
-          <LeagueWeekOverviewTable
-            overview={filterOverview(overview)}
-          />
+          {isPlayerLeague ? (
+            <PlayerWeekLineupsTable
+              data={filterWeekLineups(weekLineups)}
+              currentUserId={currentUserId}
+            />
+          ) : (
+            <LeagueWeekOverviewTable
+              overview={filterOverview(overview)}
+            />
+          )}
         </>
       )}
     </div>

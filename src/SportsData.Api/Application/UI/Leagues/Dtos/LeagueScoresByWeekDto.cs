@@ -6,6 +6,13 @@
 
         public required string LeagueName { get; set; }
 
+        /// <summary>
+        /// Which game the league plays ("TeamPickem" | "PlayerPickem"). Player
+        /// Pick'em weeks carry <see cref="LeagueUserScoreDto.Points"/> and
+        /// <see cref="LeagueUserScoreDto.PlayerCount"/>.
+        /// </summary>
+        public string GroupType { get; set; } = "TeamPickem";
+
         public List<LeagueScoreByWeek> Weeks { get; set; } = [];
 
         public class LeagueScoreByWeek
@@ -36,6 +43,12 @@
             public bool IsWeeklyWinner { get; set; }
 
             public int? Rank { get; set; }
+
+            /// <summary>Player Pick'em: the week's lineup total. Null for team leagues.</summary>
+            public decimal? Points { get; set; }
+
+            /// <summary>Player Pick'em: filled lineup slots. Null for team leagues.</summary>
+            public int? PlayerCount { get; set; }
         }
     }
 }

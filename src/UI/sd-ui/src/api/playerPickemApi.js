@@ -61,6 +61,11 @@ const PlayerPickemApi = {
   getStandings: (leagueId, seasonYear) =>
     apiClient.get(`/ui/leagues/${leagueId}/player-lineups/${seasonYear}/standings`),
 
+  // Every member's lineup for one week (leaderboard "By Week"). Other
+  // members' slots stay hidden until their game locks.
+  getLeagueWeekLineups: (leagueId, seasonYear, week) =>
+    apiClient.get(`/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}`),
+
   clearSlot: (leagueId, seasonYear, week, slotId) =>
     apiClient.delete(
       `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}/mine/slots/${encodeURIComponent(slotId)}`

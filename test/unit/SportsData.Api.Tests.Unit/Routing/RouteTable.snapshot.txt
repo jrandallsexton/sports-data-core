@@ -66,6 +66,7 @@ GET    /ui/leagues/{id}/matchups/{week}                                [Authoriz
 GET    /ui/leagues/{id}/overview/{week}                                [Authorize]
 GET    /ui/leagues/{id}/scores                                         [Authorize]
 GET    /ui/leagues/{leagueId:guid}/player-lineups/{seasonYear:int}/standings [Authorize]
+GET    /ui/leagues/{leagueId:guid}/player-lineups/{seasonYear:int}/{seasonWeek:int} [Authorize]
 GET    /ui/leagues/{leagueId:guid}/player-lineups/{seasonYear:int}/{seasonWeek:int}/mine [Authorize]
 GET    /ui/leagues/{sport}/{league}/game-dates                         [Authorize]
 GET    /ui/leagues/{sport}/{league}/season-weeks                       [Authorize]

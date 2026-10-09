@@ -135,3 +135,52 @@ export async function clearSlot(
     `${lineupPath(leagueId, seasonYear, week)}/slots/${encodeURIComponent(slotId)}`,
   );
 }
+
+// ── League leaderboard (Standings tab) ──
+
+/** PlayerStandingsDto: cumulative lineup points with weekly winners. */
+export type PlayerStandings = {
+  leagueId: string;
+  seasonYear: number;
+  rows: {
+    userId: string;
+    displayName: string;
+    totalPoints: number;
+    weeklyWins: number;
+    weeks: { week: number; points: number; isFinal: boolean; isWeeklyWinner: boolean }[];
+  }[];
+};
+
+/** LeagueWeekLineupsDto: every member's lineup for one week. */
+export type LeagueWeekLineups = {
+  leagueId: string;
+  seasonYear: number;
+  seasonWeek: number;
+  members: {
+    userId: string;
+    displayName: string;
+    isSynthetic: boolean;
+    totalPoints: number;
+    // Another member's slots stay hidden until their game locks; this counts them.
+    hiddenSlotCount: number;
+    slots: LineupSlot[];
+  }[];
+};
+
+export async function getStandings(leagueId: string, seasonYear: number): Promise<PlayerStandings> {
+  const response = await apiClient.get<PlayerStandings>(
+    `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/standings`,
+  );
+  return response.data;
+}
+
+export async function getLeagueWeekLineups(
+  leagueId: string,
+  seasonYear: number,
+  week: number,
+): Promise<LeagueWeekLineups> {
+  const response = await apiClient.get<LeagueWeekLineups>(
+    `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}`,
+  );
+  return response.data;
+}

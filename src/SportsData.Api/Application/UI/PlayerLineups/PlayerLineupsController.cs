@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Dtos;
+using SportsData.Api.Application.UI.PlayerLineups.Queries.GetLeagueWeekLineups;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetPlayerStandings;
 using SportsData.Api.Extensions;
@@ -101,6 +102,25 @@ public class PlayerLineupsController : ApiControllerBase
         var result = await handler.ExecuteAsync(
             new ClearLineupSlotCommand(leagueId, HttpContext.GetCurrentUserId(), seasonYear, seasonWeek, slotId),
             cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Every member's lineup for one week (players and points). Others'
+    /// slots stay hidden until their game locks.
+    /// </summary>
+    [HttpGet("{seasonYear:int}/{seasonWeek:int}")]
+    [Authorize]
+    public async Task<ActionResult<LeagueWeekLineupsDto>> GetLeagueWeek(
+        [FromRoute] Guid leagueId,
+        [FromRoute] int seasonYear,
+        [FromRoute] int seasonWeek,
+        [FromServices] IGetLeagueWeekLineupsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await handler.ExecuteAsync(
+            new GetLeagueWeekLineupsQuery(leagueId, userId, seasonYear, seasonWeek), cancellationToken);
         return result.ToActionResult();
     }
 

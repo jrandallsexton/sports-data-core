@@ -15,7 +15,9 @@ import { Button } from '@/src/components/ui/Button';
 import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { ByWeekPane } from '@/src/components/features/standings/ByWeekPane';
-import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
+import { useCurrentUser, useStandings, useUserLeagues } from '@/src/hooks/useStandings';
+import { PlayerStandingsList } from '@/src/components/features/standings/PlayerStandingsList';
+import { PlayerWeekLineupsPane } from '@/src/components/features/standings/PlayerWeekLineupsPane';
 import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
@@ -160,6 +162,12 @@ export default function StandingsScreen() {
 
   const selectedLeague = seasonLeagues.find((l) => l.id === selectedLeagueId) ?? null;
 
+  // Player Pick'em leagues read their own endpoints (players and points
+  // instead of picks; web leaderboard parity). Their DTOs carry API user
+  // ids, so "you" comes from /user/me, not the Firebase uid.
+  const isPlayerLeague = selectedLeague?.groupType === 'PlayerPickem';
+  const { data: me } = useCurrentUser();
+
   // By Week's selected week, keyed to the league so switching leagues
   // re-defaults to that league's latest week (web-standings parity —
   // LeagueSummary carries no currentSeasonWeek).
@@ -180,7 +188,7 @@ export default function StandingsScreen() {
     refetch,
     isRefetching,
     isError,
-  } = useStandings(rememberedHydrated ? selectedLeagueId : null);
+  } = useStandings(rememberedHydrated && !isPlayerLeague ? selectedLeagueId : null);
 
   const visibleStandings = useMemo(
     () => (showBots ? standings : standings.filter((s) => !s.isSynthetic)),
@@ -231,7 +239,25 @@ export default function StandingsScreen() {
         />
       </View>
 
-      {pane === 'byWeek' && selectedLeagueId ? (
+      {isPlayerLeague && selectedLeagueId && selectedLeague ? (
+        pane === 'byWeek' ? (
+          <PlayerWeekLineupsPane
+            leagueId={selectedLeagueId}
+            seasonYear={selectedLeague.seasonYear}
+            week={selectedWeek}
+            seasonWeeks={seasonWeeks}
+            onWeekChange={setSelectedWeek}
+            showBots={showBots}
+            currentUserId={me?.id}
+          />
+        ) : (
+          <PlayerStandingsList
+            leagueId={selectedLeagueId}
+            seasonYear={selectedLeague.seasonYear}
+            currentUserId={me?.id}
+          />
+        )
+      ) : pane === 'byWeek' && selectedLeagueId ? (
         <ByWeekPane
           leagueId={selectedLeagueId}
           week={selectedWeek}

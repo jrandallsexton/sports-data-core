@@ -89,7 +89,8 @@ Bucket → Event → Publisher(s) → Consumer(s) → Status. `file:line` refere
 | `ContestStartTimeUpdated` | `EventCompetitionDocumentProcessorBase:202` (Producer) | `ContestStartTimeUpdatedHandler` (API) | ✅ wired (updates `PickemGroupMatchup.StartDateUtc`) |
 | `ContestStatusChanged` | `EventCompetitionStatusDocumentProcessor` (FB), `BaseballEventCompetitionStatusDocumentProcessor` (MLB), `FootballContestReplayService` / `BaseballContestReplayService` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast — sport-neutral lifecycle only) |
 | `ContestWinProbabilityChanged` | `EventCompetitionProbabilityDocumentProcessor` (Producer) | — | 📤 emit-only |
-| `FootballPlayCompleted` | `FootballEventCompetitionPlayDocumentProcessor` (Producer), `FootballContestReplayService` (Producer) | `FootballPlayCompletedConsumer` (API) | ✅ wired (SignalR broadcast — merged play description + football scoreboard tick) |
+| `FootballPlayCompleted` | `FootballEventCompetitionPlayDocumentProcessor` (Producer), `FootballContestReplayService` (Producer) | `FootballPlayCompletedConsumer` (API); `FootballPlayCompletedConsumer` (Producer, own queue `producer-football-play-completed`: instant analysis) | ✅ wired (SignalR broadcast — merged play description + football scoreboard tick) |
+| `PlayAnalysisGenerated` | `PlayAnalyser` (Producer, live instant analysis only) | `PlayAnalysisGeneratedConsumer` (API) | ✅ wired (SignalR broadcast `PlayAnalysis` — see [event doc](contests/PlayAnalysisGenerated.md)) |
 
 ### Documents
 

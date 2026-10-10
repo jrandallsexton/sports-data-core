@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Competitions.InstantAnalysis;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -101,6 +103,40 @@ public class PlayAnalyserTests : ProducerTestBase<PlayAnalyser>
         var outcome = await _sut.Analyse(playId, ContestId, CorrelationId, Guid.NewGuid(), SeasonDocumentRule.BeforeKickoff);
 
         outcome.Dropped.Should().Contain(d => d.Reason == "No season document written before kickoff.");
+    }
+
+    [Fact]
+    public async Task Analyse_Live_PublishesTheFactSet_InDisplayOrder()
+    {
+        var (competitionId, playId) = await SeedPlay(liveAnalysisEnabled: false);
+        PlayAnalysisGenerated? published = null;
+        Mocker.GetMock<IEventBus>()
+            .Setup(x => x.Publish(It.IsAny<PlayAnalysisGenerated>(), It.IsAny<CancellationToken>()))
+            .Callback<PlayAnalysisGenerated, CancellationToken>((evt, _) => published = evt)
+            .Returns(Task.CompletedTask);
+
+        await Live(playId);
+
+        var rows = FootballDataContext.PlayAnalyses.OrderBy(x => x.Ordinal).ToList();
+        published.Should().NotBeNull();
+        published!.PlayId.Should().Be(playId);
+        published.ContestId.Should().Be(ContestId);
+        published.CompetitionId.Should().Be(competitionId);
+        published.CorrelationId.Should().Be(CorrelationId);
+        published.Items.Select(i => (i.Id, i.FactType, i.Text))
+            .Should().Equal(rows.Select(r => (r.Id, r.FactType, r.Text)));
+    }
+
+    [Fact]
+    public async Task Analyse_LabRun_NeverPublishes()
+    {
+        var (_, playId) = await SeedPlay(liveAnalysisEnabled: false);
+
+        await _sut.Analyse(playId, ContestId, CorrelationId, Guid.NewGuid(), SeasonDocumentRule.BeforeKickoff);
+
+        FootballDataContext.PlayAnalyses.Should().NotBeEmpty();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<PlayAnalysisGenerated>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

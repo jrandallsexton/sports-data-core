@@ -1,6 +1,6 @@
 # 08. Persist and audit
 
-**Feature:** [Instant Analysis](instant-analysis.md) · **Phase:** 1 (proof of concept) · **Status:** done 2026-10-10 (uncommitted); two checks open, see Outcome
+**Feature:** [Instant Analysis](instant-analysis.md) · **Phase:** 1 (proof of concept) · **Status:** done 2026-10-10
 
 **Depends on:** [02 Enablement and schema](02-enablement-and-schema.md), [07 Select and phrase](07-select-and-phrase.md)
 
@@ -30,7 +30,7 @@ Every fact is stored against its triggering play, and every decision is logged.
 ## Acceptance criteria
 
 - [x] After an opted-in game, the audit query lists every play in order with its facts, including plays with none.
-- [ ] Dropped facts appear in Seq with their reason and `PlayId`. (Logged at Information with `PlayId` in scope and covered by unit tests; not yet seen in Seq, since the local Producer's Information logs aren't visible.)
+- [x] Dropped facts appear in Seq with their reason and `PlayId`. (Verified in local Seq during task 10.)
 - [x] Re-processing the same play doesn't create duplicate rows. (Unit test plus the unique index tested in task 02; the end-to-end second replay was blocked locally, see Outcome.)
 
 ## Outcome (2026-10-10)

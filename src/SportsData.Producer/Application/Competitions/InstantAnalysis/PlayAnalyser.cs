@@ -1,9 +1,13 @@
 using System.Diagnostics;
 using System.Text.Json;
 
+using MassTransit.EntityFrameworkCoreIntegration;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -88,15 +92,18 @@ public class PlayAnalyser : IPlayAnalyser
     private readonly ILogger<PlayAnalyser> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IEventBus _eventBus;
 
     public PlayAnalyser(
         ILogger<PlayAnalyser> logger,
         FootballDataContext dataContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IEventBus eventBus)
     {
         _logger = logger;
         _dataContext = dataContext;
         _dateTimeProvider = dateTimeProvider;
+        _eventBus = eventBus;
     }
 
     public async Task<PlayAnalysisOutcome> Analyse(
@@ -179,7 +186,7 @@ public class PlayAnalyser : IPlayAnalyser
         var selection = FactSelector.Select(facts, teams, names);
         var selectMs = Lap(stage);
 
-        var persisted = await Persist(play, selection, analysisRunId, correlationId);
+        var persisted = await Persist(play, selection, analysisRunId, correlationId, contest);
         var persistMs = Lap(stage);
 
         foreach (var drop in gameFacts.Dropped.Concat(seasonFacts.Dropped).Concat(selection.Dropped))
@@ -228,11 +235,19 @@ public class PlayAnalyser : IPlayAnalyser
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
-    /// Writes the play's fact set in one save. The unique index on
-    /// (PlayId, AnalysisRunId, Ordinal) makes a racing duplicate job fail as a
-    /// whole and leave the first set; that's success, not an error.
+    /// Writes the play's fact set in one save and, for live analysis only,
+    /// publishes <see cref="PlayAnalysisGenerated"/> through the outbox in the
+    /// same save (task 10), so the event goes out if and only if the rows
+    /// commit. The unique index on (PlayId, AnalysisRunId, Ordinal) makes a
+    /// racing duplicate job fail as a whole and leave the first set (and its
+    /// event); that's success, not an error. Lab runs never publish.
     /// </summary>
-    private async Task<int> Persist(AnalysedPlay play, FactSelection selection, Guid? analysisRunId, Guid correlationId)
+    private async Task<int> Persist(
+        AnalysedPlay play,
+        FactSelection selection,
+        Guid? analysisRunId,
+        Guid correlationId,
+        ContestInfo contest)
     {
         if (selection.Selected.Count == 0)
             return 0;
@@ -264,6 +279,20 @@ public class PlayAnalyser : IPlayAnalyser
 
         _dataContext.PlayAnalyses.AddRange(rows);
 
+        if (analysisRunId is null)
+        {
+            await _eventBus.Publish(new PlayAnalysisGenerated(
+                play.ContestId,
+                play.CompetitionId,
+                play.PlayId,
+                rows.Select(r => new PlayAnalysisItem(r.Id, r.FactType, r.Text)).ToList(),
+                null,
+                contest.Sport,
+                contest.SeasonYear,
+                correlationId,
+                CausationId.Producer.PlayAnalyser));
+        }
+
         try
         {
             await _dataContext.SaveChangesAsync();
@@ -276,19 +305,28 @@ public class PlayAnalyser : IPlayAnalyser
             foreach (var row in rows)
                 _dataContext.Entry(row).State = EntityState.Detached;
 
+            // The event was staged as an outbox row in the same save; drop it
+            // too, so nothing else on this context can send it later.
+            foreach (var outboxEntry in _dataContext.ChangeTracker.Entries()
+                         .Where(e => e.State == EntityState.Added && e.Entity is OutboxMessage)
+                         .ToList())
+            {
+                outboxEntry.State = EntityState.Detached;
+            }
+
             return 0;
         }
     }
 
-    private record ContestInfo(DateTime StartDateUtc, int SeasonYear);
+    private record ContestInfo(DateTime StartDateUtc, int SeasonYear, Sport Sport);
 
     private async Task<ContestInfo> LoadContest(Guid contestId) =>
         await _dataContext.Contests
             .AsNoTracking()
             .Where(x => x.Id == contestId)
-            .Select(x => new ContestInfo(x.StartDateUtc, x.SeasonYear))
+            .Select(x => new ContestInfo(x.StartDateUtc, x.SeasonYear, x.Sport))
             .FirstOrDefaultAsync()
-        ?? new ContestInfo(default, default);
+        ?? new ContestInfo(default, default, default);
 
     /// <summary>Per team, when its previous game this season was finalized (null: not yet); no entry: no previous game.</summary>
     private async Task<IReadOnlyDictionary<Guid, DateTime?>> LoadPreviousGameFinals(

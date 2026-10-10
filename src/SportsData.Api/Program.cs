@@ -371,6 +371,7 @@ namespace SportsData.Api
                     typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
                     typeof(PickemGroupWeekMatchupsGeneratedConsumer),
+                    typeof(PlayAnalysisGeneratedConsumer),
                     typeof(PlayerLineupContestFinalizedConsumer),
                     typeof(MatchupPreviewApprovedConsumer),
                     typeof(PreviewGeneratedConsumer),

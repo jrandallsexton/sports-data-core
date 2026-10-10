@@ -701,6 +701,11 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
+                    b.Property<bool>("LiveAnalysisEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
 
@@ -6881,6 +6886,71 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.ToTable("FranchiseSeasonMetric", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.PlayAnalysis", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AnalysisRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FactType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Facts")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PlayId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TemplateVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompetitionId", "PlayId");
+
+                    b.HasIndex("PlayId", "AnalysisRunId", "Ordinal")
+                        .IsUnique();
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("PlayId", "AnalysisRunId", "Ordinal"), false);
+
+                    b.ToTable("PlayAnalysis", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.PlayTypeCategory", b =>
                 {
                     b.Property<int>("Id")
@@ -9875,6 +9945,17 @@ namespace SportsData.Producer.Migrations.Baseball
                         .IsRequired();
 
                     b.Navigation("FranchiseSeason");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.PlayAnalysis", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPlayBase", "Play")
+                        .WithMany()
+                        .HasForeignKey("PlayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Play");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.Season", b =>

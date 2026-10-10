@@ -33,6 +33,12 @@ namespace SportsData.Producer.Infrastructure.Data
 
         public string? Notes { get; set; }
 
+        /// <summary>
+        /// Per-game opt-in for instant analysis (default off). Takes effect on
+        /// the next play; the config kill switch must also be on.
+        /// </summary>
+        public bool LiveAnalysisEnabled { get; set; }
+
 
         public class EntityConfiguration : IEntityTypeConfiguration<CompetitionStream>
         {
@@ -74,6 +80,10 @@ namespace SportsData.Producer.Infrastructure.Data
 
                 builder.Property(x => x.Notes)
                     .HasMaxLength(1024);
+
+                builder.Property(x => x.LiveAnalysisEnabled)
+                    .IsRequired()
+                    .HasDefaultValue(false);
 
                 builder.HasIndex(x => x.CompetitionId)
                     .IsUnique();

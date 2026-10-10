@@ -118,6 +118,12 @@ namespace SportsData.Producer.DependencyInjection
                 };
             });
 
+            // Instant-analysis kill switch: read once at startup, like
+            // DocumentProcessingConfig above.
+            services.AddSingleton(sp =>
+                Application.Competitions.InstantAnalysis.InstantAnalysisConfig.FromConfiguration(
+                    sp.GetRequiredService<IConfiguration>()));
+
             services.AddHttpClient("RabbitMqManagement", (sp, client) =>
             {
                 var config = sp.GetRequiredService<IConfiguration>();

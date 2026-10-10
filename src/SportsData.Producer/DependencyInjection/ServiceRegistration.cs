@@ -400,6 +400,18 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<CompetitionStreamScheduler>();
                 services.AddScoped<IContestStartTimeUpdatedConsumerHandler, ContestStartTimeUpdatedConsumerHandler>();
                 services.AddScoped<FootballCompetitionMetricsAuditJob>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.IFootballPlayCompletedConsumerHandler,
+                    Application.Competitions.InstantAnalysis.FootballPlayCompletedConsumerHandler>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.IPlayAnalyser,
+                    Application.Competitions.InstantAnalysis.PlayAnalyser>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.Lab.IRunPlayAnalysisLabCommandHandler,
+                    Application.Competitions.InstantAnalysis.Lab.RunPlayAnalysisLabCommandHandler>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.Lab.IGetPlayAnalysisRunsQueryHandler,
+                    Application.Competitions.InstantAnalysis.Lab.GetPlayAnalysisRunsQueryHandler>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.Lab.IGetPlayAnalysisRunQueryHandler,
+                    Application.Competitions.InstantAnalysis.Lab.GetPlayAnalysisRunQueryHandler>();
+                services.AddScoped<Application.Competitions.InstantAnalysis.Lab.IRatePlayAnalysisCommandHandler,
+                    Application.Competitions.InstantAnalysis.Lab.RatePlayAnalysisCommandHandler>();
             }
 
             if (mode is Sport.BaseballMlb)

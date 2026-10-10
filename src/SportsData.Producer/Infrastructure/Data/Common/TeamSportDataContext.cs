@@ -149,6 +149,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<PlayAnalysis> PlayAnalyses { get; set; }
 
+        public DbSet<PlayAnalysisRun> PlayAnalysisRuns { get; set; }
+
+        public DbSet<PlayAnalysisRating> PlayAnalysisRatings { get; set; }
+
         public DbSet<PlayTypeCategory> PlayTypeCategories { get; set; }
 
         public DbSet<PowerIndex> PowerIndexes { get; set; }
@@ -284,6 +288,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionPlayExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new PlayAnalysis.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new PlayAnalysisRun.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new PlayAnalysisRating.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new PlayTypeCategory.EntityConfiguration());
 

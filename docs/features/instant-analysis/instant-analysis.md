@@ -30,7 +30,7 @@ One document per task, in dependency order. Tasks 05/06 and 11/12/13 can run in 
 | 11 | [Web display](11-web-display.md) | 1 (live) | 10 |
 | 12 | [Mobile display](12-mobile-display.md) | 1 (live) | 10 |
 | 13 | [Cold-load](13-cold-load.md) | 1 (live) | 08 |
-| 14 | [Enrichment: conference, national and team-rank facts](14-enrichment.md) | 2 | Phase 1 done |
+| 14 | [Enrichment: conference, national, team-rank and milestone facts](14-enrichment.md) | 2 | Phase 1 done |
 | 15 | [Move to the database, first weak-pattern filters](15-move-to-database-and-filters.md) | 2 | 09, live data |
 | 16 | [Depth](16-depth.md) | 3 | Phase 2 done |
 
@@ -139,15 +139,15 @@ several newer types (`Interception` 63, `InterceptionReturnTouchdown` 36,
 | Interception | 26, 63, 36 (pick-six) | `passDefender` (also `returner`); victim `passer` | season INTs, conference/national rank, team takeaways today, passer's INTs thrown |
 | Fumble lost | 29, 39 (return TD) | recovering defender (verify role), victim the fumbler | team takeaways today, season forced fumbles |
 | Sack | 7 | sacker (verify role) | season sacks, rank, team sacks today |
-| Passing TD | 67 | `passer`, `receiver` | season passing TDs, receiving TDs, milestones |
+| Passing TD | 67 | `passer`, `receiver` | season passing TDs, receiving TDs, milestones (Phase 2) |
 | Rushing TD | 68 | `rusher` | season rushing TDs |
-| Explosive run | 5 with `StatYardage` ≥ threshold | `rusher` | longest run of the game/season, season rushing yards, milestone crossed |
-| Explosive pass | 24 with `StatYardage` ≥ threshold | `passer`, `receiver` | longest play of the game, season yards, milestones |
+| Explosive run | 5 with `StatYardage` ≥ threshold | `rusher` | longest run of the game/season, season rushing yards, milestone crossed (Phase 2) |
+| Explosive pass | 24 with `StatYardage` ≥ threshold | `passer`, `receiver` | longest play of the game, season yards, milestones (Phase 2) |
 | Field goal | 59 (made), 60 (missed) | `kicker` | long of the season, season FG made/attempted |
 | Return TD | 32, 37, 36, 39 | `returner` | rare-event facts |
 | Safety | 20 | (verify roles) | rare-event facts |
 
-The thresholds (e.g. explosive run ≥ 20 yards) and the role mapping live in one
+The thresholds (explosive run ≥ 10 yards, explosive pass ≥ 20 yards) and the role mapping live in one
 small classifier with unit tests, not scattered through queries. **Decided:** in
 code for the proof of concept, moving to the database later (Phase 2) so they can
 be tuned without a deploy.
@@ -232,7 +232,8 @@ with 3"), and move to B once the cache exists.
   derived from plays (max `StatYardage` per athlete via `AthleteSeason.AthleteId`),
   but only for plays since 2026-07-22. Phase 3.
 - **Milestones based on career totals**: career data is thin and stale for NCAA.
-  Season milestones (crossing 1,000 rushing yards) are fine, using the season sum.
+  Season milestones (crossing 1,000 rushing yards) are fine, using the season sum,
+  but they are Phase 2 (task 14): they need a yardage event for every run and catch.
 
 ## Stage 4: select
 
@@ -379,7 +380,7 @@ reversed play could stand.
   streamed competition), **default `false`**. While we're tuning, analysis runs only
   for the handful of games an operator picks, not every game we stream, so the noise
   stays contained.
-  - **Rule:** the consumer runs only when the kill switch is on **and** the play's competition has a stream row with `LiveAnalysisEnabled = true`.
+  - **Rule:** analysis runs only when the kill switch is on (checked by the consumer) **and** the play's competition has a stream row with `LiveAnalysisEnabled = true` (checked by the job).
   - **How it's set:** an operator sets it per game (SQL at first, then an admin endpoint or toggle on the existing stream tooling). It needs a Producer migration.
   - **Later:** once tidbits are trusted, the default can flip, or the flag can be set automatically when streams are scheduled.
   - **Replays:** lab replays bypass the flag. They run the pipeline directly for a completed game, which may have no stream row.
@@ -387,7 +388,7 @@ reversed play could stand.
   - Replay a completed game through the existing contest replay service (`FootballContestReplayService` re-publishes every stored play with a 1-second delay).
   - Show the tidbits each play would produce, including the candidates that selection rejected and why.
   - Rate them 0-4 to tune thresholds and templates.
-- **Replay doesn't reproduce past "as of" data.** It runs against today's data, so a season count during a replay of a game played weeks ago includes later games. The lab must compute "as of" the replayed game: season sums restricted to competitions that started before it. That restriction is needed anyway for correctness.
+- **Replay doesn't reproduce past "as of" data.** It runs against today's data, so a season count during a replay of a game played weeks ago includes later games. **Decided (2026-10-10):** the lab uses only a season document written before the replayed game's kickoff, and drops the season fact otherwise. Season documents are rewritten in place (no history), so most past games have none and show season facts as dropped; game facts replay exactly. See tasks 06 and 09.
 
 ## Phases
 
@@ -409,7 +410,9 @@ reversed play could stand.
    then enrich them.
 4. **Display:** on for everyone once live.
 5. **Explosive-play thresholds and fact-type priorities:** in code for now; they
-   move to the database (Phase 2).
+   move to the database (Phase 2). Explosive run ≥ 10 yards, explosive pass ≥ 20 yards.
+6. **Season milestones:** Phase 2 (task 14), like conference and national
+   analysis. Phase 1 classifies only explosive runs and passes, not every run and catch.
 
 ## Known data gaps (from the 2026-10-10 survey)
 

@@ -1,6 +1,6 @@
 # 04. Classifier
 
-**Feature:** [Instant Analysis](instant-analysis.md) · **Phase:** 1 (proof of concept) · **Status:** not started
+**Feature:** [Instant Analysis](instant-analysis.md) · **Phase:** 1 (proof of concept) · **Status:** done 2026-10-10 (uncommitted)
 
 **Depends on:** [01 Data spike](01-data-spike.md), [03 Trigger](03-trigger.md)
 
@@ -36,3 +36,23 @@ Turn a play into a kind, an actor (and sometimes a victim), and the fact familie
 ## Notes
 
 - Use `EspnFootballNcaaEventCompetitionPlays.json` (Producer unit test data) for fixture plays.
+
+## Outcome (2026-10-10)
+
+`src/SportsData.Producer/Application/Competitions/InstantAnalysis/PlayClassifier.cs`, called by the analysis job
+after the play loads (logged as "Play classified" with kinds, actors and victims).
+
+- A play yields zero or more `PlayEvent(Kind, Actors, Victim)`; a long touchdown pass yields three (passing TD,
+  receiving TD, explosive pass).
+- Kinds and roles (from the task 01 findings): Interception (26, 36, 63; actor `passDefender`, victim `passer`),
+  Sack (7; every `sackedBy`, so split sacks credit both), FumbleLost (29; actor `recoverer`, victim `fumbler`),
+  PassingTouchdown + ReceivingTouchdown (67), RushingTouchdown (68), ExplosiveRun (5, 68), ExplosivePass (24, 67;
+  credits passer and receiver).
+- Thresholds in code: explosive run ≥ 10 yards, explosive pass ≥ 20 yards (set 2026-10-10; Phase 2 moves them
+  to the database).
+- Classifies on the stored ESPN `TypeId`, not the mapped enum column. Matches roles by name, never by order.
+- Type 63 interceptions keep the event with no actor, so victim facts (passer's interceptions thrown) still work.
+  Touchdowns and explosive plays with nobody credited are dropped. Unresolved athletes are never credited.
+- Out of Phase 1: safeties (20), field goals, return TDs, fumble return TD (39).
+- Tests: `PlayClassifierTests` (each kind, thresholds at the boundary, split sacks, type 63, unresolved athletes,
+  unknown and out-of-scope types).

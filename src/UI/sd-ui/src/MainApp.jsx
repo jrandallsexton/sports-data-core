@@ -40,6 +40,7 @@ import AdminPromptsPage from "./components/admin/AdminPromptsPage";
 import AdminModelsPage from "./components/admin/AdminModelsPage";
 import AdminModelLabPage from "./components/admin/AdminModelLabPage";
 import AdminSmackLabPage from "./components/admin/AdminSmackLabPage";
+import AdminInstantAnalysisLabPage from "./components/admin/AdminInstantAnalysisLabPage";
 import AdminWidgetsPage from "./components/admin/AdminWidgetsPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
@@ -309,6 +310,14 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminSmackLabPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/instant-analysis-lab"
+              element={
+                <AdminRoute>
+                  <AdminInstantAnalysisLabPage />
                 </AdminRoute>
               }
             />

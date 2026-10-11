@@ -49,16 +49,18 @@ public class RatePlayAnalysisCommandHandler : IRatePlayAnalysisCommandHandler
                 [new ValidationFailure(nameof(stars), "Stars must be between 0 and 4.")]);
         }
 
+        // Lab facts only: a live fact (no run) is what users saw, and rating
+        // it would mix live rows into the lab's dataset.
         var factExists = await _dataContext.PlayAnalyses
             .AsNoTracking()
-            .AnyAsync(x => x.Id == playAnalysisId, cancellationToken);
+            .AnyAsync(x => x.Id == playAnalysisId && x.AnalysisRunId != null, cancellationToken);
 
         if (!factExists)
         {
             return new Failure<PlayAnalysisRatingDto>(
                 default!,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(playAnalysisId), "Fact not found.")]);
+                [new ValidationFailure(nameof(playAnalysisId), "Lab fact not found.")]);
         }
 
         var now = _dateTimeProvider.UtcNow();

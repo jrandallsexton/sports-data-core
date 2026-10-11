@@ -10,11 +10,26 @@
  * @returns {Array<{id: string, factType: string, text: string}>|null}
  */
 export function playAnalysisForLastPlay(liveUpdate) {
-  const analysis = liveUpdate?.lastPlayAnalysis;
-  if (!analysis || !liveUpdate.lastPlayId || analysis.playId !== liveUpdate.lastPlayId) {
-    return null;
-  }
-  return analysis.items?.length ? analysis.items : null;
+  const lastPlayId = liveUpdate?.lastPlayId;
+  const items = lastPlayId ? liveUpdate.playAnalysisByPlayId?.[lastPlayId] : null;
+  return items?.length ? items : null;
+}
+
+/** How many plays' analyses a contest keeps; enough to cover an analysis arriving a play early or late. */
+export const PLAY_ANALYSIS_KEEP = 4;
+
+/**
+ * Adds one play's facts to a contest's map, keeping the most recently added
+ * PLAY_ANALYSIS_KEEP plays. Returns a new object.
+ *
+ * @param {Record<string, Array>|undefined} byPlayId
+ * @param {string} playId
+ * @param {Array} items
+ */
+export function withPlayAnalysis(byPlayId, playId, items) {
+  const entries = Object.entries(byPlayId ?? {}).filter(([id]) => id !== playId);
+  entries.push([playId, items]);
+  return Object.fromEntries(entries.slice(-PLAY_ANALYSIS_KEEP));
 }
 
 /**

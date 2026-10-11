@@ -40,7 +40,7 @@ public class FootballPlayCompletedConsumerHandlerTests : ProducerTestBase<Footba
     }
 
     [Fact]
-    public async Task Process_WhenGameOptedIn_AnalysesLive_WithTheNewestSeasonDocuments()
+    public async Task Process_WhenGameOptedIn_AnalysesLive_WithPreKickoffSeasonDocuments()
     {
         var (competitionId, playId) = await SeedPlay(liveAnalysisEnabled: true);
         var evt = FootballPlayCompletedConsumerTests.BuildEvent(competitionId, playId);
@@ -48,7 +48,7 @@ public class FootballPlayCompletedConsumerHandlerTests : ProducerTestBase<Footba
         await _sut.Process(evt);
 
         Mocker.GetMock<IPlayAnalyser>().Verify(x => x.Analyse(
-                playId, evt.ContestId, evt.CorrelationId, null, SeasonDocumentRule.Newest),
+                playId, evt.ContestId, evt.CorrelationId, null, SeasonDocumentRule.BeforeKickoff),
             Times.Once);
     }
 

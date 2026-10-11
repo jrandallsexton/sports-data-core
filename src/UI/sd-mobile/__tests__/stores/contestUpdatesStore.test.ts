@@ -314,6 +314,16 @@ describe('contestUpdatesStore', () => {
       expect(shown()).toBeNull();
     });
 
+    it("keeps the next play's facts that arrive before it while the current play's are showing", () => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'first'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p2', 'early'));
+      expect(shown()?.[0].text).toBe('first');
+
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p2'));
+      expect(shown()?.[0].text).toBe('early');
+    });
+
     it("never lets a late analysis for an older play replace the current play's", () => {
       useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
       useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p2'));

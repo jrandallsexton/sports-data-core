@@ -60,6 +60,18 @@ describe("ContestUpdatesContext play analysis", () => {
     expect(shown(result)).toBeNull();
   });
 
+  it("keeps the next play's facts that arrive before it while the current play's are showing", () => {
+    const { result } = setup();
+
+    act(() => result.current.handleFootballPlayCompleted(play("p1")));
+    act(() => result.current.handlePlayAnalysis(analysis("p1", "first")));
+    act(() => result.current.handlePlayAnalysis(analysis("p2", "early")));
+    expect(shown(result)?.[0].text).toBe("first");
+
+    act(() => result.current.handleFootballPlayCompleted(play("p2")));
+    expect(shown(result)?.[0].text).toBe("early");
+  });
+
   it("never lets a late analysis for an older play replace the current play's", () => {
     const { result } = setup();
 

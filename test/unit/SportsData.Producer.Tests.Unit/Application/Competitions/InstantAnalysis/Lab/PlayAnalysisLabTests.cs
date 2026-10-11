@@ -64,6 +64,18 @@ public class PlayAnalysisLabTests : ProducerTestBase<RunPlayAnalysisLabCommandHa
     }
 
     [Fact]
+    public async Task Run_GameNotFinalized_IsRejectedWithoutARun()
+    {
+        var (contestId, _) = await SeedGame(finalized: false, "1", "2");
+
+        var result = await Mocker.CreateInstance<RunPlayAnalysisLabCommandHandler>().ExecuteAsync(contestId, Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.Validation);
+        FootballDataContext.PlayAnalysisRuns.Should().BeEmpty();
+        Mocker.GetMock<IPlayAnalyser>().VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task GetRun_ListsEveryPlay_WithFactsRatingsAndDrops()
     {
         var (contestId, playIds) = await SeedGame("1", "2");
@@ -142,6 +154,30 @@ public class PlayAnalysisLabTests : ProducerTestBase<RunPlayAnalysisLabCommandHa
     }
 
     [Fact]
+    public async Task Rate_LiveFact_IsNotFound()
+    {
+        var (contestId, playIds) = await SeedGame("1");
+        var factId = Guid.NewGuid();
+        FootballDataContext.PlayAnalyses.Add(new PlayAnalysis
+        {
+            Id = factId,
+            ContestId = contestId,
+            CompetitionId = FootballDataContext.Competitions.Single().Id,
+            PlayId = playIds["1"],
+            AnalysisRunId = null,
+            FactType = FactTypes.GameCount,
+            Text = "x",
+            CreatedUtc = FixedTestNow
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<RatePlayAnalysisCommandHandler>().ExecuteAsync(factId, 3, Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.NotFound);
+        FootballDataContext.PlayAnalysisRatings.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Rate_UnknownFact_IsNotFound()
     {
         var result = await Mocker.CreateInstance<RatePlayAnalysisCommandHandler>().ExecuteAsync(Guid.NewGuid(), 2, Guid.NewGuid());
@@ -149,10 +185,27 @@ public class PlayAnalysisLabTests : ProducerTestBase<RunPlayAnalysisLabCommandHa
         result.Status.Should().Be(ResultStatus.NotFound);
     }
 
-    private async Task<(Guid ContestId, Dictionary<string, Guid> PlayIds)> SeedGame(params string[] sequences)
+    private Task<(Guid ContestId, Dictionary<string, Guid> PlayIds)> SeedGame(params string[] sequences) =>
+        SeedGame(finalized: true, sequences);
+
+    private async Task<(Guid ContestId, Dictionary<string, Guid> PlayIds)> SeedGame(bool finalized, params string[] sequences)
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
+
+        FootballDataContext.Contests.Add(new FootballContest
+        {
+            Id = contestId,
+            Name = "Test",
+            ShortName = "TST",
+            SeasonYear = 2026,
+            Sport = Sport.FootballNcaa,
+            StartDateUtc = FixedTestNow.AddHours(-4),
+            FinalizedUtc = finalized ? FixedTestNow.AddHours(-1) : null,
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            CreatedUtc = FixedTestNow
+        });
 
         FootballDataContext.Competitions.Add(new FootballCompetition
         {

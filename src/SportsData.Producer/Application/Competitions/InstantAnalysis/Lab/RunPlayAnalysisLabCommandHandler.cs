@@ -63,19 +63,34 @@ public class RunPlayAnalysisLabCommandHandler : IRunPlayAnalysisLabCommandHandle
             ["CorrelationId"] = correlationId
         });
 
-        var competitionId = await _dataContext.Competitions
+        var game = await _dataContext.Competitions
             .AsNoTracking()
             .Where(x => x.ContestId == contestId)
-            .Select(x => (Guid?)x.Id)
+            .Select(x => new { x.Id, x.Contest.FinalizedUtc })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (competitionId is null)
+        if (game is null)
         {
             return new Failure<PlayAnalysisRunSummaryDto>(
                 default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(contestId), "No competition found for this contest.")]);
         }
+
+        // The lab replays FINISHED games: a game in progress has only part of
+        // its plays, so the run's counts and ratings would mislead. An admin
+        // replay clears FinalizedUtc while it runs, so that game is refused
+        // until the replay ends.
+        if (game.FinalizedUtc is null)
+        {
+            return new Failure<PlayAnalysisRunSummaryDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(contestId),
+                    "This game isn't finalized (or an admin replay of it is running). The lab replays finished games only.")]);
+        }
+
+        var competitionId = game.Id;
 
         var plays = await _dataContext.CompetitionPlays
             .AsNoTracking()
@@ -95,7 +110,7 @@ public class RunPlayAnalysisLabCommandHandler : IRunPlayAnalysisLabCommandHandle
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CompetitionId = competitionId.Value,
+            CompetitionId = competitionId,
             TemplateVersion = FactPhraser.TemplateVersion,
             CreatedUtc = _dateTimeProvider.UtcNow(),
             CreatedBy = correlationId

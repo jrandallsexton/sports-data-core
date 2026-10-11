@@ -52,9 +52,11 @@ which loads the game's kickoff and the season documents of the play's actors and
 
 - Season count = the season document's value + this game's qualifying plays up to and including this one.
   `SeasonLongest` must be strictly longer than both the document's long and the athlete's earlier plays today.
-- **Which document (decided 2026-10-10):** live uses the newest; a lab replay uses only a document written before
-  the game's kickoff. No qualifying document drops the fact, with the reason. The cutoff is a parameter of the
-  loader; the live job passes none, and task 09 passes the kickoff.
+- **Which document (decided 2026-10-10, changed 2026-10-11):** live and lab replay both use only a document written
+  before the game's kickoff. No qualifying document drops the fact, with the reason. Live originally used the newest
+  document; the PR #838 review pointed out the spike's own numbers (54 of 2,267 mid-game documents already included
+  part of the live game), so a mid-game rewrite now drops the season fact instead of risking a double count. The
+  `Newest` rule remains in code but nothing uses it.
 - **Season documents have no history.** `AthleteSeasonStatisticsDocumentProcessor` deletes and re-inserts the row
   under the same id on every refresh, so `CreatedUtc` is the last rewrite. (Each athlete-season has two split-0
   rows, from two ESPN refs, written seconds apart with the same values.) Consequence, measured with

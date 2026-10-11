@@ -35,10 +35,17 @@ public record AnalysedPlayParticipant(
 /// <summary>Which season document a season fact may read (task 06).</summary>
 public enum SeasonDocumentRule
 {
-    /// <summary>Live: each athlete's newest document.</summary>
+    /// <summary>
+    /// Each athlete's newest document. Not used by live or the lab: a document
+    /// rewritten mid-game can already include part of the game, which the
+    /// season fact would then count twice (data spike, 01-data-spike-findings.md).
+    /// </summary>
     Newest,
 
-    /// <summary>Lab replay: only a document written before the game's kickoff, which can't include the game.</summary>
+    /// <summary>
+    /// Live and lab replay: only a document written before the game's kickoff,
+    /// which can't include the game. No such document drops the season fact.
+    /// </summary>
     BeforeKickoff
 }
 
@@ -66,9 +73,9 @@ public interface IPlayAnalyser
 {
     /// <summary>
     /// Analyses one play and persists its fact set for the run. Live passes no
-    /// run id and <see cref="SeasonDocumentRule.Newest"/>; a lab replay passes
-    /// its run id and <see cref="SeasonDocumentRule.BeforeKickoff"/>. Doesn't
-    /// check the per-game flag: callers gate.
+    /// run id, a lab replay passes its run id; both use
+    /// <see cref="SeasonDocumentRule.BeforeKickoff"/>. Doesn't check the
+    /// per-game flag: callers gate.
     /// </summary>
     Task<PlayAnalysisOutcome> Analyse(
         Guid playId,

@@ -343,8 +343,8 @@ play's `CorrelationId` from `FootballPlayCompleted`:
 
 ## Stage 8: display
 
-- **Web** (`ContestUpdatesContext`) and **mobile** (`contestUpdatesStore`) store `lastPlayAnalysis` per contest, **keyed by `playId`**.
-- **MatchupCard** shows the tidbit under the last-play line only while `lastPlayAnalysis.playId === lastPlayId`. The tidbit event can arrive after the play event (it's a later hop), and once the next play lands the old tidbit no longer applies.
+- **Web** (`ContestUpdatesContext`) and **mobile** (`contestUpdatesStore`) keep `playAnalysisByPlayId` per contest: the last few plays' facts, **keyed by `playId`**.
+- **MatchupCard** shows the entry for `lastPlayId` under the last-play line. The tidbit event usually arrives after the play event (it's a later hop) but can arrive first; once the next play lands the old tidbit no longer applies.
 - **Styling:** a distinct style, so a tidbit reads as commentary, not as part of the play description.
 - **Optional:** cold-load the latest tidbit from the matchup REST payload.
 - **On for everyone (decided 2026-10-10)** once live. There's no per-user opt-in; the kill switch and the per-game `LiveAnalysisEnabled` flag control rollout.

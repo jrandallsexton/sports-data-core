@@ -12,7 +12,7 @@ Mobile MatchupCards show the facts for the current play, for everyone.
 
 ## Scope
 
-- Subscribe to `"PlayAnalysis"` in the mobile SignalR client; store `lastPlayAnalysis` per contest in `contestUpdatesStore`.
+- Subscribe to `"PlayAnalysis"` in the mobile SignalR client; store the facts per contest, keyed by `playId`, in `contestUpdatesStore`.
 - MatchupCard shows the facts under the last-play line while the `playId` matches, ordered by priority.
 - Add the payload type to `src/types/signalR.ts`.
 
@@ -38,11 +38,11 @@ Mobile MatchupCards show the facts for the current play, for everyone.
 ## Outcome (2026-10-11)
 
 - `src/types/signalR.ts`: `PlayAnalysisItem` and `PlayAnalysisPayload`.
-- `contestUpdatesStore.handlePlayAnalysis` stores `lastPlayAnalysis: { playId, items }` per contest, with the web
-  rule: a late analysis for an older play never replaces the one for the current play.
+- `contestUpdatesStore.handlePlayAnalysis` stores `playAnalysisByPlayId` per contest (the last 4 plays), the same
+  as web (changed from a single `lastPlayAnalysis` slot in the PR #838 review, 2026-10-11).
 - `useSignalRClient` registers `"PlayAnalysis"`.
 - `src/utils/playAnalysis.ts`: `playAnalysisForLastPlay(live)` returns the items only while
-  `lastPlayAnalysis.playId === lastPlayId`; `PLAY_ANALYSIS_MAX_SHOWN` = 2. `MatchupCard` merges it as
+  the map has an entry for `lastPlayId`; `PLAY_ANALYSIS_MAX_SHOWN` = 2. `MatchupCard` merges it as
   `playAnalysis` (new optional field on `Matchup`).
 - `GameStatus` (football in progress) renders the first two facts under the last-play line: centered, 12pt,
   weight 600, primary text colour, against the 11pt italic muted play text. Baseball unchanged.

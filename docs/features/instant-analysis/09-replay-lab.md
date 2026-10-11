@@ -78,3 +78,10 @@ not a shared extraction. Test: `AdminInstantAnalysisLabPage.test.jsx`.
   the team's previous game's final on 09-27).
 - Rating: 2 then 4 stars on one fact leaves one row with 4; 7 stars is rejected (400).
 - Not exercised end to end: the API relay and the web page against a running API (unit-tested only).
+
+## PR #838 review (2026-10-11)
+
+- A lab run requires a finalized game (`Contest.FinalizedUtc`); a game in progress has only part of its plays. An
+  admin replay clears `FinalizedUtc` while it runs, so that game is refused until the replay ends.
+- Ratings accept lab facts only (`AnalysisRunId` set); a live fact returns 404.
+- The API lab routes return 400 for any sport but NCAA/NFL football (Producer has no lab handlers elsewhere).

@@ -65,7 +65,10 @@ public class FootballPlayCompletedConsumerHandler : IFootballPlayCompletedConsum
             return;
         }
 
-        // Live analysis: no run id, and each athlete's newest season document.
-        await _analyser.Analyse(evt.PlayId, evt.ContestId, evt.CorrelationId, analysisRunId: null, SeasonDocumentRule.Newest);
+        // Live analysis: no run id, and only season documents written before
+        // kickoff. A document rewritten mid-game can already include part of
+        // this game, and the season fact would count it twice; a missing one
+        // drops the fact instead (decided 2026-10-11, PR #838 review).
+        await _analyser.Analyse(evt.PlayId, evt.ContestId, evt.CorrelationId, analysisRunId: null, SeasonDocumentRule.BeforeKickoff);
     }
 }

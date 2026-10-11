@@ -12,8 +12,8 @@ Web MatchupCards show the facts for the current play, for everyone.
 
 ## Scope
 
-- Register `"PlayAnalysis"` in `useSignalRClient.js`; store `lastPlayAnalysis` per contest in `ContestUpdatesContext`, keyed by `playId`.
-- MatchupCard shows the facts under the last-play line only while `lastPlayAnalysis.playId === lastPlayId`, ordered by priority.
+- Register `"PlayAnalysis"` in `useSignalRClient.js`; store the facts per contest in `ContestUpdatesContext`, keyed by `playId`.
+- MatchupCard shows the facts for `lastPlayId` under the last-play line, ordered by priority.
 - A distinct style so facts read as commentary.
 - On for everyone (decision 4).
 
@@ -38,10 +38,12 @@ Web MatchupCards show the facts for the current play, for everyone.
 ## Outcome (2026-10-10)
 
 - `useSignalRClient.js` registers `"PlayAnalysis"` (`onPlayAnalysis`), wired in `MainApp.jsx` to
-  `ContestUpdatesContext.handlePlayAnalysis`, which stores `lastPlayAnalysis: { playId, items }` per contest.
-  A late analysis for an older play never replaces the one for the current play.
+  `ContestUpdatesContext.handlePlayAnalysis`, which stores `playAnalysisByPlayId` per contest (the last
+  `PLAY_ANALYSIS_KEEP` = 4 plays; `withPlayAnalysis`). Originally a single `lastPlayAnalysis` slot guarded against
+  older plays; the PR #838 review showed that guard dropped facts for the NEXT play when they arrived before it, so
+  it became a small map (2026-10-11).
 - `utils/playAnalysis.js`: `playAnalysisForLastPlay(liveUpdate)` returns the items only while
-  `lastPlayAnalysis.playId === lastPlayId` (so facts that arrive before their play wait for it, and facts for an
+  the map has an entry for `lastPlayId` (so facts that arrive before their play wait for it, and facts for an
   older play never show). Used by the `PicksPage` merge and the admin Football page's observer card.
 - `MatchupCard` → `GameStatus` → `FootballGameStatusInProgress` renders the first `PLAY_ANALYSIS_MAX_SHOWN` (2)
   items under the last-play line, in the order delivered (priority order), styled `.live-state-analysis`: an accent

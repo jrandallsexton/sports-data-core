@@ -14,11 +14,26 @@ import type { PlayAnalysisItem } from '@/src/types/signalR';
 export function playAnalysisForLastPlay(
   live: ContestLiveRecord | undefined,
 ): PlayAnalysisItem[] | null {
-  const analysis = live?.lastPlayAnalysis;
-  if (!analysis || !live?.lastPlayId || analysis.playId !== live.lastPlayId) {
-    return null;
-  }
-  return analysis.items.length > 0 ? analysis.items : null;
+  const lastPlayId = live?.lastPlayId;
+  const items = lastPlayId ? live?.playAnalysisByPlayId?.[lastPlayId] : undefined;
+  return items && items.length > 0 ? items : null;
+}
+
+/** How many plays' analyses a contest keeps; enough to cover an analysis arriving a play early or late. */
+export const PLAY_ANALYSIS_KEEP = 4;
+
+/**
+ * Adds one play's facts to a contest's map, keeping the most recently added
+ * PLAY_ANALYSIS_KEEP plays. Returns a new object. Mirrors web.
+ */
+export function withPlayAnalysis(
+  byPlayId: Record<string, PlayAnalysisItem[]> | undefined,
+  playId: string,
+  items: PlayAnalysisItem[],
+): Record<string, PlayAnalysisItem[]> {
+  const entries = Object.entries(byPlayId ?? {}).filter(([id]) => id !== playId);
+  entries.push([playId, items]);
+  return Object.fromEntries(entries.slice(-PLAY_ANALYSIS_KEEP));
 }
 
 /**

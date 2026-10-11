@@ -1,5 +1,6 @@
 -- Audit: how often "longest run of the game" fires across 2026 NCAA games (Database: sdProducer.FootballNcaa).
--- fires = current rule (>= 10 yards and longer than every earlier run); fires_if_beats_explosive = must beat an earlier 10+ yard run.
+-- fires = original rule (>= 10 yards and longer than every earlier run); fires_if_beats_explosive = must beat an earlier
+-- 10+ yard run, which became the rule on 2026-10-11 (about 1.65 per game vs 2.65 across 704 games).
 WITH runs AS (
   SELECT p."CompetitionId", p."SequenceNumber"::bigint seq, p."StatYardage" y,
          max(p."StatYardage") OVER (PARTITION BY p."CompetitionId" ORDER BY p."SequenceNumber"::bigint

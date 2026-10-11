@@ -203,14 +203,20 @@ public static class GameFacts
         var typeIds = evt.Kind == PlayKind.ExplosiveRun
             ? new[] { ((int)PlayType.Rush).ToString(), ((int)PlayType.RushingTouchdown).ToString() }
             : new[] { ((int)PlayType.PassReception).ToString(), ((int)PlayType.PassingTouchdown).ToString() };
+        var explosiveYards = evt.Kind == PlayKind.ExplosiveRun
+            ? PlayClassifier.ExplosiveRunYards
+            : PlayClassifier.ExplosivePassYards;
 
+        // "The longest of the game" means it beat an earlier big play: the
+        // game's first explosive run or catch only beat short ones, so it
+        // says nothing.
         var previousBest = upToNow
-            .Where(p => p.Sequence < sequence && typeIds.Contains(p.TypeId))
+            .Where(p => p.Sequence < sequence && typeIds.Contains(p.TypeId) && p.StatYardage >= explosiveYards)
             .Select(p => (int?)p.StatYardage)
             .Max();
 
         // Strictly longer: a tie isn't "the longest".
-        if (previousBest is not null && play.StatYardage <= previousBest)
+        if (previousBest is null || play.StatYardage <= previousBest)
             return;
 
         var actor = evt.Actors.Count > 0 ? evt.Actors[^1] : (Guid?)null;

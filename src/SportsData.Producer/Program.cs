@@ -286,6 +286,14 @@ public class Program
                 case Sport.FootballNfl:
                     var context = appServices.GetRequiredService<FootballDataContext>();
                     await context.Database.MigrateAsync();
+
+                    // The kill switch drops plays silently when off, so state
+                    // it once at startup where Seq shows it.
+                    var instantAnalysis = appServices.GetRequiredService<InstantAnalysisConfig>();
+                    app.Logger.LogInformation(
+                        "Instant analysis kill switch: Enabled={InstantAnalysisEnabled} ({InstantAnalysisKey})",
+                        instantAnalysis.Enabled,
+                        InstantAnalysisConfig.EnabledKey);
                     break;
                 case Sport.BaseballMlb:
                     var baseballContext = appServices.GetRequiredService<BaseballDataContext>();

@@ -46,7 +46,7 @@ which loads the game's plays (with participants) and its two competitors in two 
 | `GameCount` | interception, sack, fumble lost, passing/receiving/rushing TD | the actor's Nth today |
 | `GameCountAgainst` | interception, sack, fumble lost | the victim's Nth today (interceptions thrown, times sacked, fumbles lost) |
 | `TeamGameCount` | interception, fumble lost (takeaways together); sack | the defense's Nth today |
-| `GameLongest` | explosive run, explosive pass | strictly longer than every earlier run (or pass) in the game |
+| `GameLongest` | explosive run, explosive pass | strictly longer than an earlier explosive run (10+ yards) or catch (20+ yards) in the game; the game's first explosive play never qualifies (decision 2026-10-11) |
 
 - "As of this play": plays with sequence ≤ this play's; later plays are ignored (needed for lab replays).
 - Earlier plays are classified with the same `PlayClassifier`, so counts and the play use one definition.

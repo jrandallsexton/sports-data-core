@@ -109,13 +109,34 @@ public class GameFactsTests
     }
 
     [Fact]
-    public void FirstExplosiveRun_IsTheGameLongest_EvenWithNoEarlierRuns()
+    public void LongerExplosiveRun_RecordsTheRunItBeat()
+    {
+        var result = Compute([Rush(10, Away, Guid.NewGuid(), 30), Rush(30, Home, HomeRusher, 35)], sequence: 30);
+
+        Fact(result, FactTypes.GameLongest, HomeRusher).Provenance["previousLongest"].Should().Be(30);
+    }
+
+    [Fact]
+    public void FirstExplosiveRun_IsNotTheGameLongest_WithNoEarlierRuns()
     {
         var result = Compute([Rush(30, Home, HomeRusher, 22)], sequence: 30);
 
-        var fact = Fact(result, FactTypes.GameLongest, HomeRusher);
-        fact.Value.Should().Be(22);
-        fact.Provenance["previousLongest"].Should().BeNull();
+        result.Facts.Should().NotContain(f => f.FactType == FactTypes.GameLongest);
+    }
+
+    [Fact]
+    public void FirstExplosiveRun_IsNotTheGameLongest_WhenItOnlyBeatShortRuns()
+    {
+        var game = new List<GamePlay>
+        {
+            Rush(10, Away, Guid.NewGuid(), 0),
+            Rush(20, Away, Guid.NewGuid(), PlayClassifier.ExplosiveRunYards - 1),
+            Rush(30, Home, HomeRusher, 17)
+        };
+
+        var result = Compute(game, sequence: 30);
+
+        result.Facts.Should().NotContain(f => f.FactType == FactTypes.GameLongest);
     }
 
     [Fact]

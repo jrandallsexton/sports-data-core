@@ -1,6 +1,7 @@
 # Instant Analysis
 
-**Status:** planning (2026-10-10). Nothing is built yet.
+**Status:** in progress. Tasks 01-11 done (2026-10-11): live facts are generated in Producer, delivered over
+SignalR and shown on web MatchupCards. Phase 1 still needs 12 (mobile) and 13 (cold-load).
 
 **Scope of v1:** NCAAFB live games. NFL rides along later; MLB is a separate phase.
 

@@ -12,9 +12,14 @@ namespace SportsData.Producer.Application.Contests.Commands.ReplayFootballContes
 {
     public interface IFootballContestReplayService
     {
+        /// <param name="intervalSeconds">
+        /// Pause between plays, from <see cref="FootballContestReplayService.MinIntervalSeconds"/>
+        /// to <see cref="FootballContestReplayService.MaxIntervalSeconds"/>; the caller validates.
+        /// </param>
         Task ReplayContest(
             Guid contestId,
             Guid correlationId,
+            int intervalSeconds,
             CancellationToken ct = default);
     }
 
@@ -27,6 +32,14 @@ namespace SportsData.Producer.Application.Contests.Commands.ReplayFootballContes
     /// </summary>
     public class FootballContestReplayService : IFootballContestReplayService
     {
+        /// <summary>Pause between plays when the caller doesn't choose one.</summary>
+        public const int DefaultIntervalSeconds = 1;
+
+        public const int MinIntervalSeconds = 1;
+
+        /// <summary>Upper bound so a typo can't park a Hangfire worker for an hour.</summary>
+        public const int MaxIntervalSeconds = 60;
+
         private readonly ILogger<FootballContestReplayService> _logger;
         private readonly FootballDataContext _dataContext;
         private readonly IEventBus _eventBus;
@@ -47,11 +60,12 @@ namespace SportsData.Producer.Application.Contests.Commands.ReplayFootballContes
         public async Task ReplayContest(
             Guid contestId,
             Guid correlationId,
+            int intervalSeconds,
             CancellationToken ct = default)
         {
             _logger.LogInformation(
-                "FootballReplay: starting. ContestId={ContestId}, CorrelationId={CorrelationId}",
-                contestId, correlationId);
+                "FootballReplay: starting. ContestId={ContestId}, IntervalSeconds={IntervalSeconds}, CorrelationId={CorrelationId}",
+                contestId, intervalSeconds, correlationId);
 
             // remove finalization data from the contest
             var contest = await _dataContext.Contests
@@ -194,14 +208,14 @@ namespace SportsData.Producer.Application.Contests.Commands.ReplayFootballContes
                         "FootballReplay: published FootballPlayCompleted. PlayId={PlayId}, SequenceNumber={SequenceNumber}, Period=Q{Period}, Clock={Clock}, Score={Away}-{Home}, Scoring={Scoring}, EmittedCount={EmittedCount}/{TotalPlays}, ContestId={ContestId}, CorrelationId={CorrelationId}",
                         play.Id, play.SequenceNumber, play.PeriodNumber, play.ClockDisplayValue ?? "UNK", play.AwayScore, play.HomeScore, play.ScoringPlay, emittedCount, plays.Count, contestId, correlationId);
 
-                    await Task.Delay(1000, ct);
+                    await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), ct);
                 }
 
                 // Lifecycle bookend — InProgress→Final. Published after
                 // the last play so the UI transitions out of the live
-                // layout once the replay ends. The 1-sec inter-play pace
-                // above means there's already a beat between the final
-                // play and this transition. Mirrors the symmetric
+                // layout once the replay ends. The inter-play pause above
+                // means there's already a beat between the final play and
+                // this transition. Mirrors the symmetric
                 // InProgress publish at the top of the try block.
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,

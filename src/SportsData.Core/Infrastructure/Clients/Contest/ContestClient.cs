@@ -82,7 +82,8 @@ public interface IProvideContests : IProvideHealthChecks
     /// followed by a <c>FootballPlayCompleted</c> / <c>BaseballPlayCompleted</c>
     /// per stored play (sport-keyed by the running Producer pod).
     /// </summary>
-    Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default);
+    /// <param name="intervalSeconds">Seconds between plays (football); null = Producer's default.</param>
+    Task<Result<bool>> ReplayContest(Guid contestId, int? intervalSeconds = null, CancellationToken cancellationToken = default);
 
     // Instant-analysis replay lab (admin). Football Producers only.
 
@@ -274,7 +275,7 @@ public class ContestClient : ClientBase, IProvideContests
             cancellationToken);
     }
 
-    public async Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> ReplayContest(Guid contestId, int? intervalSeconds = null, CancellationToken cancellationToken = default)
     {
         if (contestId == Guid.Empty)
         {
@@ -284,8 +285,12 @@ public class ContestClient : ClientBase, IProvideContests
                 [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
         }
 
+        var url = intervalSeconds is null
+            ? $"contests/{contestId}/replay"
+            : $"contests/{contestId}/replay?intervalSeconds={intervalSeconds.Value}";
+
         return await PostWithResultAsync(
-            $"contests/{contestId}/replay",
+            url,
             "ReplayContest",
             cancellationToken);
     }

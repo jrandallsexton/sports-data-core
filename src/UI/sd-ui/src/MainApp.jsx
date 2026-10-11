@@ -109,6 +109,7 @@ function MainApp() {
     handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
+    handlePlayAnalysis,
   } = useContestUpdates();
 
   // Memoize callbacks so useSignalRClient's effect (which lists each
@@ -141,12 +142,17 @@ function MainApp() {
     handleBaseballPlayCompleted(data);
   }, [handleBaseballPlayCompleted]);
 
+  const onPlayAnalysis = useCallback((data) => {
+    handlePlayAnalysis(data);
+  }, [handlePlayAnalysis]);
+
   useSignalRClient({
     onPreviewCompleted,
     onContestStatusChanged,
     onContestFinalized,
     onFootballPlayCompleted,
     onBaseballPlayCompleted,
+    onPlayAnalysis,
   });
 
   return (

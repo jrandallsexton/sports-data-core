@@ -198,6 +198,7 @@ public class ContestsController : ControllerBase
         [FromRoute] string sport,
         [FromRoute] string league,
         [FromRoute] Guid contestId,
+        [FromQuery] int? intervalSeconds,
         [FromServices] IContestClientFactory contestClientFactory,
         CancellationToken cancellationToken = default)
     {
@@ -208,7 +209,7 @@ public class ContestsController : ControllerBase
 
         var result = await contestClientFactory
             .Resolve(mode)
-            .ReplayContest(contestId, cancellationToken);
+            .ReplayContest(contestId, intervalSeconds, cancellationToken);
 
         return result.ToActionResult();
     }

@@ -109,8 +109,13 @@ const AdminApi = {
   // SignalR pipeline end-to-end against a real game.
   replayBaseballContest: (contestId) =>
     apiClient.post(`/api/baseball/mlb/contests/${contestId}/replay`),
-  replayFootballContest: (contestId, league) =>
-    apiClient.post(`/api/football/${league || 'ncaa'}/contests/${contestId}/replay`),
+  // intervalSeconds (1-60) = pause between plays; omitted = Producer's default.
+  replayFootballContest: (contestId, league, intervalSeconds) =>
+    apiClient.post(
+      `/api/football/${league || 'ncaa'}/contests/${contestId}/replay`,
+      null,
+      intervalSeconds ? { params: { intervalSeconds } } : undefined
+    ),
 
   // Re-run enrichment for a single contest. Clears UserPick scoring
   // fields and asks Producer to clear the Contest derived fields and

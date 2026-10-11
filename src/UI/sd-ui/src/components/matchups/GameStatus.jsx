@@ -80,6 +80,8 @@ function GameStatus({
   runnerOnSecond,
   runnerOnThird,
   lastPlayDescription,
+  // Instant-analysis facts for the last play (football only), or null.
+  playAnalysis,
   atBatShortName,
   atBatPositionAbbreviation,
   atBatHeadshotUrl,
@@ -212,6 +214,7 @@ function GameStatus({
         statusDescription={statusDescription}
         status={status}
         lastPlayDescription={lastPlayDescription}
+        playAnalysis={playAnalysis}
         contestId={contestId}
         sport={sport}
         league={league}

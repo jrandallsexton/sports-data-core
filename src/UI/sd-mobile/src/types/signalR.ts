@@ -85,6 +85,26 @@ export interface ContestFinalizedPayload {
   completedUtc?: string | null;
 }
 
+/** One instant-analysis fact; `text` is ready to display. */
+export interface PlayAnalysisItem {
+  id: string;
+  factType: string;
+  text: string;
+}
+
+/**
+ * Instant-analysis facts for one live football play
+ * (docs/features/instant-analysis/). Items arrive in display (priority)
+ * order. Keyed by playId: it can arrive before or after the play's
+ * FootballPlayCompleted.
+ */
+export interface PlayAnalysisPayload {
+  contestId: string;
+  competitionId: string;
+  playId: string;
+  items: PlayAnalysisItem[];
+}
+
 export interface BaseballPlayCompletedPayload {
   contestId: string;
   competitionId: string;

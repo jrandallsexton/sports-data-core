@@ -4,6 +4,8 @@ import type {
   ContestFinalizedPayload,
   ContestStatusChangedPayload,
   FootballPlayCompletedPayload,
+  PlayAnalysisItem,
+  PlayAnalysisPayload,
 } from '@/src/types/signalR';
 
 /**
@@ -59,6 +61,10 @@ export interface ContestLiveRecord {
   lastPlayAt?: number;
   lastUpdated?: number;
 
+  /** Instant-analysis facts and the play they belong to; shown only while
+   *  that play is lastPlayId (see utils/playAnalysis). */
+  lastPlayAnalysis?: { playId: string; items: PlayAnalysisItem[] };
+
   // Enrichment-result fields, populated by handleContestFinalized when
   // ContestFinalized fires. MatchupCard's enrichedMatchup merge picks
   // these up so FinalScoreResult / GameStatus can render the cover line
@@ -79,6 +85,7 @@ interface ContestUpdatesState {
   handleContestFinalized: (data: ContestFinalizedPayload) => void;
   handleFootballPlayCompleted: (data: FootballPlayCompletedPayload) => void;
   handleBaseballPlayCompleted: (data: BaseballPlayCompletedPayload) => void;
+  handlePlayAnalysis: (data: PlayAnalysisPayload) => void;
   clearContestUpdate: (contestId: string) => void;
   clearAllUpdates: () => void;
 }
@@ -247,6 +254,40 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
         },
       },
     }));
+  },
+
+  /**
+   * Instant-analysis facts for one live play (docs/features/instant-analysis/).
+   * Stored per contest keyed by playId, so they attach whether they arrive
+   * before or after their play and stop showing once the next play lands.
+   * A late analysis for an OLDER play never replaces the current play's.
+   * Mirrors web's ContestUpdatesContext.handlePlayAnalysis.
+   */
+  handlePlayAnalysis: (data) => {
+    if (!data?.contestId || !data?.playId) return;
+    set((state) => {
+      const current = state.contests[data.contestId];
+      const showingCurrentPlay =
+        current?.lastPlayAnalysis !== undefined &&
+        current.lastPlayAnalysis.playId === current.lastPlayId;
+      if (showingCurrentPlay && data.playId !== current?.lastPlayId) {
+        return state;
+      }
+      return {
+        contests: {
+          ...state.contests,
+          [data.contestId]: {
+            ...current,
+            contestId: data.contestId,
+            lastPlayAnalysis: {
+              playId: data.playId,
+              items: Array.isArray(data.items) ? data.items : [],
+            },
+            lastUpdated: Date.now(),
+          },
+        },
+      };
+    });
   },
 
   clearContestUpdate: (contestId) => {

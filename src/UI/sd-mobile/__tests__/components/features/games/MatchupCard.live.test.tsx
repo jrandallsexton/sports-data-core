@@ -331,6 +331,61 @@ describe('MatchupCard — live updates', () => {
     expect(screen.queryByText(/TOUCHDOWN/)).toBeNull();
   });
 
+  describe('instant analysis', () => {
+    const PLAY = '00000000-0000-0000-0000-0000000000ff';
+    const play = (playId: string, playDescription: string) => ({
+      contestId: CID,
+      competitionId: '00000000-0000-0000-0000-0000000000ee',
+      playId,
+      playDescription,
+      period: 'Q1',
+      clock: '12:38',
+      awayScore: 0,
+      homeScore: 0,
+      possessionFranchiseSeasonId: null,
+      isScoringPlay: false,
+      ballOnYardLine: 31,
+    });
+    const analysis = {
+      contestId: CID,
+      competitionId: '00000000-0000-0000-0000-0000000000ee',
+      playId: PLAY,
+      items: [
+        { id: 'a', factType: 'SeasonCount', text: "T. Cooley's second interception of the season." },
+        { id: 'b', factType: 'GameCount', text: "T. Cooley's first interception of the game." },
+        { id: 'c', factType: 'TeamGameCount', text: "LSU's first takeaway of the game." },
+      ],
+    };
+
+    it('shows the first two facts under the last play', () => {
+      renderWithProviders(<MatchupCard matchup={buildFootballMatchup()} leagueSport="FootballNcaa" />);
+
+      act(() => {
+        useContestUpdatesStore.getState().handleFootballPlayCompleted(play(PLAY, 'J.Strong pass intercepted by T.Cooley'));
+        useContestUpdatesStore.getState().handlePlayAnalysis(analysis);
+      });
+
+      expect(screen.getByTestId('play-analysis')).toBeTruthy();
+      expect(screen.getByText("T. Cooley's second interception of the season.")).toBeTruthy();
+      expect(screen.getByText("T. Cooley's first interception of the game.")).toBeTruthy();
+      expect(screen.queryByText("LSU's first takeaway of the game.")).toBeNull();
+    });
+
+    it('clears the facts when the next play lands', () => {
+      renderWithProviders(<MatchupCard matchup={buildFootballMatchup()} leagueSport="FootballNcaa" />);
+
+      act(() => {
+        useContestUpdatesStore.getState().handleFootballPlayCompleted(play(PLAY, 'J.Strong pass intercepted by T.Cooley'));
+        useContestUpdatesStore.getState().handlePlayAnalysis(analysis);
+        useContestUpdatesStore.getState().handleFootballPlayCompleted(
+          play('00000000-0000-0000-0000-000000000100', 'D.Jones rush for 3 yards'),
+        );
+      });
+
+      expect(screen.queryByTestId('play-analysis')).toBeNull();
+    });
+  });
+
   it('does not subscribe to events for a different contestId', () => {
     const matchup = buildBaseballMatchup();
     renderWithProviders(<MatchupCard matchup={matchup} leagueSport="BaseballMlb" />);

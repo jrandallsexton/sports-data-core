@@ -110,7 +110,7 @@ describe('useSignalRClient', () => {
     jest.restoreAllMocks();
   });
 
-  it('registers handlers for the four SignalR events', async () => {
+  it('registers handlers for the five SignalR events', async () => {
     render(<HookHarness />);
     // Allow the start() promise to resolve.
     await act(async () => { await Promise.resolve(); });
@@ -119,6 +119,7 @@ describe('useSignalRClient', () => {
     expect(mockConnection.on).toHaveBeenCalledWith('ContestFinalized', expect.any(Function));
     expect(mockConnection.on).toHaveBeenCalledWith('FootballPlayCompleted', expect.any(Function));
     expect(mockConnection.on).toHaveBeenCalledWith('BaseballPlayCompleted', expect.any(Function));
+    expect(mockConnection.on).toHaveBeenCalledWith('PlayAnalysis', expect.any(Function));
     expect(mockConnection.start).toHaveBeenCalledTimes(1);
   });
 

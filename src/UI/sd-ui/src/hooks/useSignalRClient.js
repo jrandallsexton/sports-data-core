@@ -12,6 +12,7 @@ export default function useSignalRClient({
   onContestFinalized,
   onFootballPlayCompleted,
   onBaseballPlayCompleted,
+  onPlayAnalysis,
 }) {
   const connectionRef = useRef(null);
 
@@ -73,6 +74,12 @@ export default function useSignalRClient({
       connection.on("BaseballPlayCompleted", onBaseballPlayCompleted);
     }
 
+    // Instant-analysis facts for a live play, keyed by playId (can trail
+    // its *PlayCompleted by a hop).
+    if (onPlayAnalysis) {
+      connection.on("PlayAnalysis", onPlayAnalysis);
+    }
+
     connection
       .start()
       .then(() => {
@@ -98,6 +105,7 @@ export default function useSignalRClient({
     onContestFinalized,
     onFootballPlayCompleted,
     onBaseballPlayCompleted,
+    onPlayAnalysis,
   ]);
 
   return connectionRef.current;

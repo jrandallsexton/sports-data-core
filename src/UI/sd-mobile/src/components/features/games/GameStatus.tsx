@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
+import { PLAY_ANALYSIS_MAX_SHOWN } from '@/src/utils/playAnalysis';
 import type { Matchup, PickType } from '@/src/types/models';
 import { formatToUserTime, getDefaultGameWeekday } from '@/src/utils/timeUtils';
 import { formatBroadcasts } from '@/src/utils/textUtils';
@@ -313,6 +314,8 @@ function FootballInProgress({
   const hasLastPlay =
     typeof matchup.lastPlayDescription === 'string' &&
     matchup.lastPlayDescription.length > 0;
+  // Instant analysis: the first few facts, in delivered (priority) order.
+  const analysis = (matchup.playAnalysis ?? []).slice(0, PLAY_ANALYSIS_MAX_SHOWN);
 
   // Three-tier scoring-label resolution (issue #45), mirroring web's
   // FootballGameStatusInProgress:
@@ -373,6 +376,20 @@ function FootballInProgress({
         >
           {matchup.lastPlayDescription}
         </Text>
+      ) : null}
+
+      {hasLastPlay && analysis.length > 0 ? (
+        <View style={styles.analysisBlock} testID="play-analysis">
+          {analysis.map((item) => (
+            <Text
+              key={item.id}
+              style={[styles.analysisText, { color: theme.text }]}
+              numberOfLines={2}
+            >
+              {item.text}
+            </Text>
+          ))}
+        </View>
       ) : null}
 
       <OverviewLink label="Live Box Score" onPress={onPressGameDetail} theme={theme} />
@@ -627,6 +644,18 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 2,
+  },
+  // Instant analysis under the last play: upright and bolder than the
+  // italic play text so it reads as commentary (web: .live-state-analysis).
+  analysisBlock: {
+    alignItems: 'center',
+    gap: 1,
+    marginTop: 2,
+  },
+  analysisText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   // Baseball-specific InProgress rows
   baseballAtBatRow: {

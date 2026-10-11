@@ -38,6 +38,7 @@ export function useSignalRClient(): void {
   const handleBaseballPlayCompleted = useContestUpdatesStore(
     (s) => s.handleBaseballPlayCompleted,
   );
+  const handlePlayAnalysis = useContestUpdatesStore((s) => s.handlePlayAnalysis);
 
   useEffect(() => {
     const connection = createSignalRConnection({
@@ -66,6 +67,9 @@ export function useSignalRClient(): void {
     connection.on('ContestFinalized', handleContestFinalized);
     connection.on('FootballPlayCompleted', handleFootballPlayCompleted);
     connection.on('BaseballPlayCompleted', handleBaseballPlayCompleted);
+    // Instant-analysis facts for a live play, keyed by playId (can trail
+    // its FootballPlayCompleted by a hop).
+    connection.on('PlayAnalysis', handlePlayAnalysis);
 
     connection
       .start()
@@ -109,5 +113,6 @@ export function useSignalRClient(): void {
     handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
+    handlePlayAnalysis,
   ]);
 }

@@ -45,6 +45,8 @@ GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons    (none)
 GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear} (none)
 GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/contests (none)
 GET    /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/roster (none)
+GET    /api/{sport}/{league}/instant-analysis-lab/contests/{contestId:guid}/runs [AdminApiToken]
+GET    /api/{sport}/{league}/instant-analysis-lab/runs/{runId:guid}    [AdminApiToken]
 GET    /api/{sport}/{league}/seasons/current                           (none)
 GET    /api/{sport}/{league}/venues                                    (none)
 GET    /api/{sport}/{league}/venues/{id}                               (none)
@@ -146,6 +148,7 @@ POST   /api/{sport}/{league}/contests/{contestId:guid}/score           [AdminApi
 POST   /api/{sport}/{league}/franchises/seasons/{seasonYear:int}/source [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/enrich [AdminApiToken]
 POST   /api/{sport}/{league}/franchises/{franchiseIdOrSlug}/seasons/{seasonYear}/source [AdminApiToken]
+POST   /api/{sport}/{league}/instant-analysis-lab/contests/{contestId:guid}/runs [AdminApiToken]
 POST   /system/league-contests/in-use                                  (none)
 POST   /ui/contest/{id}/finalize                                       [AdminApiToken] [Authorize]
 POST   /ui/contest/{id}/media/refresh                                  [AdminApiToken] [Authorize]
@@ -171,4 +174,5 @@ PUT    /api/messageboard/posts/{postId:guid}/reaction                  [Authoriz
 PUT    /api/models/{modelId}                                           [AdminApiToken]
 PUT    /api/prompts/{promptId}                                         [AdminApiToken]
 PUT    /api/smack-lab/phrases/{phraseId:guid}                          [AdminApiToken]
+PUT    /api/{sport}/{league}/instant-analysis-lab/facts/{playAnalysisId:guid}/rating [AdminApiToken]
 PUT    /ui/leagues/{leagueId:guid}/player-lineups/{seasonYear:int}/{seasonWeek:int}/mine/slots/{slotId} [Authorize]

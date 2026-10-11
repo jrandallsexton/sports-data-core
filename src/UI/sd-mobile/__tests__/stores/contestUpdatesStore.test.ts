@@ -4,7 +4,9 @@ import type {
   ContestFinalizedPayload,
   ContestStatusChangedPayload,
   FootballPlayCompletedPayload,
+  PlayAnalysisPayload,
 } from '@/src/types/signalR';
+import { playAnalysisForLastPlay } from '@/src/utils/playAnalysis';
 
 const CID = '00000000-0000-0000-0000-000000000001';
 
@@ -275,6 +277,66 @@ describe('contestUpdatesStore', () => {
       expect(record.ballOnYardLine).toBe(42);
       // And the new fields are present.
       expect(record.winnerFranchiseSeasonId).toBe('11111111-1111-1111-1111-111111111111');
+    });
+  });
+
+  describe('handlePlayAnalysis', () => {
+    const play = (playId: string) => footballPayload({ playId, playDescription: `play ${playId}` });
+    const analysis = (playId: string, text: string): PlayAnalysisPayload => ({
+      contestId: CID,
+      competitionId: '00000000-0000-0000-0000-0000000000aa',
+      playId,
+      items: [{ id: `${playId}-f`, factType: 'GameCount', text }],
+    });
+    const shown = () =>
+      playAnalysisForLastPlay(useContestUpdatesStore.getState().contests[CID]);
+
+    it('attaches facts that arrive after their play', () => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'first'));
+
+      expect(shown()?.[0].text).toBe('first');
+    });
+
+    it('attaches facts that arrive before their play once the play lands', () => {
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'early'));
+      expect(shown()).toBeNull();
+
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      expect(shown()?.[0].text).toBe('early');
+    });
+
+    it('drops the facts when the next play lands', () => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'first'));
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p2'));
+
+      expect(shown()).toBeNull();
+    });
+
+    it("keeps the next play's facts that arrive before it while the current play's are showing", () => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'first'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p2', 'early'));
+      expect(shown()?.[0].text).toBe('first');
+
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p2'));
+      expect(shown()?.[0].text).toBe('early');
+    });
+
+    it("never lets a late analysis for an older play replace the current play's", () => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p1'));
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(play('p2'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p2', 'current'));
+      useContestUpdatesStore.getState().handlePlayAnalysis(analysis('p1', 'stale'));
+
+      expect(shown()?.[0].text).toBe('current');
+    });
+
+    it('ignores payloads missing contestId or playId', () => {
+      useContestUpdatesStore.getState().handlePlayAnalysis({ ...analysis('p1', 'x'), playId: '' });
+
+      expect(useContestUpdatesStore.getState().contests[CID]).toBeUndefined();
     });
   });
 

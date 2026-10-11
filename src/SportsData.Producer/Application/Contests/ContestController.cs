@@ -1,4 +1,6 @@
 ﻿
+using FluentValidation.Results;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -333,15 +335,37 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(correlationId);
         }
 
+        /// <param name="intervalSeconds">
+        /// Football only: seconds between plays (1-60, default 1), so an
+        /// admin can read each play and its analysis. Baseball ignores it.
+        /// </param>
         [HttpPost("{id}/replay")]
-        public IActionResult ReplayContestById([FromRoute] Guid id, CancellationToken cancellationToken)
+        public IActionResult ReplayContestById(
+            [FromRoute] Guid id,
+            [FromQuery] int? intervalSeconds,
+            CancellationToken cancellationToken)
         {
             var correlationId = GetCorrelationIdFromRequest();
 
+            var interval = intervalSeconds ?? FootballContestReplayService.DefaultIntervalSeconds;
+            if (interval is < FootballContestReplayService.MinIntervalSeconds or > FootballContestReplayService.MaxIntervalSeconds)
+            {
+                return BadRequest(new
+                {
+                    Errors = new[]
+                    {
+                        new ValidationFailure(
+                            nameof(intervalSeconds),
+                            $"intervalSeconds must be between {FootballContestReplayService.MinIntervalSeconds} and {FootballContestReplayService.MaxIntervalSeconds}.")
+                    }
+                });
+            }
+
             _logger.LogInformation(
-                "ReplayContest requested. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
+                "ReplayContest requested. ContestId={ContestId}, Sport={Sport}, IntervalSeconds={IntervalSeconds}, CorrelationId={CorrelationId}",
                 id,
                 _appMode.CurrentSport,
+                interval,
                 correlationId);
 
             // Replay services are sport-specific (sport-keyed DataContext);
@@ -354,7 +378,7 @@ namespace SportsData.Producer.Application.Contests
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
                     _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
-                        p => p.ReplayContest(id, correlationId, CancellationToken.None));
+                        p => p.ReplayContest(id, correlationId, interval, CancellationToken.None));
                     break;
                 case Sport.BaseballMlb:
                     _backgroundJobProvider.Enqueue<IBaseballContestReplayService>(
@@ -411,7 +435,7 @@ namespace SportsData.Producer.Application.Contests
                     foreach (var contestId in contestIds)
                     {
                         _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
-                            p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
+                            p => p.ReplayContest(contestId, correlationId, FootballContestReplayService.DefaultIntervalSeconds, CancellationToken.None));
                     }
                     break;
                 case Sport.BaseballMlb:

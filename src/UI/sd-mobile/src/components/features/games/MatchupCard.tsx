@@ -9,6 +9,7 @@ import { DeetsMeter } from './DeetsMeter';
 import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
+import { playAnalysisForCard } from '@/src/utils/playAnalysis';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { useUserOptions } from '@/src/hooks/useUserOptions';
 import { shouldShowGambling } from '@/src/lib/gamblingContent';
@@ -634,6 +635,8 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
       pitchingHeadshotUrl: live.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
       lastPlayId: live.lastPlayId ?? matchup.lastPlayId,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
+      // Instant analysis: only while it belongs to the last play shown.
+      playAnalysis: playAnalysisForCard(live, matchup),
       // Enrichment-result fields, populated by handleContestFinalized.
       // Pre-enrichment these are null on the wire from the matchups GET
       // (the readiness contract documented in FinalScoreResult); the

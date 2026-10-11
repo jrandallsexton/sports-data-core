@@ -111,7 +111,7 @@ public class LeaguesController : ApiControllerBase
         // a Hangfire job per call and returns immediately, so this is
         // a quick burst of HTTP calls — not waiting on play emission.
         var replayResults = await Task.WhenAll(
-            finalContestIds.Select(id => client.ReplayContest(id, cancellationToken)));
+            finalContestIds.Select(id => client.ReplayContest(id, cancellationToken: cancellationToken)));
 
         var succeeded = replayResults.Count(r => r.IsSuccess);
         var failed = replayResults.Length - succeeded;

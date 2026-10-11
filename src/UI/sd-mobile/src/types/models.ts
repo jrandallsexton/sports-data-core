@@ -1,3 +1,5 @@
+import type { PlayAnalysisItem } from '@/src/types/signalR';
+
 // ─── Enums / unions ──────────────────────────────────────────────────────────
 
 // Pick type as used by the backend
@@ -135,6 +137,8 @@ export interface Matchup {
   // Sport-neutral last-play info (written by either *PlayCompleted handler)
   lastPlayId?: string | null;
   lastPlayDescription?: string | null;
+  /** Instant-analysis facts for the last play (live only; see utils/playAnalysis). */
+  playAnalysis?: PlayAnalysisItem[] | null;
 
   // MLB only — null on non-MLB matchups.
   homeProbablePitcher?: ProbablePitcher | null;

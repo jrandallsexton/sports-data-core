@@ -89,8 +89,23 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         var situations = liveEligibleContestIds.Length == 0
             ? new Dictionary<Guid, LiveSituation>()
             : await GetLiveSituationsAsync(liveEligibleContestIds, cancellationToken);
+
+        // Instant analysis for each live game's latest play — the play the
+        // SQL already chose as LastPlayId, so the facts always match the
+        // last-play line beside them.
+        var liveLastPlayIds = matchups
+            .Where(m => m.LastPlayId is not null && liveEligibleContestIds.Contains(m.ContestId))
+            .Select(m => m.LastPlayId!.Value)
+            .Distinct()
+            .ToArray();
+        var playAnalyses = await GetPlayAnalysesAsync(liveLastPlayIds, cancellationToken);
+
         foreach (var matchup in matchups)
         {
+            matchup.PlayAnalysis = matchup.LastPlayId is { } lastPlayId
+                ? playAnalyses.GetValueOrDefault(lastPlayId)
+                : null;
+
             matchup.StreamScheduledTimeUtc = streamTimes.GetValueOrDefault(matchup.ContestId);
 
             if (probables.TryGetValue(matchup.ContestId, out var pair))
@@ -146,6 +161,43 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         "STATUS_CANCELED",
         "STATUS_FORFEIT",
     };
+
+    /// <summary>
+    /// Live instant-analysis facts per play (cold-load, instant-analysis task
+    /// 13), in display order. Live rows only: lab replay runs
+    /// (<c>AnalysisRunId</c> set) never reach a card. One query for the whole
+    /// batch; plays with no facts are absent.
+    /// </summary>
+    internal async Task<Dictionary<Guid, List<PlayAnalysisItemDto>>> GetPlayAnalysesAsync(
+        Guid[] playIds,
+        CancellationToken cancellationToken)
+    {
+        if (playIds.Length == 0)
+        {
+            return new Dictionary<Guid, List<PlayAnalysisItemDto>>();
+        }
+
+        var rows = await _dbContext.PlayAnalyses
+            .AsNoTracking()
+            .Where(x => playIds.Contains(x.PlayId) && x.AnalysisRunId == null)
+            .OrderBy(x => x.PlayId)
+            .ThenBy(x => x.Ordinal)
+            .Select(x => new
+            {
+                x.PlayId,
+                Item = new PlayAnalysisItemDto
+                {
+                    Id = x.Id,
+                    FactType = x.FactType,
+                    Text = x.Text
+                }
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.PlayId)
+            .ToDictionary(g => g.Key, g => g.Select(r => r.Item).ToList());
+    }
 
     internal static Guid[] FilterLiveEligibleContestIds(IReadOnlyCollection<LeagueMatchupDto> matchups) =>
         matchups

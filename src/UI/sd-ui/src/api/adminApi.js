@@ -109,8 +109,13 @@ const AdminApi = {
   // SignalR pipeline end-to-end against a real game.
   replayBaseballContest: (contestId) =>
     apiClient.post(`/api/baseball/mlb/contests/${contestId}/replay`),
-  replayFootballContest: (contestId, league) =>
-    apiClient.post(`/api/football/${league || 'ncaa'}/contests/${contestId}/replay`),
+  // intervalSeconds (1-60) = pause between plays; omitted = Producer's default.
+  replayFootballContest: (contestId, league, intervalSeconds) =>
+    apiClient.post(
+      `/api/football/${league || 'ncaa'}/contests/${contestId}/replay`,
+      null,
+      intervalSeconds ? { params: { intervalSeconds } } : undefined
+    ),
 
   // Re-run enrichment for a single contest. Clears UserPick scoring
   // fields and asks Producer to clear the Contest derived fields and
@@ -142,6 +147,18 @@ const AdminApi = {
   updateSmackPhrase: (phraseId, body) =>
     apiClient.put(`/api/smack-lab/phrases/${encodeURIComponent(phraseId)}`, body),
   rateSmackPreview: (body) => apiClient.post('/api/smack-lab/ratings', body),
+
+  // Instant Analysis Lab (docs/features/instant-analysis/09-replay-lab.md).
+  // API relays to the football Producer for the league; a run is
+  // synchronous and returns its summary when complete.
+  runInstantAnalysisLab: (league, contestId) =>
+    apiClient.post(`/api/football/${league || 'ncaa'}/instant-analysis-lab/contests/${contestId}/runs`),
+  getInstantAnalysisLabRuns: (league, contestId) =>
+    apiClient.get(`/api/football/${league || 'ncaa'}/instant-analysis-lab/contests/${contestId}/runs`),
+  getInstantAnalysisLabRun: (league, runId) =>
+    apiClient.get(`/api/football/${league || 'ncaa'}/instant-analysis-lab/runs/${runId}`),
+  rateInstantAnalysisFact: (league, playAnalysisId, stars) =>
+    apiClient.put(`/api/football/${league || 'ncaa'}/instant-analysis-lab/facts/${playAnalysisId}/rating`, { stars }),
 
   // SignalR debug harness — see docs/signalr-debug-harness-plan.md.
   // Each call publishes a synthetic integration event through API's

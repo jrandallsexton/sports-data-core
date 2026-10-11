@@ -297,6 +297,7 @@ function MatchupCard({
           runnerOnSecond={matchup.runnerOnSecond}
           runnerOnThird={matchup.runnerOnThird}
           lastPlayDescription={matchup.lastPlayDescription}
+          playAnalysis={matchup.playAnalysis}
           // At-bat header (baseball live): names, position abbrevs,
           // headshots come off the BaseballPlayCompleted event; team
           // logos derive locally from halfInning + the team logo URIs.

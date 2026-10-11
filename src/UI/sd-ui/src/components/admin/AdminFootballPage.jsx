@@ -6,9 +6,22 @@ import FootballDebugCard from './signalr-debug/FootballDebugCard';
 import MatchupCard from '../matchups/MatchupCard';
 import apiWrapper from '../../api/apiWrapper';
 import { useContestUpdates } from '../../contexts/ContestUpdatesContext';
+import { playAnalysisForCard } from '../../utils/playAnalysis';
 
 const CONTEST_ID_STORAGE_KEY = 'admin.football.debugContestId';
 const LEAGUE_STORAGE_KEY = 'admin.football.debugLeague';
+const INTERVAL_STORAGE_KEY = 'admin.football.replayIntervalSeconds';
+
+// Seconds between replayed plays; Producer accepts 1-60.
+const MIN_INTERVAL_SECONDS = 1;
+const MAX_INTERVAL_SECONDS = 60;
+const DEFAULT_INTERVAL_SECONDS = 1;
+
+const clampInterval = (value) => {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return DEFAULT_INTERVAL_SECONDS;
+  return Math.min(MAX_INTERVAL_SECONDS, Math.max(MIN_INTERVAL_SECONDS, n));
+};
 
 const LEAGUE_OPTIONS = [
   { value: 'ncaa', label: 'NCAAFB', sport: 'FootballNcaa' },
@@ -42,6 +55,10 @@ export default function AdminFootballPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [replaying, setReplaying] = useState(false);
+  const [intervalSeconds, setIntervalSeconds] = useState(() => {
+    const stored = localStorage.getItem(INTERVAL_STORAGE_KEY);
+    return stored === null ? DEFAULT_INTERVAL_SECONDS : clampInterval(stored);
+  });
 
   const { getContestUpdate } = useContestUpdates();
   const live = contestId ? getContestUpdate(contestId) : null;
@@ -76,6 +93,8 @@ export default function AdminFootballPage() {
         : matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
+      // Instant analysis for the last play (same rule as PicksPage).
+      playAnalysis: playAnalysisForCard(live, matchup),
     };
   }, [matchup, live]);
 
@@ -133,9 +152,12 @@ export default function AdminFootballPage() {
       toast.error('Load a matchup first.');
       return;
     }
+    const interval = clampInterval(intervalSeconds);
+    setIntervalSeconds(interval);
+    localStorage.setItem(INTERVAL_STORAGE_KEY, String(interval));
     setReplaying(true);
     try {
-      await apiWrapper.Admin.replayFootballContest(contestId, league);
+      await apiWrapper.Admin.replayFootballContest(contestId, league, interval);
       toast.success('Replay queued — events will start flowing.');
     } catch (err) {
       toast.error(
@@ -187,6 +209,19 @@ export default function AdminFootballPage() {
               style={{ flex: 1, padding: '6px 8px', minWidth: 0 }}
             />
             <button type="submit">Load matchup</button>
+            <label htmlFor="admin-football-replay-interval" style={{ fontWeight: 600 }}>
+              Seconds between plays:
+            </label>
+            <input
+              id="admin-football-replay-interval"
+              type="number"
+              min={MIN_INTERVAL_SECONDS}
+              max={MAX_INTERVAL_SECONDS}
+              step={1}
+              value={intervalSeconds}
+              onChange={(e) => setIntervalSeconds(e.target.value)}
+              style={{ width: 64, padding: '6px 8px' }}
+            />
             <button
               type="button"
               onClick={handleStartReplay}

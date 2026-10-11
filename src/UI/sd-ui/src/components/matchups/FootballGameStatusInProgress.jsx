@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { contestLink } from '../../utils/sportLinks';
 import { formatFootballSituation } from '../../utils/liveSituation';
+import { PLAY_ANALYSIS_MAX_SHOWN } from '../../utils/playAnalysis';
 
 /**
  * Football per-play live block. Renders LIVE label, period+clock, the
@@ -33,6 +34,8 @@ function FootballGameStatusInProgress({
   // SCORING_LABELS lookup below requires these slugs.
   scoringPlayType,
   lastPlayDescription,
+  // Instant-analysis facts for this last play, in display order, or null.
+  playAnalysis,
   // See BaseballGameStatusInProgress isDelayed comment — same
   // semantics, mirrors the LIVE → delay-status text swap.
   isDelayed = false,
@@ -102,6 +105,15 @@ function FootballGameStatusInProgress({
       {hasLastPlayRow && (
         <span className="live-state-lastplay" title={lastPlayDescription}>
           {lastPlayDescription}
+        </span>
+      )}
+      {hasLastPlayRow && playAnalysis?.length > 0 && (
+        <span className="live-state-analysis" data-testid="play-analysis">
+          {playAnalysis.slice(0, PLAY_ANALYSIS_MAX_SHOWN).map((item) => (
+            <span key={item.id} className="live-state-analysis-item" title={item.text}>
+              {item.text}
+            </span>
+          ))}
         </span>
       )}
     </>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { withPlayAnalysis } from '../utils/playAnalysis';
 
 // DIAG (refresh-loses-updates investigation): module-level counter so
 // each ContestUpdatesProvider mount gets a unique instance ID. If the
@@ -194,6 +195,38 @@ export const ContestUpdatesProvider = ({ children }) => {
   }, [instanceId]);
 
   /**
+   * Handle PlayAnalysis — instant-analysis facts for one live play
+   * (docs/features/instant-analysis/). Kept per contest in a small map keyed
+   * by playId (the last few plays): the card shows the entry for the
+   * contest's last play, so an analysis can arrive before or after its play
+   * and still attach, stops showing once the next play lands, and a late one
+   * for an older play is kept but never shown. Items arrive in display order.
+   */
+  const handlePlayAnalysis = useCallback((data) => {
+    if (!data?.contestId || !data?.playId) {
+      console.warn('PlayAnalysis event missing contestId/playId', data);
+      return;
+    }
+
+    setContests(prev => {
+      const current = prev[data.contestId];
+      return {
+        ...prev,
+        [data.contestId]: {
+          ...current,
+          contestId: data.contestId,
+          playAnalysisByPlayId: withPlayAnalysis(
+            current?.playAnalysisByPlayId,
+            data.playId,
+            Array.isArray(data.items) ? data.items : []
+          ),
+          lastUpdated: Date.now()
+        }
+      };
+    });
+  }, []);
+
+  /**
    * Handle ContestFinalized — fires AFTER ContestStatusChanged(STATUS_FINAL)
    * once Producer's ContestEnrichmentProcessor has written the canonical
    * Contest row with winner, spread winner, over/under result, and final
@@ -311,6 +344,7 @@ export const ContestUpdatesProvider = ({ children }) => {
     handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
+    handlePlayAnalysis,
     getContestUpdate,
     hasLiveUpdate,
     clearContestUpdate,

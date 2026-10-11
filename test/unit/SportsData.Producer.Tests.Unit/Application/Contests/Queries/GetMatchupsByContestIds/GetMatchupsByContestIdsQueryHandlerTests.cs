@@ -549,6 +549,69 @@ public class GetMatchupsByContestIdsQueryHandlerTests
         result.Should().BeEmpty();
     }
 
+    // ─── Instant analysis (cold-load) ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetPlayAnalyses_ReturnsLiveFactsInDisplayOrder()
+    {
+        var ctx = NewFootballContext();
+        var playId = Guid.NewGuid();
+        SeedPlayAnalysis(ctx, playId, ordinal: 1, text: "second");
+        SeedPlayAnalysis(ctx, playId, ordinal: 0, text: "first");
+        await ctx.SaveChangesAsync();
+
+        var result = await NewFootballSut(ctx).GetPlayAnalysesAsync(new[] { playId }, CancellationToken.None);
+
+        result[playId].Select(x => x.Text).Should().Equal("first", "second");
+    }
+
+    [Fact]
+    public async Task GetPlayAnalyses_IgnoresLabRunsAndOtherPlays()
+    {
+        var ctx = NewFootballContext();
+        var playId = Guid.NewGuid();
+        SeedPlayAnalysis(ctx, playId, ordinal: 0, text: "live");
+        SeedPlayAnalysis(ctx, playId, ordinal: 0, text: "lab", analysisRunId: Guid.NewGuid());
+        SeedPlayAnalysis(ctx, Guid.NewGuid(), ordinal: 0, text: "other play");
+        await ctx.SaveChangesAsync();
+
+        var result = await NewFootballSut(ctx).GetPlayAnalysesAsync(new[] { playId }, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[playId].Should().ContainSingle().Which.Text.Should().Be("live");
+    }
+
+    [Fact]
+    public async Task GetPlayAnalyses_NoPlays_ReturnsEmpty()
+    {
+        var result = await NewFootballSut(NewFootballContext())
+            .GetPlayAnalysesAsync(Array.Empty<Guid>(), CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    private static void SeedPlayAnalysis(
+        FootballDataContext ctx,
+        Guid playId,
+        int ordinal,
+        string text,
+        Guid? analysisRunId = null)
+    {
+        ctx.PlayAnalyses.Add(new PlayAnalysis
+        {
+            Id = Guid.NewGuid(),
+            ContestId = Guid.NewGuid(),
+            CompetitionId = Guid.NewGuid(),
+            PlayId = playId,
+            AnalysisRunId = analysisRunId,
+            Ordinal = ordinal,
+            FactType = "GameCount",
+            Text = text,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+    }
+
     private static FootballDataContext NewFootballContext() =>
         new(new DbContextOptionsBuilder<FootballDataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])

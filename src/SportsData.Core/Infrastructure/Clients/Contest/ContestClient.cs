@@ -82,7 +82,22 @@ public interface IProvideContests : IProvideHealthChecks
     /// followed by a <c>FootballPlayCompleted</c> / <c>BaseballPlayCompleted</c>
     /// per stored play (sport-keyed by the running Producer pod).
     /// </summary>
-    Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default);
+    /// <param name="intervalSeconds">Seconds between plays (football); null = Producer's default.</param>
+    Task<Result<bool>> ReplayContest(Guid contestId, int? intervalSeconds = null, CancellationToken cancellationToken = default);
+
+    // Instant-analysis replay lab (admin). Football Producers only.
+
+    /// <summary>
+    /// Replays a game's stored plays through the instant-analysis pipeline as a
+    /// new lab run (synchronous; returns when the run is complete).
+    /// </summary>
+    Task<Result<PlayAnalysisRunSummaryDto>> RunInstantAnalysisLab(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task<Result<List<PlayAnalysisRunSummaryDto>>> GetInstantAnalysisLabRuns(Guid contestId, CancellationToken cancellationToken = default);
+
+    Task<Result<PlayAnalysisRunDetailDto>> GetInstantAnalysisLabRun(Guid runId, CancellationToken cancellationToken = default);
+
+    Task<Result<PlayAnalysisRatingDto>> RateInstantAnalysisFact(Guid playAnalysisId, int stars, CancellationToken cancellationToken = default);
 
     // Matchup query endpoints (Phase 2)
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
@@ -260,7 +275,7 @@ public class ContestClient : ClientBase, IProvideContests
             cancellationToken);
     }
 
-    public async Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> ReplayContest(Guid contestId, int? intervalSeconds = null, CancellationToken cancellationToken = default)
     {
         if (contestId == Guid.Empty)
         {
@@ -270,10 +285,88 @@ public class ContestClient : ClientBase, IProvideContests
                 [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
         }
 
+        var url = intervalSeconds is null
+            ? $"contests/{contestId}/replay"
+            : $"contests/{contestId}/replay?intervalSeconds={intervalSeconds.Value}";
+
         return await PostWithResultAsync(
-            $"contests/{contestId}/replay",
+            url,
             "ReplayContest",
             cancellationToken);
+    }
+
+    public async Task<Result<PlayAnalysisRunSummaryDto>> RunInstantAnalysisLab(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<PlayAnalysisRunSummaryDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await PostAsync<PlayAnalysisRunSummaryDto, PlayAnalysisRunSummaryDto, object>(
+            $"instant-analysis/lab/contests/{contestId}/runs",
+            new { },
+            dto => dto,
+            default!,
+            "Instant analysis lab run",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<Result<List<PlayAnalysisRunSummaryDto>>> GetInstantAnalysisLabRuns(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<List<PlayAnalysisRunSummaryDto>>(
+                [],
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await GetAsync<List<PlayAnalysisRunSummaryDto>>(
+            $"instant-analysis/lab/contests/{contestId}/runs",
+            [],
+            "Instant analysis lab runs",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<Result<PlayAnalysisRunDetailDto>> GetInstantAnalysisLabRun(Guid runId, CancellationToken cancellationToken = default)
+    {
+        if (runId == Guid.Empty)
+        {
+            return new Failure<PlayAnalysisRunDetailDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("runId", "Run ID cannot be empty")]);
+        }
+
+        return await GetAsync<PlayAnalysisRunDetailDto>(
+            $"instant-analysis/lab/runs/{runId}",
+            default!,
+            "Instant analysis lab run",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<Result<PlayAnalysisRatingDto>> RateInstantAnalysisFact(Guid playAnalysisId, int stars, CancellationToken cancellationToken = default)
+    {
+        if (playAnalysisId == Guid.Empty)
+        {
+            return new Failure<PlayAnalysisRatingDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("playAnalysisId", "Fact ID cannot be empty")]);
+        }
+
+        return await PutAsync<PlayAnalysisRatingDto, PlayAnalysisRatingDto, RatePlayAnalysisRequest>(
+            $"instant-analysis/lab/facts/{playAnalysisId}/rating",
+            new RatePlayAnalysisRequest(stars),
+            dto => dto,
+            default!,
+            "Instant analysis rating",
+            cancellationToken: cancellationToken);
     }
 
     public async Task<Result<bool>> FinalizeContestByContestId(Guid contestId, CancellationToken cancellationToken = default)

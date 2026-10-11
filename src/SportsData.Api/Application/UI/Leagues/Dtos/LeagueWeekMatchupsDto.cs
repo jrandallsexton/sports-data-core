@@ -142,6 +142,13 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public Guid? LastPlayId { get; set; }
             public string? LastPlayDescription { get; set; }
 
+            /// <summary>
+            /// Instant-analysis facts for <see cref="LastPlayId"/>, in display
+            /// order (same item shape as the SignalR PlayAnalysis message).
+            /// Live games only; null otherwise.
+            /// </summary>
+            public List<PlayAnalysisItemDto>? PlayAnalysis { get; set; }
+
             // Football snap state, from the latest play. Baseball has no
             // per-play count/runner equivalent, so MLB carries only the
             // sport-neutral fields above.

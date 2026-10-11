@@ -40,6 +40,7 @@ import AdminPromptsPage from "./components/admin/AdminPromptsPage";
 import AdminModelsPage from "./components/admin/AdminModelsPage";
 import AdminModelLabPage from "./components/admin/AdminModelLabPage";
 import AdminSmackLabPage from "./components/admin/AdminSmackLabPage";
+import AdminInstantAnalysisLabPage from "./components/admin/AdminInstantAnalysisLabPage";
 import AdminWidgetsPage from "./components/admin/AdminWidgetsPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
@@ -108,6 +109,7 @@ function MainApp() {
     handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
+    handlePlayAnalysis,
   } = useContestUpdates();
 
   // Memoize callbacks so useSignalRClient's effect (which lists each
@@ -140,12 +142,17 @@ function MainApp() {
     handleBaseballPlayCompleted(data);
   }, [handleBaseballPlayCompleted]);
 
+  const onPlayAnalysis = useCallback((data) => {
+    handlePlayAnalysis(data);
+  }, [handlePlayAnalysis]);
+
   useSignalRClient({
     onPreviewCompleted,
     onContestStatusChanged,
     onContestFinalized,
     onFootballPlayCompleted,
     onBaseballPlayCompleted,
+    onPlayAnalysis,
   });
 
   return (
@@ -309,6 +316,14 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminSmackLabPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/instant-analysis-lab"
+              element={
+                <AdminRoute>
+                  <AdminInstantAnalysisLabPage />
                 </AdminRoute>
               }
             />

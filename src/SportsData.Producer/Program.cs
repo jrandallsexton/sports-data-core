@@ -1,11 +1,14 @@
 ﻿using Hangfire;
 using Hangfire.Dashboard;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Competitions.InstantAnalysis;
 using SportsData.Producer.Application.Contests.Consumers;
 using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Events;
@@ -195,7 +198,11 @@ public class Program
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    services.AddMessaging<FootballDataContext>(config, consumers);
+                    // Instant analysis trigger. Registered with its definition so it
+                    // gets its own queue rather than competing with the API's
+                    // same-named consumer on a shared broker.
+                    services.AddMessaging<FootballDataContext>(config, consumers, x =>
+                        x.AddConsumer<FootballPlayCompletedConsumer, FootballPlayCompletedConsumerDefinition>());
                     break;
                 case Sport.GolfPga:
                     services.AddMessaging<GolfDataContext>(config, consumers);
@@ -279,6 +286,14 @@ public class Program
                 case Sport.FootballNfl:
                     var context = appServices.GetRequiredService<FootballDataContext>();
                     await context.Database.MigrateAsync();
+
+                    // The kill switch drops plays silently when off, so state
+                    // it once at startup where Seq shows it.
+                    var instantAnalysis = appServices.GetRequiredService<InstantAnalysisConfig>();
+                    app.Logger.LogInformation(
+                        "Instant analysis kill switch: Enabled={InstantAnalysisEnabled} ({InstantAnalysisKey})",
+                        instantAnalysis.Enabled,
+                        InstantAnalysisConfig.EnabledKey);
                     break;
                 case Sport.BaseballMlb:
                     var baseballContext = appServices.GetRequiredService<BaseballDataContext>();

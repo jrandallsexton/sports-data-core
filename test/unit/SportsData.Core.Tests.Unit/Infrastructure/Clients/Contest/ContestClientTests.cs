@@ -276,6 +276,29 @@ public class ContestClientTests
     }
 
     [Fact]
+    public async Task ReplayContest_WithInterval_SendsItOnTheQueryString()
+    {
+        var contestId = Guid.NewGuid();
+        _handler.SetResponse(HttpStatusCode.Accepted, "{}");
+
+        var result = await _sut.ReplayContest(contestId, intervalSeconds: 5);
+
+        result.IsSuccess.Should().BeTrue();
+        _handler.LastRequestUri.Should().EndWith($"/contests/{contestId}/replay?intervalSeconds=5");
+    }
+
+    [Fact]
+    public async Task ReplayContest_WithoutInterval_LeavesTheDefaultToProducer()
+    {
+        var contestId = Guid.NewGuid();
+        _handler.SetResponse(HttpStatusCode.Accepted, "{}");
+
+        await _sut.ReplayContest(contestId);
+
+        _handler.LastRequestUri.Should().EndWith($"/contests/{contestId}/replay");
+    }
+
+    [Fact]
     public async Task GetOddsPricingByContestId_On404_ReturnsNotFound()
     {
         // The backfill job skips NotFound (retrying cannot help).

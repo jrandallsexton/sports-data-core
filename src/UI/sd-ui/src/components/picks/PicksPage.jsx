@@ -19,6 +19,7 @@ import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import { shouldShowGambling } from "../../utils/gamblingContent";
 import { formatBetPoints, betPointsTone } from "../../utils/betPoints";
+import { playAnalysisForCard } from "../../utils/playAnalysis";
 
 function PicksPage() {
   const { userDto, loading: userLoading, refreshUserDto, userOptions } = useUserDto();
@@ -327,7 +328,9 @@ function PicksPage() {
           pitchingPositionAbbreviation: liveUpdate.pitchingPositionAbbreviation ?? matchup.pitchingPositionAbbreviation,
           pitchingHeadshotUrl: liveUpdate.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
           // Sport-neutral last-play (written by both *PlayCompleted handlers)
-          lastPlayDescription: liveUpdate.lastPlayDescription ?? matchup.lastPlayDescription
+          lastPlayDescription: liveUpdate.lastPlayDescription ?? matchup.lastPlayDescription,
+          // Instant analysis: only while it belongs to the last play shown.
+          playAnalysis: playAnalysisForCard(liveUpdate, matchup)
         };
       }
       return matchup;

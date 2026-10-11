@@ -6,7 +6,7 @@ import FootballDebugCard from './signalr-debug/FootballDebugCard';
 import MatchupCard from '../matchups/MatchupCard';
 import apiWrapper from '../../api/apiWrapper';
 import { useContestUpdates } from '../../contexts/ContestUpdatesContext';
-import { playAnalysisForLastPlay } from '../../utils/playAnalysis';
+import { playAnalysisForCard } from '../../utils/playAnalysis';
 
 const CONTEST_ID_STORAGE_KEY = 'admin.football.debugContestId';
 const LEAGUE_STORAGE_KEY = 'admin.football.debugLeague';
@@ -94,7 +94,7 @@ export default function AdminFootballPage() {
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
       // Instant analysis for the last play (same rule as PicksPage).
-      playAnalysis: playAnalysisForLastPlay(live),
+      playAnalysis: playAnalysisForCard(live, matchup),
     };
   }, [matchup, live]);
 

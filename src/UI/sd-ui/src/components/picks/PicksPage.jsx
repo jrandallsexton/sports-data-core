@@ -19,7 +19,7 @@ import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 import { shouldShowGambling } from "../../utils/gamblingContent";
 import { formatBetPoints, betPointsTone } from "../../utils/betPoints";
-import { playAnalysisForLastPlay } from "../../utils/playAnalysis";
+import { playAnalysisForCard } from "../../utils/playAnalysis";
 
 function PicksPage() {
   const { userDto, loading: userLoading, refreshUserDto, userOptions } = useUserDto();
@@ -330,7 +330,7 @@ function PicksPage() {
           // Sport-neutral last-play (written by both *PlayCompleted handlers)
           lastPlayDescription: liveUpdate.lastPlayDescription ?? matchup.lastPlayDescription,
           // Instant analysis: only while it belongs to the last play shown.
-          playAnalysis: playAnalysisForLastPlay(liveUpdate)
+          playAnalysis: playAnalysisForCard(liveUpdate, matchup)
         };
       }
       return matchup;

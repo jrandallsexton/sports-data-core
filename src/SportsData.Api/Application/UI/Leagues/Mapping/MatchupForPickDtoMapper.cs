@@ -57,6 +57,7 @@ public static class MatchupForPickDtoMapper
         matchup.PossessionFranchiseSeasonId = canonical.PossessionFranchiseSeasonId;
         matchup.LastPlayId = canonical.LastPlayId;
         matchup.LastPlayDescription = canonical.LastPlayDescription;
+        matchup.PlayAnalysis = canonical.PlayAnalysis;
         matchup.Down = canonical.Down;
         matchup.Distance = canonical.Distance;
         matchup.BallOnYardLine = canonical.BallOnYardLine;

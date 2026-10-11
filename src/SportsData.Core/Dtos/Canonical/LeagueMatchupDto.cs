@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SportsData.Core.Dtos.Canonical;
 
@@ -53,6 +54,14 @@ public class LeagueMatchupDto
 
     public Guid? LastPlayId { get; set; }
     public string? LastPlayDescription { get; set; }
+
+    /// <summary>
+    /// Instant-analysis facts for <see cref="LastPlayId"/>, in display order,
+    /// so a card loaded mid-game shows them without waiting for the next play.
+    /// Stitched in the handler for games in progress only; null otherwise or
+    /// when the play has none.
+    /// </summary>
+    public List<PlayAnalysisItemDto>? PlayAnalysis { get; set; }
 
     // Football-only snap state, read from the latest play and enriched in
     // the handler rather than the shared SQL: the play's snap columns are

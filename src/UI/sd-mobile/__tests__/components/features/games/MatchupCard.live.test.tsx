@@ -371,6 +371,21 @@ describe('MatchupCard — live updates', () => {
       expect(screen.queryByText("LSU's first takeaway of the game.")).toBeNull();
     });
 
+    it('shows the facts from the matchup payload on a cold load', () => {
+      const matchup = buildFootballMatchup({
+        status: 'STATUS_IN_PROGRESS',
+        period: 'Q1',
+        clock: '12:38',
+        lastPlayId: PLAY,
+        lastPlayDescription: 'J.Strong pass intercepted by T.Cooley',
+        playAnalysis: analysis.items,
+      });
+
+      renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNcaa" />);
+
+      expect(screen.getByText("T. Cooley's second interception of the season.")).toBeTruthy();
+    });
+
     it('clears the facts when the next play lands', () => {
       renderWithProviders(<MatchupCard matchup={buildFootballMatchup()} leagueSport="FootballNcaa" />);
 

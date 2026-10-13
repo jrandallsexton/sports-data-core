@@ -72,8 +72,7 @@ namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
         /// </summary>
         public async Task ExecuteAsync(Sport? sportFilter)
         {
-            _logger.LogInformation(
-                "{JobName} Began. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
+            _logger.LogInformation("{JobName} Began. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
 
             var now = _dateTimeProvider.UtcNow();
             var inWindow = InWindowPredicate(now);
@@ -101,8 +100,7 @@ namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
                 await ScheduleForSportAsync(sport, inWindow);
             }
 
-            _logger.LogInformation(
-                "{JobName} Ended. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
+            _logger.LogInformation("{JobName} Ended. Sport={Sport}", nameof(MatchupScheduler), sportFilter?.ToString() ?? "(all)");
         }
 
         private async Task ScheduleForSportAsync(Sport sport, Expression<Func<PickemGroup, bool>> inWindow)
@@ -111,9 +109,7 @@ namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling
 
             if (!weekResult.IsSuccess)
             {
-                _logger.LogWarning(
-                    "Current week could not be resolved for {Sport}; skipping matchup scheduling for this sport.",
-                    sport);
+                _logger.LogError("Current week could not be resolved for {Sport}; skipping matchup scheduling for this sport.", sport);
                 return;
             }
 

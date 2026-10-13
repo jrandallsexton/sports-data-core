@@ -1,17 +1,28 @@
-select * from public."Contest" where "Id" = 'cd690ee5-f9f9-ce70-0f69-0fe6bf2fd3b6';
+select * from public."Contest" where "Id" = '98035135-931b-34a2-1f9e-be42e1647453';
+
+--select * from public."Contest" where "SeasonYear" = 2026 and "StartDateUtc" < now() and "FinalizedUtc" is null;
 
 select * from public."ContestExternalId" where "ContestId" = '5e6ec64e-3a92-c5a5-5a49-bf345f757def';
 
-select * from public."Competition" where "ContestId" = 'cd690ee5-f9f9-ce70-0f69-0fe6bf2fd3b6';
+select * from public."Competition" where "ContestId" = '98035135-931b-34a2-1f9e-be42e1647453';
 
-select * from public."CompetitionOdds" where "CompetitionId" = 'e874d9d9-d184-5d72-44c9-86a1668da805';
+select * from public."CompetitionOdds" where "CompetitionId" = '6f3ebe93-0d6e-144e-6aec-8e6bf42180d4';
 
-select * from public."CompetitionMetric" where "CompetitionId" = 'e874d9d9-d184-5d72-44c9-86a1668da805';
+select * from public."CompetitionMetric" where "CompetitionId" = '6f3ebe93-0d6e-144e-6aec-8e6bf42180d4';
 
 select * from public."CompetitionOdds" where "Spread" is null and "SpreadWinner" is not null;
 select * from public."CompetitionOdds" where "ProviderId"::bigint = 200 and "Spread" is not null;
 
-select * from public."CompetitionPlay" where "CompetitionId" = '0594210f-b83c-ba8b-ac63-c3c8508aae6c' order by "SequenceNumber"::bigint;
+select * from public."CompetitionPlay" where "CompetitionId" = '6f3ebe93-0d6e-144e-6aec-8e6bf42180d4' order by "SequenceNumber"::bigint;
+
+select * from public."CompetitionPlay" where "CompetitionId" = '6f3ebe93-0d6e-144e-6aec-8e6bf42180d4' and "TypeId" = '26';
+select * from public."CompetitionPlayParticipant" where "CompetitionPlayId" = 'bb0fb521-bf2f-08f5-afb0-97693bed4a07'; -- passer, passDefender, returner, tackler (interception play)
+select * from public."AthleteSeason" where "Id" = 'b73973f2-60d4-9cdc-2801-71d8e81a6b4e'; -- Tamarcus Cooley (S) this was his second INT of the season
+
+select * from public."AthleteSeasonStatistic" where "AthleteSeasonId" = 'b73973f2-60d4-9cdc-2801-71d8e81a6b4e';
+select * from public."AthleteSeasonStatisticCategory" where "AthleteSeasonStatisticId" = '8e2dbab4-a411-3530-0957-b25b3582e0e9';
+
+select * from public."AthleteSeasonStatisticStat" where "AthleteSeasonStatisticCategoryId" = '4cb185d6-a1b2-49f8-81c6-9c870b23d8e9';
 
 select DISTINCT
     lc."DisplayName" as "LeaderCategory",

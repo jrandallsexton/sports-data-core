@@ -14,7 +14,7 @@ select * from public."SeasonPhase" where "SeasonId" = 'a6ccfe8e-0a74-e6c5-73d8-9
 -- fb82b861-2c3f-1291-34c1-d75b4ce2ac26	a6ccfe8e-0a74-e6c5-73d8-9dfd2e5583f8	4	Off Season	off	off-season	2026	2027-02-16 03:00:00-05	2027-08-01 02:59:00-04	False	False	False	2026-04-05 11:04:59.706564-04	NULL	396132a1-5a5f-4b7f-ae77-355ac156f5be	NULL
 
 select * from public."SeasonWeek" where "SeasonId" = 'a6ccfe8e-0a74-e6c5-73d8-9dfd2e5583f8'
-and "SeasonPhaseId" = 'b078e6fe-92c1-bde0-aa2d-412bf83fad84' order by "Number";
+and "SeasonPhaseId" = '1653727c-c07a-4261-8903-b4ff8aebc6c7' order by "Number";
 
 -- Id	SeasonId	SeasonPhaseId	Number	StartDate	EndDate	IsNonStandardWeek	CreatedUtc	ModifiedUtc	CreatedBy	ModifiedBy	Text
 -- c70200c1-a05a-9ce7-c01a-a7fd4e3dd889	a6ccfe8e-0a74-e6c5-73d8-9dfd2e5583f8	b078e6fe-92c1-bde0-aa2d-412bf83fad84	1	2026-08-06 03:00:00-04	2026-08-13 02:59:00-04	False	2026-04-05 11:05:16.524117-04	NULL	396132a1-5a5f-4b7f-ae77-355ac156f5be	NULL	NULL

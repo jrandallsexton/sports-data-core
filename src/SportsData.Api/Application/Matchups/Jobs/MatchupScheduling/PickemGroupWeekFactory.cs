@@ -5,7 +5,7 @@ namespace SportsData.Api.Application.Matchups.Jobs.MatchupScheduling;
 
 /// <summary>
 /// Single source of truth for building a <see cref="PickemGroupWeek"/> row.
-/// Two call sites previously constructed this entity inline and had drifted —
+/// Two call sites previously constructed this entity inline and had drifted -
 /// <c>PickemGroupCreatedHandler</c> omitted <see cref="PickemGroupWeek.IsNonStandardWeek"/>
 /// and didn't adjust the <see cref="PickemGroupWeek.SeasonWeek"/> ordinal for
 /// postseason; <c>MatchupScheduler</c> did both. Centralizing here so the two

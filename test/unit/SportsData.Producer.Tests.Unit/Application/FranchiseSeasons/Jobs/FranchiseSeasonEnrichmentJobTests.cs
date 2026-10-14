@@ -232,8 +232,9 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
     public async Task Execute_PublishesScopedStatisticsRequest_PerTeamWithEspnRef()
     {
         // The statistics leg (2026-09-10): one DocumentRequested per team
-        // for its TeamSeason doc, scoped to spawn ONLY the statistics child
-        // (athlete-cascade-scoping vocabulary). Before this, statistics
+        // for its TeamSeason doc, scoped to spawn ONLY team statistics, the
+        // roster, team leaders and athlete statistics (2026-10-13; the last
+        // three had the same poll-only refresh gap). Before this, statistics
         // refreshed only as a side effect of poll appearances - FAMU@Miami
         // exposed unranked teams keeping empty initial-sourcing statistics
         // forever.
@@ -257,8 +258,11 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
                     d.SeasonYear == 2026 &&
                     d.Uri.ToString().Contains("/teams/50") &&
                     d.IncludeLinkedDocumentTypes != null &&
-                    d.IncludeLinkedDocumentTypes.Count == 1 &&
-                    d.IncludeLinkedDocumentTypes[0] == DocumentType.TeamSeasonStatistics)),
+                    d.IncludeLinkedDocumentTypes.Count == 4 &&
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonStatistics) &&
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeason) &&
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonLeaders) &&
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeasonStatistics))),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // The publish must run inside an explicit Direct delivery scope:

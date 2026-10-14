@@ -30,6 +30,19 @@ VALUES
    2.00, 6.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')
 ON CONFLICT DO NOTHING;
 
+-- The insert skips silently on any unique clash, so assert the seat is
+-- actually filled before vacating the old one. Raising aborts the
+-- transaction: Qwen 3 Max stays active and nothing changes.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM "Model" m
+    JOIN "ModelProvider" p ON p."Id" = m."ModelProviderId"
+    WHERE m."ApiModelId" = 'qwen/qwen3.8-max-0902' AND m."IsActive" AND p."IsActive") THEN
+    RAISE EXCEPTION 'Qwen 3.8 Max (0902) is not present and active; refusing to deactivate Qwen 3 Max';
+  END IF;
+END $$;
+
 UPDATE "Model"
 SET "IsActive" = FALSE,
     "ModifiedUtc" = NOW() AT TIME ZONE 'utc',

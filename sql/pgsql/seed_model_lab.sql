@@ -13,6 +13,11 @@
 -- Idempotent: fixed UUIDs + ON CONFLICT DO NOTHING (any unique clash —
 -- id, name, or (provider, api id) — skips the row rather than erroring).
 -- Target DB: API (AppDataContext).
+--
+-- Seed only reaches FRESH databases: ON CONFLICT DO NOTHING never updates
+-- an existing row. A database seeded before 2026-10-14 must also run
+-- model_lab_2026-10-14_qwen38_max.sql, or Qwen 3 Max (retired, 404s) stays
+-- active beside its replacement.
 
 -- Providers. Kind maps to a first-party client implementation;
 -- 99 = GatewayOnly (no first-party client; reachable only via gateway).

@@ -256,7 +256,7 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
                 }
                 else
                 {
-                    var experimentParsed = TryParseResponse(rawResponse);
+                    var experimentParsed = TryParseResponse(rawResponse, capture.Model);
                     if (experimentParsed is null)
                     {
                         // A truncated response's parse failure is already
@@ -318,7 +318,7 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
                 return;
             }
 
-            var parsed = TryParseResponse(rawResponse);
+            var parsed = TryParseResponse(rawResponse, _aiCommunication.GetModelName());
 
             // Exit if we still failed to parse anything
             if (parsed is null)
@@ -367,7 +367,7 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
 
                 parsed = !retryResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse)
                     ? null
-                    : TryParseResponse(rawResponse);
+                    : TryParseResponse(rawResponse, _aiCommunication.GetModelName());
 
                 if (parsed is null)
                 {
@@ -767,9 +767,22 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
             return trimmed[(firstLineBreak + 1)..closingFence].Trim();
         }
 
-        private MatchupPreviewResponse? TryParseResponse(string rawResponse)
+        // Some models narrate before answering ("I'll work through this
+        // systematically before generating the JSON.", seen across the lab
+        // panel 2026-10-14) or wrap the object in prose after a fence. The
+        // answer is the outermost object: first '{' through last '}'. A
+        // response with no object is returned unchanged and fails the parse
+        // as before.
+        private static string ExtractJsonObject(string raw)
         {
-            rawResponse = StripCodeFence(rawResponse);
+            var start = raw.IndexOf('{');
+            var end = raw.LastIndexOf('}');
+            return start >= 0 && end > start ? raw[start..(end + 1)] : raw;
+        }
+
+        private MatchupPreviewResponse? TryParseResponse(string rawResponse, string? model)
+        {
+            rawResponse = ExtractJsonObject(StripCodeFence(rawResponse));
 
             try
             {
@@ -780,7 +793,7 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
             }
             catch (JsonException primaryEx)
             {
-                _logger.LogWarning(primaryEx, "Flat deserialization failed. Trying V2 fallback...");
+                _logger.LogWarning(primaryEx, "Flat deserialization failed. Trying V2 fallback... Model={Model}", model);
 
                 try
                 {
@@ -793,7 +806,7 @@ namespace SportsData.Api.Application.Previews.Jobs.Generation
                 }
                 catch (JsonException fallbackEx)
                 {
-                    _logger.LogError(fallbackEx, "V2 fallback deserialization also failed. Raw: {Raw}", rawResponse);
+                    _logger.LogError(fallbackEx, "V2 fallback deserialization also failed. Model={Model}, Raw: {Raw}", model, rawResponse);
                     return null;
                 }
             }

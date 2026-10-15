@@ -85,6 +85,8 @@ const AdminApi = {
   // immutable after creation; set-default flips THE production model.
   getModelProviders: () => apiClient.get('/api/model-providers'),
   createModelProvider: (body) => apiClient.post('/api/model-providers', body),
+  getModelFamilies: () => apiClient.get('/api/model-families'),
+  createModelFamily: (body) => apiClient.post('/api/model-families', body),
   getModels: () => apiClient.get('/api/models'),
   getModel: (modelId) => apiClient.get(`/api/models/${encodeURIComponent(modelId)}`),
   createModel: (body) => apiClient.post('/api/models', body),

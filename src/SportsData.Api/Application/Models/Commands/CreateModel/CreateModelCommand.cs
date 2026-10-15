@@ -13,6 +13,9 @@ public class CreateModelCommand
 {
     public Guid ModelProviderId { get; set; }
 
+    /// <summary>The lab seat lineage (e.g. "Qwen"). An OpenRouter model takes the family's seat, deactivating the previous holder.</summary>
+    public Guid ModelFamilyId { get; set; }
+
     /// <summary>Display name (unique), e.g. "Claude Haiku 4.5".</summary>
     public required string Name { get; set; }
 
@@ -44,6 +47,7 @@ public class CreateModelCommandValidator : AbstractValidator<CreateModelCommand>
     public CreateModelCommandValidator()
     {
         RuleFor(x => x.ModelProviderId).NotEmpty();
+        RuleFor(x => x.ModelFamilyId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.ApiModelId).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Gateway).IsInEnum();
@@ -104,6 +108,18 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
                 [new ValidationFailure(nameof(command.Gateway), "This provider is gateway-only (no first-party client) — the model must specify a gateway route.")]);
         }
 
+        var familyExists = await _dataContext.ModelFamilies
+            .AsNoTracking()
+            .AnyAsync(f => f.Id == command.ModelFamilyId, cancellationToken);
+
+        if (!familyExists)
+        {
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(command.ModelFamilyId), "Model family not found — create it first (POST /api/model-families)")]);
+        }
+
         var name = command.Name.Trim();
         var apiModelId = command.ApiModelId.Trim();
 
@@ -121,23 +137,14 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
                 [new ValidationFailure(nameof(command.Name), $"A model with this name or (provider, api id) already exists.")]);
         }
 
-        if (command.IsDefault)
-        {
-            var currentDefaults = await _dataContext.Models
-                .Where(m => m.IsDefault)
-                .ToListAsync(cancellationToken);
-
-            foreach (var existing in currentDefaults)
-            {
-                existing.IsDefault = false;
-                existing.ModifiedUtc = _dateTimeProvider.UtcNow();
-            }
-        }
+        var modelId = Guid.NewGuid();
+        var takesSeat = LabSeat.Occupies(command.Gateway, isActive: true);
 
         var model = new Model
         {
-            Id = Guid.NewGuid(),
+            Id = modelId,
             ModelProviderId = command.ModelProviderId,
+            ModelFamilyId = command.ModelFamilyId,
             Name = name,
             ApiModelId = apiModelId,
             Gateway = command.Gateway,
@@ -151,27 +158,66 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             CreatedUtc = _dateTimeProvider.UtcNow()
         };
 
-        await _dataContext.Models.AddAsync(model, cancellationToken);
+        List<string> displaced;
 
         try
         {
-            // Clear-old-default + insert commit in ONE SaveChanges; the
-            // partial unique index turns a concurrent race into a
-            // constraint violation here.
-            await _dataContext.SaveChangesAsync(cancellationToken);
+            // Two saves in ONE transaction: first vacate the default and the
+            // family's lab seat, then insert. In a single SaveChanges EF may
+            // send the insert first (it does not see that the partial unique
+            // indexes depend on IsDefault / IsActive), and PostgreSQL checks
+            // non-deferrable unique indexes per statement. A concurrent race
+            // still surfaces as a constraint violation here. Execution
+            // strategy wrap: EnableRetryOnFailure forbids a raw transaction.
+            // Each attempt starts from a clear change tracker: a retry
+            // follows a rolled-back transaction, and entities still tracked
+            // from the failed attempt would read as already saved, so the
+            // vacate would issue no updates and the insert would collide.
+            var strategy = _dataContext.Database.CreateExecutionStrategy();
+            displaced = await strategy.ExecuteAsync(async () =>
+            {
+                _dataContext.ChangeTracker.Clear();
+                await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+
+                if (command.IsDefault)
+                {
+                    var currentDefaults = await _dataContext.Models
+                        .Where(m => m.IsDefault)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var existing in currentDefaults)
+                    {
+                        existing.IsDefault = false;
+                        existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                    }
+                }
+
+                // New rows are active, so an OpenRouter model takes its family's seat.
+                var vacated = takesSeat
+                    ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, modelId, _dateTimeProvider.UtcNow(), cancellationToken)
+                    : new List<string>();
+
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                await _dataContext.Models.AddAsync(model, cancellationToken);
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                return vacated;
+            });
         }
-        catch (DbUpdateException ex) when (command.IsDefault)
+        catch (DbUpdateException ex) when (command.IsDefault || takesSeat)
         {
-            _logger.LogWarning(ex, "Concurrent default-model change detected while creating model {ModelId}.", model.Id);
+            _logger.LogWarning(ex, "Concurrent default-model or lab-seat change detected while creating model {ModelId}.", model.Id);
             return new Failure<Guid>(
                 default!,
                 ResultStatus.BadRequest,
-                [new ValidationFailure(nameof(command.IsDefault), "The default model changed concurrently — reload and retry.")]);
+                [new ValidationFailure(nameof(command.ModelFamilyId), "The default model or the family's lab seat changed concurrently — reload and retry.")]);
         }
 
         _logger.LogInformation(
-            "Model created. Id: {ModelId}, Provider: {ProviderId}, IsDefault: {IsDefault}, Cutoff: {Cutoff}",
-            model.Id, model.ModelProviderId, model.IsDefault, model.KnowledgeCutoffUtc);
+            "Model created. Id: {ModelId}, Provider: {ProviderId}, Family: {FamilyId}, IsDefault: {IsDefault}, Cutoff: {Cutoff}, DisplacedFromSeat: {Displaced}",
+            model.Id, model.ModelProviderId, model.ModelFamilyId, model.IsDefault, model.KnowledgeCutoffUtc, displaced);
 
         return new Success<Guid>(model.Id);
     }

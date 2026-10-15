@@ -34,6 +34,8 @@ public class GetModelByIdQueryHandler : IGetModelByIdQueryHandler
                 ModelProviderId = m.ModelProviderId,
                 ProviderName = m.ModelProvider!.Name,
                 ProviderKind = m.ModelProvider.Kind,
+                ModelFamilyId = m.ModelFamilyId,
+                ModelFamilyName = m.ModelFamily!.Name,
                 Name = m.Name,
                 ApiModelId = m.ApiModelId,
                 Gateway = m.Gateway,

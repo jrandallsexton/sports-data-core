@@ -23,6 +23,20 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public ModelProvider? ModelProvider { get; set; }
 
+        /// <summary>
+        /// The lab seat's lineage (e.g. "Qwen"). Grouping, not identity:
+        /// an operator may move a model between families.
+        /// </summary>
+        public Guid ModelFamilyId { get; set; }
+
+        /// <summary>
+        /// The route whose active rows occupy their family's lab seat
+        /// (IX_Model_SingleActiveLabSeat filters on this value).
+        /// </summary>
+        public const ModelGateway LabSeatGateway = ModelGateway.OpenRouter;
+
+        public ModelFamily? ModelFamily { get; set; }
+
         /// <summary>Display name (unique), e.g. "Claude Haiku 4.5".</summary>
         public required string Name { get; set; }
 
@@ -90,6 +104,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.ModelProviderId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                builder.HasOne(x => x.ModelFamily)
+                    .WithMany(f => f.Models)
+                    .HasForeignKey(x => x.ModelFamilyId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 builder.Property(x => x.Name).HasMaxLength(100).IsRequired();
                 builder.HasIndex(x => x.Name).IsUnique();
 
@@ -116,6 +135,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .IsUnique()
                     .HasFilter("\"IsDefault\"")
                     .HasDatabaseName("IX_Model_SingleDefault");
+
+                // ONE active lab seat per family: a version swap can never
+                // grow or shrink the panel. Gateway 1 (OpenRouter) mirrors
+                // AiModelClientResolver.CanResolve; the direct production
+                // DeepSeek row (Gateway None) shares the DeepSeek family
+                // without occupying its seat. When first-party clients join
+                // the panel, this filter changes with CanResolve.
+                builder.HasIndex(x => x.ModelFamilyId)
+                    .IsUnique()
+                    .HasFilter("\"IsActive\" AND \"Gateway\" = 1")
+                    .HasDatabaseName("IX_Model_SingleActiveLabSeat");
             }
         }
     }

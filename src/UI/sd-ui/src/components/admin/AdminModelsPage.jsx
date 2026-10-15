@@ -36,8 +36,13 @@ const GATEWAY_OPTIONS = [
   { value: 'OpenRouter', label: 'via OpenRouter gateway' },
 ];
 
+// A model's lab seat: active + routed through the gateway the lab can reach
+// (mirrors Model.LabSeatGateway / IX_Model_SingleActiveLabSeat).
+const isOpenRouter = (gateway) => gateway === 'OpenRouter' || gateway === 1;
+
 const EMPTY_FORM = {
   modelProviderId: '',
+  modelFamilyId: '',
   name: '',
   apiModelId: '',
   gateway: 'None',
@@ -61,10 +66,14 @@ const fromDateInput = (v) => (v ? `${v}T00:00:00Z` : null);
  * compares them against the 2025-season window client-side, and the
  * scoring harness does the same per-game server-side. The DEFAULT badge
  * marks THE production model — pre-season selection and in-season swaps
- * are one Set-default click.
+ * are one Set-default click. FAMILIES group versions into one lab seat
+ * (docs/features/model-family.md): activating an OpenRouter version
+ * replaces the family's previous one, and the matrix keeps every
+ * version's votes in the family column.
  */
 export default function AdminModelsPage() {
   const [providers, setProviders] = useState([]);
+  const [families, setFamilies] = useState([]);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -73,15 +82,18 @@ export default function AdminModelsPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [newProvider, setNewProvider] = useState({ name: '', kind: 'DeepSeek', description: '' });
+  const [newFamilyName, setNewFamilyName] = useState('');
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [prov, mods] = await Promise.all([
+      const [prov, fams, mods] = await Promise.all([
         apiWrapper.Admin.getModelProviders(),
+        apiWrapper.Admin.getModelFamilies(),
         apiWrapper.Admin.getModels(),
       ]);
       setProviders(Array.isArray(prov.data) ? prov.data : []);
+      setFamilies(Array.isArray(fams.data) ? fams.data : []);
       setModels(Array.isArray(mods.data) ? mods.data : []);
     } catch (err) {
       toast.error(err?.message ?? 'Failed to load models');
@@ -105,6 +117,7 @@ export default function AdminModelsPage() {
     setSelectedId(m.id);
     setForm({
       modelProviderId: m.modelProviderId,
+      modelFamilyId: m.modelFamilyId,
       name: m.name,
       apiModelId: m.apiModelId,
       gateway: m.gateway ?? 'None',
@@ -141,12 +154,44 @@ export default function AdminModelsPage() {
     }
   };
 
+  const handleCreateFamily = async () => {
+    if (!newFamilyName.trim()) {
+      toast.error('Family name is required.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiWrapper.Admin.createModelFamily({ name: newFamilyName.trim() });
+      toast.success('Family created.');
+      setNewFamilyName('');
+      loadAll();
+    } catch (err) {
+      toast.error(err?.response?.data?.errors?.[0]?.errorMessage ?? err.message ?? 'Create failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // The seat holder an OpenRouter activation into this family will replace
+  // (the server swaps it in the same save); null when the seat is empty or
+  // the model already holds it.
+  const seatHolderReplacedBy = (familyId, modelId) => {
+    const holder = models.find(x =>
+      x.modelFamilyId === familyId && x.isActive && isOpenRouter(x.gateway) && x.id !== modelId);
+    return holder?.name ?? null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       if (mode === 'edit') {
+        const current = models.find(x => x.id === selectedId);
+        const replaced = form.isActive && isOpenRouter(current?.gateway)
+          ? seatHolderReplacedBy(form.modelFamilyId, selectedId)
+          : null;
         await apiWrapper.Admin.updateModel(selectedId, {
+          modelFamilyId: form.modelFamilyId,
           releaseDate: fromDateInput(form.releaseDate),
           knowledgeCutoffUtc: fromDateInput(form.knowledgeCutoffUtc),
           cutoffEvidence: form.cutoffEvidence || null,
@@ -155,14 +200,18 @@ export default function AdminModelsPage() {
           outputCostPerMTok: form.outputCostPerMTok === '' ? null : Number(form.outputCostPerMTok),
           isActive: form.isActive,
         });
-        toast.success('Model updated.');
+        toast.success(replaced ? `Model updated — replaced ${replaced} in the family's lab seat.` : 'Model updated.');
       } else {
-        if (!form.modelProviderId || !form.name.trim() || !form.apiModelId.trim()) {
-          toast.error('Provider, name, and API model id are required.');
+        if (!form.modelProviderId || !form.modelFamilyId || !form.name.trim() || !form.apiModelId.trim()) {
+          toast.error('Provider, family, name, and API model id are required.');
           return;
         }
+        const replaced = isOpenRouter(form.gateway)
+          ? seatHolderReplacedBy(form.modelFamilyId, null)
+          : null;
         await apiWrapper.Admin.createModel({
           modelProviderId: form.modelProviderId,
+          modelFamilyId: form.modelFamilyId,
           name: form.name.trim(),
           apiModelId: form.apiModelId.trim(),
           gateway: form.gateway,
@@ -174,7 +223,7 @@ export default function AdminModelsPage() {
           outputCostPerMTok: form.outputCostPerMTok === '' ? null : Number(form.outputCostPerMTok),
           isDefault: form.isDefault,
         });
-        toast.success('Model created.');
+        toast.success(replaced ? `Model created — replaced ${replaced} in the family's lab seat.` : 'Model created.');
         resetToCreate();
       }
       loadAll();
@@ -198,13 +247,17 @@ export default function AdminModelsPage() {
     }
   };
 
-  // One-click matrix curation: active models are the Model Lab's columns.
-  // The update endpoint replaces all metadata, so echo the row's own
-  // values back with only IsActive flipped.
+  // One-click seat curation: a family's active OpenRouter version holds its
+  // lab seat. The update endpoint replaces all metadata, so echo the row's
+  // own values back with only IsActive flipped.
   const handleToggleActive = async (m) => {
     setSubmitting(true);
     try {
+      const replaced = !m.isActive && isOpenRouter(m.gateway)
+        ? seatHolderReplacedBy(m.modelFamilyId, m.id)
+        : null;
       await apiWrapper.Admin.updateModel(m.id, {
+        modelFamilyId: m.modelFamilyId,
         releaseDate: m.releaseDate,
         knowledgeCutoffUtc: m.knowledgeCutoffUtc,
         cutoffEvidence: m.cutoffEvidence,
@@ -213,7 +266,11 @@ export default function AdminModelsPage() {
         outputCostPerMTok: m.outputCostPerMTok,
         isActive: !m.isActive,
       });
-      toast.success(m.isActive ? 'Deactivated — dropped from the lab matrix.' : 'Activated — now a lab matrix column.');
+      toast.success(m.isActive
+        ? 'Deactivated — no longer runs; its past votes stay in the family column.'
+        : replaced
+          ? `Activated — replaced ${replaced} in the family's lab seat.`
+          : 'Activated.');
       loadAll();
     } catch (err) {
       toast.error(err?.response?.data?.errors?.[0]?.errorMessage ?? err.message ?? 'Toggle failed');
@@ -278,6 +335,32 @@ export default function AdminModelsPage() {
           </div>
         </details>
 
+        <details style={{ marginBottom: 16 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+            Families ({families.length})
+          </summary>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0' }}>
+            {families.map(f => (
+              <div key={f.id} style={{ fontSize: '0.9rem' }}>
+                <strong>{f.name}</strong> — {f.modelCount} version(s) · seat: {f.activeModelName ?? 'empty'}
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="text"
+                aria-label="New family name"
+                value={newFamilyName}
+                onChange={(e) => setNewFamilyName(e.target.value)}
+                placeholder="family name (e.g. Qwen)"
+                style={{ padding: '6px 8px' }}
+              />
+              <button type="button" disabled={submitting} onClick={handleCreateFamily}>
+                Add family
+              </button>
+            </div>
+          </div>
+        </details>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(360px, 1.1fr) minmax(380px, 1fr)', gap: 20, alignItems: 'start' }}>
           {/* Left: the registry */}
           <section>
@@ -305,8 +388,8 @@ export default function AdminModelsPage() {
                   >
                     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
                       <strong>{m.name}</strong>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.providerName}</span>
-                      {(m.gateway === 'OpenRouter' || m.gateway === 1) && <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-warning, #e67e22)' }}>via OpenRouter</span>}
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.providerName} · {m.modelFamilyName}</span>
+                      {isOpenRouter(m.gateway) && <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-warning, #e67e22)' }}>via OpenRouter</span>}
                       {m.isDefault && <span style={{ color: 'var(--color-success, #27ae60)', fontSize: '0.8rem', fontWeight: 700 }}>PRODUCTION DEFAULT</span>}
                       {!m.isActive && <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>INACTIVE</span>}
                     </div>
@@ -330,7 +413,7 @@ export default function AdminModelsPage() {
                           type="button"
                           disabled={submitting}
                           onClick={() => handleToggleActive(m)}
-                          title={m.isActive ? 'Drop from the lab matrix' : 'Add to the lab matrix'}
+                          title={m.isActive ? 'Stop running this version' : "Make this version its family's lab seat"}
                         >
                           {m.isActive ? 'Deactivate' : 'Activate'}
                         </button>
@@ -355,9 +438,23 @@ export default function AdminModelsPage() {
               {mode === 'edit' && (
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                   Identity (name, API id, provider) is immutable — a
-                  different API identifier is a different model.
+                  different API identifier is a different model. Family
+                  is grouping and can change.
                 </div>
               )}
+
+              <select
+                aria-label="Family"
+                value={form.modelFamilyId}
+                onChange={(e) => setForm(f => ({ ...f, modelFamilyId: e.target.value }))}
+                title="The lab seat this version belongs to. An active OpenRouter version replaces the family's previous one; the matrix keeps every version's votes in the family column."
+                style={{ padding: '6px 8px' }}
+              >
+                <option value="">— family —</option>
+                {families.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
 
               {mode === 'create' && (
                 <>

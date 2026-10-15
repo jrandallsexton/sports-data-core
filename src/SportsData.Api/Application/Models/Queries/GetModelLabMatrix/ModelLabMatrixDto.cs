@@ -7,21 +7,29 @@ namespace SportsData.Api.Application.Models.Queries.GetModelLabMatrix;
 
 /// <summary>
 /// The week matrix: rows = contests (each rendered as an SU line and an
-/// ATS line by the UI), columns = models. A missing cell means that
-/// (contest, model) pair has no experiment yet — the UI offers to
-/// generate it. Consensus is computed client-side from the cells.
+/// ATS line by the UI), columns = model FAMILIES (one lab seat each,
+/// docs/features/model-family.md). A family's cells may come from any of
+/// its versions, so a retired version's votes stay in the weeks it cast
+/// them. A missing cell means that (contest, family) pair has no
+/// experiment yet — the UI offers to generate it with the family's active
+/// version. Consensus is computed client-side from the cells.
 /// </summary>
 public class ModelLabMatrixDto
 {
-    public List<MatrixModelDto> Models { get; set; } = [];
+    public List<MatrixFamilyDto> Families { get; set; } = [];
 
     public List<MatrixContestDto> Contests { get; set; } = [];
 
-    public class MatrixModelDto
+    public class MatrixFamilyDto
     {
         public Guid Id { get; set; }
 
         public string Name { get; set; } = default!;
+
+        /// <summary>The version holding the family's lab seat; null = no active, lab-reachable version (the column is history only).</summary>
+        public Guid? ActiveModelId { get; set; }
+
+        public string? ActiveModelName { get; set; }
     }
 
     public class MatrixContestDto
@@ -54,13 +62,18 @@ public class ModelLabMatrixDto
         /// <summary>Actual ATS winner (FranchiseSeasonId); null until final — and null on a PUSH, which grades nobody.</summary>
         public Guid? ActualSpreadWinnerId { get; set; }
 
-        /// <summary>Latest experiment per model; a model absent here has no run yet.</summary>
+        /// <summary>Latest experiment per family (any version); a family absent here has no run yet.</summary>
         public List<MatrixCellDto> Cells { get; set; } = [];
     }
 
     public class MatrixCellDto
     {
+        public Guid FamilyId { get; set; }
+
+        /// <summary>The exact version that produced this cell (provenance; may differ from the family's active version).</summary>
         public Guid ModelId { get; set; }
+
+        public string ModelName { get; set; } = default!;
 
         /// <summary>Parsed SU pick (FranchiseSeasonId); null = abstained/unparsed.</summary>
         public Guid? PredictedStraightUpWinnerId { get; set; }

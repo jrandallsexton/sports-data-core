@@ -61,11 +61,14 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        var columns = await GetModelColumnsAsync(cancellationToken);
+        var activeSeats = await GetActiveSeatsAsync(cancellationToken);
 
         if (contestIds.Count == 0)
         {
-            return new Success<ModelLabMatrixDto>(new ModelLabMatrixDto { Models = columns });
+            return new Success<ModelLabMatrixDto>(new ModelLabMatrixDto
+            {
+                Families = BuildFamilyColumns(activeSeats, [])
+            });
         }
 
         // Display identity (names + FranchiseSeasonIds for pick mapping)
@@ -85,8 +88,6 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                 ResultStatus.Error,
                 [new ValidationFailure("matchups", "Failed to retrieve matchup data from Producer")]);
         }
-
-        var modelIds = columns.Select(c => c.Id).ToHashSet();
 
         var captures = await _dataContext.MatchupPreviewPrompts
             .AsNoTracking()
@@ -109,13 +110,36 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
             })
             .ToListAsync(cancellationToken);
 
-        // Latest run wins per (contest, model) — reruns supersede, history
-        // stays on the capture rows for the Preview Lab drill-down.
+        // Every version that voted this week, active or retired: a retired
+        // version's votes stay in its family's column for the weeks it cast
+        // them (docs/features/model-family.md).
+        var capturedModelIds = captures.Select(c => c.ModelId!.Value).Distinct().ToList();
+
+        var capturedModels = await _dataContext.Models
+            .AsNoTracking()
+            .Where(m => capturedModelIds.Contains(m.Id))
+            .Select(m => new ModelSeat(m.Id, m.Name, m.ModelFamilyId, m.ModelFamily!.Name))
+            .ToDictionaryAsync(m => m.ModelId, cancellationToken);
+
+        var orphanModelIds = capturedModelIds.Where(id => !capturedModels.ContainsKey(id)).ToList();
+        if (orphanModelIds.Count > 0)
+        {
+            _logger.LogWarning(
+                "Model-lab matrix dropped captures whose ModelId matches no Model row. ModelIds={ModelIds}",
+                orphanModelIds);
+        }
+
+        var columns = BuildFamilyColumns(activeSeats, capturedModels.Values);
+
+        // Latest run wins per (contest, family) across versions — reruns
+        // supersede, history stays on the capture rows for the Preview Lab
+        // drill-down.
         var latestCells = captures
-            .Where(c => modelIds.Contains(c.ModelId!.Value))
-            .GroupBy(c => (c.ContestId, c.ModelId))
-            .Select(g => g.OrderByDescending(c => c.CreatedUtc).First())
-            .ToLookup(c => c.ContestId);
+            .Where(c => capturedModels.ContainsKey(c.ModelId!.Value))
+            .Select(c => new { Capture = c, Seat = capturedModels[c.ModelId!.Value] })
+            .GroupBy(x => (x.Capture.ContestId, x.Seat.FamilyId))
+            .Select(g => g.OrderByDescending(x => x.Capture.CreatedUtc).First())
+            .ToLookup(x => x.Capture.ContestId);
 
         var contests = matchupsResult.Value
             .OrderBy(m => m.StartDateUtc).ThenBy(m => m.Away)
@@ -134,17 +158,19 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                 ActualWinnerId = m.WinnerFranchiseSeasonId,
                 ActualSpreadWinnerId = m.SpreadWinnerFranchiseSeasonId,
                 Cells = latestCells[m.ContestId]
-                    .Select(c => new ModelLabMatrixDto.MatrixCellDto
+                    .Select(x => new ModelLabMatrixDto.MatrixCellDto
                     {
-                        ModelId = c.ModelId!.Value,
-                        PredictedStraightUpWinnerId = c.PredictedStraightUpWinnerId,
-                        PredictedSpreadWinnerId = c.PredictedSpreadWinnerId,
-                        AwayScore = c.AwayScore,
-                        HomeScore = c.HomeScore,
-                        OverUnderPrediction = c.OverUnderPrediction,
-                        Problems = c.ResponseValidationErrors,
-                        CaptureId = c.Id,
-                        CreatedUtc = c.CreatedUtc
+                        FamilyId = x.Seat.FamilyId,
+                        ModelId = x.Seat.ModelId,
+                        ModelName = x.Seat.ModelName,
+                        PredictedStraightUpWinnerId = x.Capture.PredictedStraightUpWinnerId,
+                        PredictedSpreadWinnerId = x.Capture.PredictedSpreadWinnerId,
+                        AwayScore = x.Capture.AwayScore,
+                        HomeScore = x.Capture.HomeScore,
+                        OverUnderPrediction = x.Capture.OverUnderPrediction,
+                        Problems = x.Capture.ResponseValidationErrors,
+                        CaptureId = x.Capture.Id,
+                        CreatedUtc = x.Capture.CreatedUtc
                     })
                     .ToList()
             })
@@ -152,26 +178,69 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
 
         return new Success<ModelLabMatrixDto>(new ModelLabMatrixDto
         {
-            Models = columns,
+            Families = columns,
             Contests = contests
         });
     }
 
-    private async Task<List<ModelLabMatrixDto.MatrixModelDto>> GetModelColumnsAsync(
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// The lab seats: active, lab-reachable models with an active provider.
+    /// The resolver is the single source of truth for lab reachability —
+    /// same filter the panel fan-out applies. IX_Model_SingleActiveLabSeat
+    /// keeps this to one per family.
+    /// </summary>
+    private async Task<List<ModelSeat>> GetActiveSeatsAsync(CancellationToken cancellationToken)
     {
         var candidates = await _dataContext.Models
             .AsNoTracking()
             .Where(m => m.IsActive && m.ModelProvider!.IsActive)
             .OrderBy(m => m.Name)
-            .Select(m => new { m.Id, m.Name, m.Gateway, m.ModelProvider!.Kind })
+            .Select(m => new
+            {
+                m.Id,
+                m.Name,
+                m.Gateway,
+                m.ModelProvider!.Kind,
+                m.ModelFamilyId,
+                FamilyName = m.ModelFamily!.Name
+            })
             .ToListAsync(cancellationToken);
 
-        // The resolver is the single source of truth for lab reachability —
-        // same filter the panel fan-out applies.
         return candidates
             .Where(m => _modelClientResolver.CanResolve(m.Gateway, m.Kind))
-            .Select(m => new ModelLabMatrixDto.MatrixModelDto { Id = m.Id, Name = m.Name })
+            .Select(m => new ModelSeat(m.Id, m.Name, m.ModelFamilyId, m.FamilyName))
             .ToList();
     }
+
+    /// <summary>
+    /// Columns = families with an active seat, plus any family that voted
+    /// this week (a fully retired family appears only in weeks it voted).
+    /// </summary>
+    private static List<ModelLabMatrixDto.MatrixFamilyDto> BuildFamilyColumns(
+        IReadOnlyCollection<ModelSeat> activeSeats,
+        IEnumerable<ModelSeat> capturedModels)
+    {
+        var activeByFamily = activeSeats
+            .GroupBy(s => s.FamilyId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return activeSeats
+            .Concat(capturedModels)
+            .GroupBy(s => s.FamilyId)
+            .Select(g =>
+            {
+                activeByFamily.TryGetValue(g.Key, out var active);
+                return new ModelLabMatrixDto.MatrixFamilyDto
+                {
+                    Id = g.Key,
+                    Name = g.First().FamilyName,
+                    ActiveModelId = active?.ModelId,
+                    ActiveModelName = active?.ModelName
+                };
+            })
+            .OrderBy(f => f.Name)
+            .ToList();
+    }
+
+    private sealed record ModelSeat(Guid ModelId, string ModelName, Guid FamilyId, string FamilyName);
 }

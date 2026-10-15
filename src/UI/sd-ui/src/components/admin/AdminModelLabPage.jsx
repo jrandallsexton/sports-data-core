@@ -26,10 +26,12 @@ const QUEUED_EXPIRY_MS = 10 * 60 * 1000;
 /**
  * Model Consensus Lab — the week matrix. Rows = contests any pick'em
  * league carries for the selected sport/week (one SU line + one ATS line
- * each); columns = active lab-reachable models + Consensus. An empty cell
- * offers a per-(contest, model) generate button; a whole-row Run panel
- * fills every hole for that contest. Actuals + accuracy columns arrive
- * with scoring-on-finalization. Design: docs/features/model-consensus-lab.md.
+ * each); columns = model families (one lab seat each, any version's
+ * votes; docs/features/model-family.md) + Consensus. An empty cell offers a
+ * per-(contest, family) generate button that runs the family's active
+ * version; a whole-row Run panel fills every hole for that contest. A
+ * family with no active version is history only (no generate). Design:
+ * docs/features/model-consensus-lab.md.
  */
 export default function AdminModelLabPage() {
   const { userDto } = useUserDto();
@@ -50,9 +52,9 @@ export default function AdminModelLabPage() {
     () => localStorage.getItem(PROMPT_ID_STORAGE_KEY) ?? ''
   );
 
-  const [matrix, setMatrix] = useState(null); // { models: [], contests: [] }
+  const [matrix, setMatrix] = useState(null); // { families: [], contests: [] }
   const [loading, setLoading] = useState(false);
-  // Cells with a generation in flight, keyed `${contestId}|${modelId}`
+  // Cells with a generation in flight, keyed `${contestId}|${familyId}`
   // (or `${contestId}|*` for a whole-row panel run).
   const [queued, setQueued] = useState({});
 
@@ -104,7 +106,7 @@ export default function AdminModelLabPage() {
     try {
       const res = await apiWrapper.Admin.getModelLabMatrix(sport, y, w, pId || undefined);
       if (seq !== loadSeqRef.current) return;
-      setMatrix(res.data ?? { models: [], contests: [] });
+      setMatrix(res.data ?? { families: [], contests: [] });
     } catch (err) {
       if (seq !== loadSeqRef.current) return;
       toast.error(err?.message ?? 'Failed to load matrix');
@@ -151,10 +153,13 @@ export default function AdminModelLabPage() {
       const entries = Object.entries(q);
       if (entries.length === 0) return q;
       const cellTime = {};
-      const modelIds = (matrix.models ?? []).map(m => String(m.id).toLowerCase());
+      // Only families with an active version can land a new run.
+      const familyIds = (matrix.families ?? [])
+        .filter(f => f.activeModelId)
+        .map(f => String(f.id).toLowerCase());
       for (const c of matrix.contests ?? []) {
         for (const cell of c.cells ?? []) {
-          cellTime[`${String(c.contestId).toLowerCase()}|${String(cell.modelId).toLowerCase()}`] =
+          cellTime[`${String(c.contestId).toLowerCase()}|${String(cell.familyId).toLowerCase()}`] =
             Date.parse(cell.createdUtc) || 0;
         }
       }
@@ -165,7 +170,7 @@ export default function AdminModelLabPage() {
         const [cid, mid] = key.toLowerCase().split('|');
         const landedAfter = (m) => (cellTime[`${cid}|${m}`] ?? 0) > setAt - QUEUED_SKEW_GRACE_MS;
         const done = mid === '*'
-          ? modelIds.length > 0 && modelIds.every(landedAfter)
+          ? familyIds.length > 0 && familyIds.every(landedAfter)
           : landedAfter(mid);
         if (done || now - setAt > QUEUED_EXPIRY_MS) {
           changed = true;
@@ -264,8 +269,8 @@ export default function AdminModelLabPage() {
     }
   };
 
-  const generateCell = async (contestId, modelId) => {
-    const key = `${contestId}|${modelId}`;
+  const generateCell = async (contestId, familyId, modelId) => {
+    const key = `${contestId}|${familyId}`;
     setQueued(q => ({ ...q, [key]: Date.now() }));
     try {
       await apiWrapper.Admin.runPreviewExperiment(
@@ -290,7 +295,7 @@ export default function AdminModelLabPage() {
   const [previewView, setPreviewView] = useState(null); // { matchup, loading }
   const capturesCacheRef = useRef(new Map());
 
-  const viewCellPreview = async (contest, model, cell) => {
+  const viewCellPreview = async (contest, family, cell) => {
     const teamName = (fsId) => {
       if (!fsId) return null;
       const id = String(fsId).toLowerCase();
@@ -310,7 +315,7 @@ export default function AdminModelLabPage() {
       home: contest.home,
       homeShort: contest.homeShort,
       startDateUtc: contest.startDateUtc,
-      generatedByLabel: model.name,
+      generatedByLabel: cell.modelName ?? family.name,
       straightUpWinner: teamName(cell.predictedStraightUpWinnerId),
       atsWinner: teamName(cell.predictedSpreadWinnerId),
       awayScore: cell.awayScore ?? null,
@@ -398,19 +403,19 @@ export default function AdminModelLabPage() {
     }
   };
 
-  const models = useMemo(() => matrix?.models ?? [], [matrix]);
+  const families = useMemo(() => matrix?.families ?? [], [matrix]);
   const contests = useMemo(() => matrix?.contests ?? [], [matrix]);
 
   // WEEK records for the footer (scope = the displayed matrix: the
   // selected week's contests only — season-to-date needs a cross-week
-  // aggregate and is future work): per model and for the consensus
+  // aggregate and is future work): per family and for the consensus
   // column, X/Y = correct picks / graded picks. A pick is
   // GRADED only when the game is final, the model actually picked, and
   // an actual exists (ATS pushes grade nobody). Abstentions and
   // not-yet-run cells never count against a model here — cost of
   // abstaining is a Phase-4 scoring question, not a display one.
   const records = useMemo(() => {
-    const perModel = {};
+    const perFamily = {};
     const consensus = { su: [0, 0], ats: [0, 0] };
     const favorites = { su: [0, 0], ats: [0, 0] };
     const home = { su: [0, 0], ats: [0, 0] };
@@ -421,15 +426,15 @@ export default function AdminModelLabPage() {
     };
     for (const c of contests) {
       const cellBy = {};
-      for (const cell of c.cells ?? []) cellBy[String(cell.modelId).toLowerCase()] = cell;
-      for (const m of models) {
-        const cell = cellBy[String(m.id).toLowerCase()];
-        const rec = (perModel[m.id] ??= { su: [0, 0], ats: [0, 0] });
+      for (const cell of c.cells ?? []) cellBy[String(cell.familyId).toLowerCase()] = cell;
+      for (const f of families) {
+        const cell = cellBy[String(f.id).toLowerCase()];
+        const rec = (perFamily[f.id] ??= { su: [0, 0], ats: [0, 0] });
         tally(rec.su, gradePick(cell?.predictedStraightUpWinnerId, c.actualWinnerId, c.isFinal));
         tally(rec.ats, gradePick(cell?.predictedSpreadWinnerId, c.actualSpreadWinnerId, c.isFinal));
       }
-      const suC = consensusOf(models.map(m => cellBy[String(m.id).toLowerCase()]?.predictedStraightUpWinnerId ?? null));
-      const atsC = consensusOf(models.map(m => cellBy[String(m.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
+      const suC = consensusOf(families.map(f => cellBy[String(f.id).toLowerCase()]?.predictedStraightUpWinnerId ?? null));
+      const atsC = consensusOf(families.map(f => cellBy[String(f.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
       tally(consensus.su, gradePick(suC, c.actualWinnerId, c.isFinal));
       tally(consensus.ats, gradePick(atsC, c.actualSpreadWinnerId, c.isFinal));
       const fav = favoritePickFor(c);
@@ -438,8 +443,8 @@ export default function AdminModelLabPage() {
       tally(home.su, gradePick(c.homeFranchiseSeasonId, c.actualWinnerId, c.isFinal));
       tally(home.ats, gradePick(c.homeFranchiseSeasonId, c.actualSpreadWinnerId, c.isFinal));
     }
-    return { perModel, consensus, favorites, home };
-  }, [contests, models]);
+    return { perFamily, consensus, favorites, home };
+  }, [contests, families]);
 
   return (
     <div className="admin-page">
@@ -451,10 +456,12 @@ export default function AdminModelLabPage() {
         <h2 className="model-lab-no-print" style={{ marginBottom: 4 }}>Model Consensus Lab</h2>
         <p className="model-lab-no-print" style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
           Every contest any pick'em league carries for the week, against
-          every active lab-reachable model. Empty cell = no run yet - the
-          button generates just that pair. Experiments never write a
-          MatchupPreview. Models live on /admin/models; consensus is a
-          simple majority of the picks cast.
+          every model family - one lab seat each, with every version's
+          picks (a pick by an older version is labelled with it). Empty
+          cell = no run yet - the button runs the family's active version
+          on just that pair. Experiments never write a MatchupPreview.
+          Models and families live on /admin/models; consensus is a simple
+          majority of the picks cast.
         </p>
 
         <div className="model-lab-print-header">
@@ -505,7 +512,7 @@ export default function AdminModelLabPage() {
             type="button"
             className="model-lab-btn"
             onClick={() => setPrintMode(true)}
-            disabled={loading || models.length === 0 || contests.length === 0}
+            disabled={loading || families.length === 0 || contests.length === 0}
             title="Print-to-PDF with model names anonymized (Model A, B, ...) — safe to share outside admin."
           >
             Export PDF
@@ -531,29 +538,37 @@ export default function AdminModelLabPage() {
         </div>
 
         {loading && <div>Loading matrix…</div>}
-        {!loading && models.length === 0 && (
+        {!loading && families.length === 0 && (
           <div style={{ color: 'var(--text-secondary)' }}>
             No active lab-reachable models - add models (gateway: OpenRouter)
             on /admin/models first.
           </div>
         )}
-        {!loading && models.length > 0 && contests.length === 0 && (
+        {!loading && families.length > 0 && contests.length === 0 && (
           <div style={{ color: 'var(--text-secondary)' }}>
             No pick'em league carries contests for this sport/week.
           </div>
         )}
 
-        {models.length > 0 && contests.length > 0 && (
+        {families.length > 0 && contests.length > 0 && (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.9rem' }}>
               <thead>
                 <tr>
                   <th style={headerStyle}>Contest</th>
-                  {models.map((m, i) => (
-                    <th key={m.id} className="model-lab-model-col" style={headerStyle}>
+                  {families.map((f, i) => (
+                    <th key={f.id} className="model-lab-model-col" style={headerStyle}>
                       {printMode
                         ? <>Model<br />{modelLetter(i)}</>
-                        : m.name}
+                        : (
+                          <>
+                            {f.name}
+                            <br />
+                            <span style={{ fontWeight: 400, fontSize: '0.8em', color: 'var(--text-secondary)' }}>
+                              {f.activeModelName ?? 'retired'}
+                            </span>
+                          </>
+                        )}
                     </th>
                   ))}
                   <th style={headerStyle}>Consensus</th>
@@ -577,7 +592,8 @@ export default function AdminModelLabPage() {
                   <ContestRows
                     key={c.contestId}
                     contest={c}
-                    models={models}
+                    families={families}
+                    printMode={printMode}
                     queued={queued}
                     onGenerateCell={generateCell}
                     onRunPanel={runPanelForContest}
@@ -588,8 +604,8 @@ export default function AdminModelLabPage() {
               <tfoot>
                 <tr>
                   <td style={footerStyle}>Week Record - SU</td>
-                  {models.map(m => (
-                    <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.su)}</td>
+                  {families.map(f => (
+                    <td key={f.id} style={footerStyle}>{formatRecord(records.perFamily[f.id]?.su)}</td>
                   ))}
                   <td style={footerStyle}>{formatRecord(records.consensus.su)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.su)}</td>
@@ -598,8 +614,8 @@ export default function AdminModelLabPage() {
                 </tr>
                 <tr>
                   <td style={footerStyle}>Week Record - ATS</td>
-                  {models.map(m => (
-                    <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.ats)}</td>
+                  {families.map(f => (
+                    <td key={f.id} style={footerStyle}>{formatRecord(records.perFamily[f.id]?.ats)}</td>
                   ))}
                   <td style={footerStyle}>{formatRecord(records.consensus.ats)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.ats)}</td>
@@ -658,7 +674,6 @@ const footerStyle = {
   fontWeight: 700,
 };
 
-/** Majority of the picks cast; needs at least 2 votes and no tie. */
 /**
  * Home-relative line as " (-22.5)" / " (+3.5)" / " (PK)" — no team name,
  * the spread is always the home team's. Empty string when no odds.
@@ -705,11 +720,16 @@ const GRADE_STYLES = {
   },
 };
 
+function sameId(a, b) {
+  return a != null && b != null && String(a).toLowerCase() === String(b).toLowerCase();
+}
+
 function formatRecord(pair) {
   if (!pair || pair[1] === 0) return '—';
   return `${pair[0]}/${pair[1]}`;
 }
 
+/** Majority of the picks cast; needs at least 2 votes and no tie. */
 function consensusOf(picks) {
   const votes = picks.filter(Boolean);
   if (votes.length < 2) return null;
@@ -720,15 +740,15 @@ function consensusOf(picks) {
   return ranked[0][1] * 2 > votes.length ? ranked[0][0] : null;
 }
 
-function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onViewPreview }) {
+function ContestRows({ contest, families, printMode, queued, onGenerateCell, onRunPanel, onViewPreview }) {
   const teamById = useMemo(() => ({
     [String(contest.awayFranchiseSeasonId).toLowerCase()]: contest.awayShort || contest.away,
     [String(contest.homeFranchiseSeasonId).toLowerCase()]: contest.homeShort || contest.home,
   }), [contest]);
 
-  const cellByModel = useMemo(() => {
+  const cellByFamily = useMemo(() => {
     const map = {};
-    for (const cell of contest.cells ?? []) map[String(cell.modelId).toLowerCase()] = cell;
+    for (const cell of contest.cells ?? []) map[String(cell.familyId).toLowerCase()] = cell;
     return map;
   }, [contest]);
 
@@ -741,21 +761,25 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
   const rowPanelQueued = queued[`${contest.contestId}|*`];
   const label = `${contest.away} @ ${contest.home}`;
 
-  const renderPickCell = (model, pickField) => {
-    const cell = cellByModel[String(model.id).toLowerCase()];
-    const isQueued = rowPanelQueued || queued[`${contest.contestId}|${model.id}`];
+  const renderPickCell = (family, pickField) => {
+    const cell = cellByFamily[String(family.id).toLowerCase()];
+    const isQueued = rowPanelQueued || queued[`${contest.contestId}|${family.id}`];
+    // A family with no active version is history only: nothing can run.
+    const canRun = !!family.activeModelId;
 
     if (!cell) {
       return (
-        <td key={model.id} style={cellStyle}>
-          {isQueued ? (
+        <td key={family.id} style={cellStyle}>
+          {!canRun ? (
+            <span style={{ color: 'var(--text-secondary)' }}>—</span>
+          ) : isQueued ? (
             <span style={{ color: 'var(--text-secondary)' }}>queued…</span>
           ) : (
             <button
               type="button"
               className="model-lab-btn model-lab-btn--small"
-              onClick={() => onGenerateCell(contest.contestId, model.id)}
-              title={`Run ${model.name} on ${label}`}
+              onClick={() => onGenerateCell(contest.contestId, family.id, family.activeModelId)}
+              title={`Run ${family.activeModelName} on ${label}`}
             >
               generate
             </button>
@@ -776,7 +800,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
       // abstained. Different facts, different cells - and both keep a
       // retry (a rerun supersedes; the failed capture stays as history).
       return (
-        <td key={model.id} style={cellStyle}>
+        <td key={family.id} style={cellStyle}>
           {cell.problems ? (
             <span
               title={cell.problems}
@@ -787,14 +811,14 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
           ) : (
             <span style={{ color: 'var(--text-secondary)' }}>abstained</span>
           )}
-          {isQueued ? (
+          {!canRun ? null : isQueued ? (
             <span style={{ color: 'var(--text-secondary)', marginLeft: 6 }}>queued…</span>
           ) : (
             <button
               type="button"
               className="model-lab-btn model-lab-btn--small"
-              onClick={() => onGenerateCell(contest.contestId, model.id)}
-              title={`Retry ${model.name} on ${label}`}
+              onClick={() => onGenerateCell(contest.contestId, family.id, family.activeModelId)}
+              title={`Retry with ${family.activeModelName} on ${label}`}
               style={{ marginLeft: 6 }}
             >
               retry
@@ -804,14 +828,14 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
       );
     }
     return (
-      <td key={model.id} style={{ ...cellStyle, fontWeight: 600, ...(grade ? GRADE_STYLES[grade] : null) }}>
+      <td key={family.id} style={{ ...cellStyle, fontWeight: 600, ...(grade ? GRADE_STYLES[grade] : null) }}>
         {/* The pick doubles as the drill-down into what the model actually
             wrote — the capture behind this cell, rendered in the standard
             preview dialog (read-only). */}
         <button
           type="button"
-          onClick={() => onViewPreview(contest, model, cell)}
-          title={`View ${model.name}'s generated preview`}
+          onClick={() => onViewPreview(contest, family, cell)}
+          title={`View ${cell.modelName}'s generated preview`}
           style={{
             background: 'none',
             border: 'none',
@@ -825,6 +849,15 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
         >
           {pick}
         </button>
+        {/* An older version's vote: label it (never in the anonymized export). */}
+        {!printMode && !sameId(cell.modelId, family.activeModelId) && (
+          <span
+            title={`Picked by ${cell.modelName}`}
+            style={{ fontWeight: 400, fontSize: '0.75em', color: 'var(--text-secondary)', marginLeft: 4 }}
+          >
+            {cell.modelName}
+          </span>
+        )}
         {cell.problems && (
           <span
             title={cell.problems}
@@ -837,10 +870,10 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
     );
   };
 
-  const suConsensus = consensusOf(models.map(m =>
-    cellByModel[String(m.id).toLowerCase()]?.predictedStraightUpWinnerId ?? null));
-  const atsConsensus = consensusOf(models.map(m =>
-    cellByModel[String(m.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
+  const suConsensus = consensusOf(families.map(f =>
+    cellByFamily[String(f.id).toLowerCase()]?.predictedStraightUpWinnerId ?? null));
+  const atsConsensus = consensusOf(families.map(f =>
+    cellByFamily[String(f.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
 
   const suGrade = gradePick(suConsensus, contest.actualWinnerId, contest.isFinal);
   const atsGrade = gradePick(atsConsensus, contest.actualSpreadWinnerId, contest.isFinal);
@@ -866,13 +899,13 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
     );
   };
 
-  const hasHoles = models.some(m => !cellByModel[String(m.id).toLowerCase()]);
+  const hasHoles = families.some(f => f.activeModelId && !cellByFamily[String(f.id).toLowerCase()]);
 
   return (
     <>
       <tr>
         <td style={{ ...cellStyle, fontWeight: 600 }}>{label} - SU</td>
-        {models.map(m => renderPickCell(m, 'predictedStraightUpWinnerId'))}
+        {families.map(f => renderPickCell(f, 'predictedStraightUpWinnerId'))}
         <td style={{ ...cellStyle, fontWeight: 700, ...(suGrade ? GRADE_STYLES[suGrade] : null) }}>
           {suConsensus ? teamFor(suConsensus) : '-'}
         </td>
@@ -896,7 +929,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onVi
         <td style={{ ...cellStyle, color: 'var(--text-secondary)' }}>
           {label} - ATS{formatSpread(contest.spread)}
         </td>
-        {models.map(m => renderPickCell(m, 'predictedSpreadWinnerId'))}
+        {families.map(f => renderPickCell(f, 'predictedSpreadWinnerId'))}
         <td style={{ ...cellStyle, fontWeight: 700, ...(atsGrade ? GRADE_STYLES[atsGrade] : null) }}>
           {atsConsensus ? teamFor(atsConsensus) : '—'}
         </td>

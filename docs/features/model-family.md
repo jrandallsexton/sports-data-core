@@ -125,8 +125,10 @@ before models, and give every model row its `ModelFamilyId`.
 `ModelLabMatrixDto`:
 
 - `Models` is renamed **`Families`**: `{ Id, Name, ActiveModelId?,
-  ActiveModelName? }`. The active model is the family's one lab-reachable
-  active model, or null when no version of the family is active any more.
+  ActiveModelName? }`. The active model is the family's one active,
+  lab-reachable model, or null when the family has none (no active
+  version, or its active version is not lab-reachable, e.g. its provider is
+  inactive).
   Renamed because the columns now are families.
 - `MatrixCellDto` gains **`FamilyId`** and **`ModelName`**. `ModelId` stays as
   the exact provenance.

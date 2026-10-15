@@ -164,15 +164,85 @@ public sealed class ModelLabSeatTests
         active.Should().Equal(createdId);
     }
 
+    [Fact]
+    public async Task UpdateModel_SeatSwappedAwayBeforeTheAttempt_TakesTheSeatBack()
+    {
+        // The handler reads the model as the active seat holder (so a plain
+        // metadata edit would not take a seat). Before its transaction does
+        // anything, a concurrent swap deactivates it and seats another
+        // version. The update keeps IsActive = true, so it must decide from
+        // the reloaded row that it now takes the seat and vacate the new
+        // holder, not collide on the index.
+        var familyId = await SeedFamilyAsync();
+        var editedId = Guid.NewGuid();
+        var rivalId = Guid.NewGuid();
+        await SeedModelAsync(editedId, familyId, "edited", isActive: true);
+        await SeedModelAsync(rivalId, familyId, "rival", isActive: false);
+
+        var connectionString = ConnectionString();
+        var swap = new OnFirstTransactionStartInterceptor(async () =>
+        {
+            await using var conn = new NpgsqlConnection(connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new NpgsqlCommand(
+                "UPDATE \"Model\" SET \"IsActive\" = FALSE WHERE \"Id\" = @edited; " +
+                "UPDATE \"Model\" SET \"IsActive\" = TRUE WHERE \"Id\" = @rival;", conn);
+            cmd.Parameters.AddWithValue("edited", editedId);
+            cmd.Parameters.AddWithValue("rival", rivalId);
+            await cmd.ExecuteNonQueryAsync();
+        });
+
+        await using (var db = CreateRetryingContext(swap))
+        {
+            var result = await new UpdateModelCommandHandler(db, new DateTimeProvider(), NullLogger<UpdateModelCommandHandler>.Instance)
+                .ExecuteAsync(new UpdateModelCommand
+                {
+                    ModelId = editedId,
+                    ModelFamilyId = familyId,
+                    CutoffEvidence = "metadata edit",
+                    IsActive = true
+                }, CancellationToken.None);
+
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        swap.Fired.Should().BeTrue();
+        var active = await ActiveSeatIdsAsync(familyId);
+        active.Should().Equal(editedId);
+    }
+
+    private string ConnectionString()
+    {
+        using var scope = _fixture.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<AppDataContext>()
+            .Database.GetConnectionString()!;
+    }
+
+    /// <summary>Runs a side effect once, as the handler's first transaction opens.</summary>
+    private sealed class OnFirstTransactionStartInterceptor(Func<Task> sideEffect) : DbTransactionInterceptor
+    {
+        public bool Fired { get; private set; }
+
+        public override async ValueTask<DbTransaction> TransactionStartedAsync(
+            DbConnection connection,
+            TransactionEndEventData eventData,
+            DbTransaction result,
+            CancellationToken cancellationToken = default)
+        {
+            if (!Fired)
+            {
+                Fired = true;
+                await sideEffect();
+            }
+
+            return result;
+        }
+    }
+
     /// <summary>Same retry policy as production (Core ServiceRegistration), shorter delay.</summary>
     private AppDataContext CreateRetryingContext(IInterceptor interceptor)
     {
-        string connectionString;
-        using (var scope = _fixture.CreateScope())
-        {
-            connectionString = scope.ServiceProvider.GetRequiredService<AppDataContext>()
-                .Database.GetConnectionString()!;
-        }
+        var connectionString = ConnectionString();
 
         var options = new DbContextOptionsBuilder<AppDataContext>()
             .UseNpgsql(connectionString, b => b.EnableRetryOnFailure(5, TimeSpan.FromMilliseconds(200), ["40001"]))

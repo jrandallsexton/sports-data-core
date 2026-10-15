@@ -104,8 +104,10 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
             }
         }
 
-        var takesSeat = LabSeat.Occupies(model.Gateway, command.IsActive)
-            && (!model.IsActive || model.ModelFamilyId != command.ModelFamilyId);
+        // Decided per attempt from the model reloaded inside the
+        // transaction: a concurrent swap between the read above and the
+        // attempt can change whether this update takes the seat.
+        var takesSeat = false;
 
         List<string> displaced;
 
@@ -131,6 +133,9 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
 
                 var current = await _dataContext.Models
                     .FirstAsync(m => m.Id == command.ModelId, cancellationToken);
+
+                takesSeat = LabSeat.Occupies(current.Gateway, command.IsActive)
+                    && (!current.IsActive || current.ModelFamilyId != command.ModelFamilyId);
 
                 var vacated = takesSeat
                     ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, model.Id, _dateTimeProvider.UtcNow(), cancellationToken)

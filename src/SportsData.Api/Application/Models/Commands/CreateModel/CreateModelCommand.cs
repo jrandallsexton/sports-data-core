@@ -137,25 +137,8 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
                 [new ValidationFailure(nameof(command.Name), $"A model with this name or (provider, api id) already exists.")]);
         }
 
-        if (command.IsDefault)
-        {
-            var currentDefaults = await _dataContext.Models
-                .Where(m => m.IsDefault)
-                .ToListAsync(cancellationToken);
-
-            foreach (var existing in currentDefaults)
-            {
-                existing.IsDefault = false;
-                existing.ModifiedUtc = _dateTimeProvider.UtcNow();
-            }
-        }
-
         var modelId = Guid.NewGuid();
-
-        // New rows are active, so an OpenRouter model takes its family's seat.
-        var displaced = LabSeat.Occupies(command.Gateway, isActive: true)
-            ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, modelId, _dateTimeProvider.UtcNow(), cancellationToken)
-            : new List<string>();
+        var takesSeat = LabSeat.Occupies(command.Gateway, isActive: true);
 
         var model = new Model
         {
@@ -175,16 +158,50 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             CreatedUtc = _dateTimeProvider.UtcNow()
         };
 
-        await _dataContext.Models.AddAsync(model, cancellationToken);
+        List<string> displaced;
 
         try
         {
-            // Clear-old-default + insert commit in ONE SaveChanges; the
-            // partial unique index turns a concurrent race into a
-            // constraint violation here.
-            await _dataContext.SaveChangesAsync(cancellationToken);
+            // Two saves in ONE transaction: first vacate the default and the
+            // family's lab seat, then insert. In a single SaveChanges EF may
+            // send the insert first (it does not see that the partial unique
+            // indexes depend on IsDefault / IsActive), and PostgreSQL checks
+            // non-deferrable unique indexes per statement. A concurrent race
+            // still surfaces as a constraint violation here. Execution
+            // strategy wrap: EnableRetryOnFailure forbids a raw transaction.
+            var strategy = _dataContext.Database.CreateExecutionStrategy();
+            displaced = await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+
+                if (command.IsDefault)
+                {
+                    var currentDefaults = await _dataContext.Models
+                        .Where(m => m.IsDefault)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var existing in currentDefaults)
+                    {
+                        existing.IsDefault = false;
+                        existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                    }
+                }
+
+                // New rows are active, so an OpenRouter model takes its family's seat.
+                var vacated = takesSeat
+                    ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, modelId, _dateTimeProvider.UtcNow(), cancellationToken)
+                    : new List<string>();
+
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                await _dataContext.Models.AddAsync(model, cancellationToken);
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                return vacated;
+            });
         }
-        catch (DbUpdateException ex) when (command.IsDefault || LabSeat.Occupies(command.Gateway, isActive: true))
+        catch (DbUpdateException ex) when (command.IsDefault || takesSeat)
         {
             _logger.LogWarning(ex, "Concurrent default-model or lab-seat change detected while creating model {ModelId}.", model.Id);
             return new Failure<Guid>(

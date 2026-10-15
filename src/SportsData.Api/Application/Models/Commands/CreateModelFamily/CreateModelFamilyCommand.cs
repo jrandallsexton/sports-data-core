@@ -78,7 +78,21 @@ public class CreateModelFamilyCommandHandler : ICreateModelFamilyCommandHandler
         };
 
         await _dataContext.ModelFamilies.AddAsync(family, cancellationToken);
-        await _dataContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            // A concurrent create with the same name passed the check above;
+            // the unique name index rejects the loser. Same 400 as that check.
+            _logger.LogWarning(ex, "Concurrent ModelFamily create rejected. Name: {Name}", name);
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(command.Name), $"A family named '{name}' already exists.")]);
+        }
 
         _logger.LogInformation("ModelFamily created. Id: {FamilyId}, Name: {Name}", family.Id, family.Name);
 

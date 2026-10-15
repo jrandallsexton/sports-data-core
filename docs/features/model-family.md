@@ -106,8 +106,9 @@ crash loop. The migration therefore:
    Model Manager) **its own family, named after the model**. An operator can
    regroup it later.
 4. **Resolves seat collisions before creating the index.** In each family with
-   more than one active OpenRouter row, it keeps the newest by `ReleaseDate`
-   (ties broken by `CreatedUtc`) active and deactivates the rest, with a
+   more than one active OpenRouter row, it keeps one active and deactivates
+   the rest: the production default (`IsDefault`) first, otherwise the newest
+   by `ReleaseDate` (ties broken by `CreatedUtc`), with a
    `RAISE NOTICE` for each change. The case it handles is any database that
    never ran `model_lab_2026-10-14_qwen38_max.sql`, where Qwen 3 Max and 3.8
    are both active. The model it deactivates returns 404 anyway.

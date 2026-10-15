@@ -106,26 +106,44 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
         var takesSeat = LabSeat.Occupies(model.Gateway, command.IsActive)
             && (!model.IsActive || model.ModelFamilyId != command.ModelFamilyId);
 
-        var displaced = takesSeat
-            ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, model.Id, _dateTimeProvider.UtcNow(), cancellationToken)
-            : new List<string>();
-
-        model.ModelFamilyId = command.ModelFamilyId;
-        model.ReleaseDate = command.ReleaseDate;
-        model.KnowledgeCutoffUtc = command.KnowledgeCutoffUtc;
-        model.CutoffEvidence = command.CutoffEvidence;
-        model.CutoffVerifiedUtc = command.CutoffVerifiedUtc;
-        model.InputCostPerMTok = command.InputCostPerMTok;
-        model.OutputCostPerMTok = command.OutputCostPerMTok;
-        model.IsActive = command.IsActive;
-        model.ModifiedUtc = _dateTimeProvider.UtcNow();
+        List<string> displaced;
 
         try
         {
-            // Vacate-old-seat + update commit in ONE SaveChanges; the
-            // partial unique index turns a concurrent race into a
-            // constraint violation here.
-            await _dataContext.SaveChangesAsync(cancellationToken);
+            // Two saves in ONE transaction: first vacate the family's lab
+            // seat, then apply the update. In a single SaveChanges EF orders
+            // same-table updates by key, not by the partial unique index it
+            // cannot see depends on IsActive, and PostgreSQL checks
+            // non-deferrable unique indexes per statement — the incoming
+            // activation could land first and collide. A concurrent race
+            // still surfaces as a constraint violation here. Execution
+            // strategy wrap: EnableRetryOnFailure forbids a raw transaction.
+            var strategy = _dataContext.Database.CreateExecutionStrategy();
+            displaced = await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+
+                var vacated = takesSeat
+                    ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, model.Id, _dateTimeProvider.UtcNow(), cancellationToken)
+                    : new List<string>();
+
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                model.ModelFamilyId = command.ModelFamilyId;
+                model.ReleaseDate = command.ReleaseDate;
+                model.KnowledgeCutoffUtc = command.KnowledgeCutoffUtc;
+                model.CutoffEvidence = command.CutoffEvidence;
+                model.CutoffVerifiedUtc = command.CutoffVerifiedUtc;
+                model.InputCostPerMTok = command.InputCostPerMTok;
+                model.OutputCostPerMTok = command.OutputCostPerMTok;
+                model.IsActive = command.IsActive;
+                model.ModifiedUtc = _dateTimeProvider.UtcNow();
+
+                await _dataContext.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                return vacated;
+            });
         }
         catch (DbUpdateException ex) when (takesSeat)
         {

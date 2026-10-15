@@ -103,8 +103,10 @@ crash loop. The migration therefore:
 2. Adds `ModelFamilyId` as **nullable** and maps the known rows by their fixed
    Model Ids.
 3. Gives each remaining row with no family (models an operator created in the
-   Model Manager) **its own family, named after the model**. An operator can
-   regroup it later.
+   Model Manager) a family by name: it joins an existing family whose name
+   equals the model's name (a model named "GPT" joins the seeded GPT family),
+   otherwise it gets **its own family, named after the model**. An operator
+   can regroup it later.
 4. **Resolves seat collisions before creating the index.** In each family with
    more than one active OpenRouter row, it keeps one active and deactivates
    the rest: the production default (`IsDefault`) first, otherwise the newest

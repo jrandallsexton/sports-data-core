@@ -78,6 +78,7 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
         }
 
         var model = await _dataContext.Models
+            .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == command.ModelId, cancellationToken);
 
         if (model is null)
@@ -118,10 +119,18 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
             // activation could land first and collide. A concurrent race
             // still surfaces as a constraint violation here. Execution
             // strategy wrap: EnableRetryOnFailure forbids a raw transaction.
+            // Each attempt starts from a clear change tracker and reloads:
+            // a retry follows a rolled-back transaction, and entities still
+            // tracked from the failed attempt would read as already saved
+            // (no dirty updates), so the retry would commit nothing.
             var strategy = _dataContext.Database.CreateExecutionStrategy();
             displaced = await strategy.ExecuteAsync(async () =>
             {
+                _dataContext.ChangeTracker.Clear();
                 await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+
+                var current = await _dataContext.Models
+                    .FirstAsync(m => m.Id == command.ModelId, cancellationToken);
 
                 var vacated = takesSeat
                     ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, model.Id, _dateTimeProvider.UtcNow(), cancellationToken)
@@ -129,15 +138,15 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
 
                 await _dataContext.SaveChangesAsync(cancellationToken);
 
-                model.ModelFamilyId = command.ModelFamilyId;
-                model.ReleaseDate = command.ReleaseDate;
-                model.KnowledgeCutoffUtc = command.KnowledgeCutoffUtc;
-                model.CutoffEvidence = command.CutoffEvidence;
-                model.CutoffVerifiedUtc = command.CutoffVerifiedUtc;
-                model.InputCostPerMTok = command.InputCostPerMTok;
-                model.OutputCostPerMTok = command.OutputCostPerMTok;
-                model.IsActive = command.IsActive;
-                model.ModifiedUtc = _dateTimeProvider.UtcNow();
+                current.ModelFamilyId = command.ModelFamilyId;
+                current.ReleaseDate = command.ReleaseDate;
+                current.KnowledgeCutoffUtc = command.KnowledgeCutoffUtc;
+                current.CutoffEvidence = command.CutoffEvidence;
+                current.CutoffVerifiedUtc = command.CutoffVerifiedUtc;
+                current.InputCostPerMTok = command.InputCostPerMTok;
+                current.OutputCostPerMTok = command.OutputCostPerMTok;
+                current.IsActive = command.IsActive;
+                current.ModifiedUtc = _dateTimeProvider.UtcNow();
 
                 await _dataContext.SaveChangesAsync(cancellationToken);
 
@@ -156,7 +165,7 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
 
         _logger.LogInformation(
             "Model updated. Id: {ModelId}, Family: {FamilyId}, Cutoff: {Cutoff}, VerifiedUtc: {VerifiedUtc}, IsActive: {IsActive}, DisplacedFromSeat: {Displaced}",
-            model.Id, model.ModelFamilyId, model.KnowledgeCutoffUtc, model.CutoffVerifiedUtc, model.IsActive, displaced);
+            model.Id, command.ModelFamilyId, command.KnowledgeCutoffUtc, command.CutoffVerifiedUtc, command.IsActive, displaced);
 
         return new Success<Guid>(model.Id);
     }

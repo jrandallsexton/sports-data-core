@@ -169,9 +169,14 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             // non-deferrable unique indexes per statement. A concurrent race
             // still surfaces as a constraint violation here. Execution
             // strategy wrap: EnableRetryOnFailure forbids a raw transaction.
+            // Each attempt starts from a clear change tracker: a retry
+            // follows a rolled-back transaction, and entities still tracked
+            // from the failed attempt would read as already saved, so the
+            // vacate would issue no updates and the insert would collide.
             var strategy = _dataContext.Database.CreateExecutionStrategy();
             displaced = await strategy.ExecuteAsync(async () =>
             {
+                _dataContext.ChangeTracker.Clear();
                 await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
 
                 if (command.IsDefault)

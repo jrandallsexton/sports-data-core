@@ -1,13 +1,20 @@
+using System.Data.Common;
+
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+
+using Npgsql;
 
 using SportsData.Api.Application.Models.Commands.CreateModel;
 using SportsData.Api.Application.Models.Commands.UpdateModel;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Tests.Integration.Fixtures;
+using SportsData.Core.Common;
 
 using Xunit;
 
@@ -94,6 +101,106 @@ public sealed class ModelLabSeatTests
 
         var active = await ActiveSeatIdsAsync(familyId);
         active.Should().Equal(createdId);
+    }
+
+    [Fact]
+    public async Task UpdateModel_RetryAfterFailedCommit_StillSwapsTheSeat()
+    {
+        // The first commit fails with a transient serialization error, so
+        // the execution strategy rolls back and re-runs the delegate. The
+        // retry must re-issue the vacate and the activation, not trust
+        // entities tracked from the rolled-back attempt.
+        var familyId = await SeedFamilyAsync();
+        var incumbentId = Guid.NewGuid();
+        var incomingId = Guid.NewGuid();
+        await SeedModelAsync(incumbentId, familyId, "incumbent", isActive: true);
+        await SeedModelAsync(incomingId, familyId, "successor", isActive: false);
+
+        var failOnce = new FailFirstCommitInterceptor();
+        await using (var db = CreateRetryingContext(failOnce))
+        {
+            var result = await new UpdateModelCommandHandler(db, new DateTimeProvider(), NullLogger<UpdateModelCommandHandler>.Instance)
+                .ExecuteAsync(new UpdateModelCommand
+                {
+                    ModelId = incomingId,
+                    ModelFamilyId = familyId,
+                    IsActive = true
+                }, CancellationToken.None);
+
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        failOnce.Failures.Should().Be(1);
+        var active = await ActiveSeatIdsAsync(familyId);
+        active.Should().Equal(incomingId);
+    }
+
+    [Fact]
+    public async Task CreateModel_RetryAfterFailedCommit_StillSwapsTheSeat()
+    {
+        var familyId = await SeedFamilyAsync();
+        await SeedModelAsync(Guid.NewGuid(), familyId, "incumbent", isActive: true);
+
+        var failOnce = new FailFirstCommitInterceptor();
+        Guid createdId;
+        await using (var db = CreateRetryingContext(failOnce))
+        {
+            var result = await new CreateModelCommandHandler(db, new DateTimeProvider(), NullLogger<CreateModelCommandHandler>.Instance)
+                .ExecuteAsync(new CreateModelCommand
+                {
+                    ModelProviderId = _providerByFamily[familyId],
+                    ModelFamilyId = familyId,
+                    Name = $"successor-{familyId:N}",
+                    ApiModelId = $"test/successor-{familyId:N}",
+                    Gateway = ModelGateway.OpenRouter
+                }, CancellationToken.None);
+
+            result.IsSuccess.Should().BeTrue();
+            createdId = result.Value;
+        }
+
+        failOnce.Failures.Should().Be(1);
+        var active = await ActiveSeatIdsAsync(familyId);
+        active.Should().Equal(createdId);
+    }
+
+    /// <summary>Same retry policy as production (Core ServiceRegistration), shorter delay.</summary>
+    private AppDataContext CreateRetryingContext(IInterceptor interceptor)
+    {
+        string connectionString;
+        using (var scope = _fixture.CreateScope())
+        {
+            connectionString = scope.ServiceProvider.GetRequiredService<AppDataContext>()
+                .Database.GetConnectionString()!;
+        }
+
+        var options = new DbContextOptionsBuilder<AppDataContext>()
+            .UseNpgsql(connectionString, b => b.EnableRetryOnFailure(5, TimeSpan.FromMilliseconds(200), ["40001"]))
+            .AddInterceptors(interceptor)
+            .Options;
+
+        return new AppDataContext(options);
+    }
+
+    /// <summary>Fails the first commit with a transient serialization error (40001).</summary>
+    private sealed class FailFirstCommitInterceptor : DbTransactionInterceptor
+    {
+        public int Failures { get; private set; }
+
+        public override ValueTask<InterceptionResult> TransactionCommittingAsync(
+            DbTransaction transaction,
+            TransactionEventData eventData,
+            InterceptionResult result,
+            CancellationToken cancellationToken = default)
+        {
+            if (Failures == 0)
+            {
+                Failures++;
+                throw new PostgresException("injected serialization failure", "ERROR", "ERROR", "40001");
+            }
+
+            return base.TransactionCommittingAsync(transaction, eventData, result, cancellationToken);
+        }
     }
 
     private async Task<Guid> SeedFamilyAsync()

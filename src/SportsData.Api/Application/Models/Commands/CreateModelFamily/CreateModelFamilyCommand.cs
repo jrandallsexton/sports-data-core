@@ -87,14 +87,14 @@ public class CreateModelFamilyCommandHandler : ICreateModelFamilyCommandHandler
         {
             // A concurrent create with the same name passed the check above;
             // the unique name index rejects the loser. Same 400 as that check.
-            _logger.LogWarning(ex, "Concurrent ModelFamily create rejected. Name: {Name}", name);
+            _logger.LogWarning(ex, "Concurrent ModelFamily create rejected (duplicate name).");
             return new Failure<Guid>(
                 default!,
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.Name), $"A family named '{name}' already exists.")]);
         }
 
-        _logger.LogInformation("ModelFamily created. Id: {FamilyId}, Name: {Name}", family.Id, family.Name);
+        _logger.LogInformation("ModelFamily created. Id: {FamilyId}", family.Id);
 
         return new Success<Guid>(family.Id);
     }

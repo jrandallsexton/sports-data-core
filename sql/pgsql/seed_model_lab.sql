@@ -13,6 +13,11 @@
 -- Idempotent: fixed UUIDs + ON CONFLICT DO NOTHING (any unique clash —
 -- id, name, or (provider, api id) — skips the row rather than erroring).
 -- Target DB: API (AppDataContext).
+--
+-- Seed only reaches FRESH databases: ON CONFLICT DO NOTHING never updates
+-- an existing row. A database seeded before 2026-10-14 must also run
+-- model_lab_2026-10-14_qwen38_max.sql, or Qwen 3 Max (retired, 404s) stays
+-- active beside its replacement.
 
 -- Providers. Kind maps to a first-party client implementation;
 -- 99 = GatewayOnly (no first-party client; reachable only via gateway).
@@ -70,10 +75,18 @@ VALUES
   -- llm-training-dates.md's lower-risk pool (Jun 30 2025 cutoff, full
   -- 2025 season clean) AND a fourth architecture family — a tiebreaker
   -- correlated with existing panelists would just vote with the herd.
+  -- Retired by OpenRouter 2026-10-09 (404); seeded INACTIVE so a fresh
+  -- database doesn't call a dead model. Replaced by the row below
+  -- (model_lab_2026-10-14_qwen38_max.sql applied the same change in prod).
   ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000006',
    'Qwen 3 Max', 'qwen/qwen3-max', 1,
    '2025-09-01', '2025-06-30', 'llm-training-dates.md: Jun 30 2025 (Tier-2 aggregator confidence — verify against Alibaba docs)', NULL,
-   0.78, 3.90, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+   0.78, 3.90, FALSE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000006',
+   'Qwen 3.8 Max (0902)', 'qwen/qwen3.8-max-0902', 1,
+   '2026-09-03', NULL, 'No published cutoff (Sep 2026 release; replaces Qwen 3 Max, retired by OpenRouter 2026-10-09) — NULL = treated higher-risk by design', NULL,
+   2.00, 6.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   -- The production incumbent, reached DIRECTLY (Gateway 0 = None) — the
   -- same weights as the OpenRouter row above but a different evaluand.

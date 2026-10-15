@@ -1140,6 +1140,51 @@ namespace SportsData.Api.Tests.Unit.Application.Previews.Jobs.Generation
         }
 
         [Fact]
+        public async Task Generate_ParsesJsonAfterProsePreamble()
+        {
+            // 2026-10-14 prod lab: models narrated before answering ("I'll
+            // work through this systematically before generating the JSON.")
+            // and every such pick was discarded as a parse failure. The
+            // outermost object is the answer, wherever the prose sits.
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            var responseJson = $$"""
+                I'll work through this systematically before generating the JSON.
+
+                **Teams & Context:**
+                - Away team is 3-3, home team is 4-2.
+
+                ```json
+                {
+                  "overview": "o", "analysis": "a", "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": 2, "awayScore": 17, "homeScore": 27
+                }
+                ```
+
+                Let me know if you want a different angle.
+                """;
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            });
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Equal(_homeFranchiseSeasonId, preview.PredictedStraightUpWinner);
+            Assert.Null(preview.ValidationErrors);
+        }
+
+        [Fact]
         public async Task Generate_StampsModelId_WhenDefaultRowMatchesWiredClient()
         {
             SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));

@@ -17,7 +17,7 @@ namespace SportsData.Api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -865,6 +865,9 @@ namespace SportsData.Api.Migrations
                     b.Property<DateTime?>("KnowledgeCutoffUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("ModelFamilyId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ModelProviderId")
                         .HasColumnType("uuid");
 
@@ -899,6 +902,11 @@ namespace SportsData.Api.Migrations
                         .HasDatabaseName("IX_Model_SingleDefault")
                         .HasFilter("\"IsDefault\"");
 
+                    b.HasIndex("ModelFamilyId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Model_SingleActiveLabSeat")
+                        .HasFilter("\"IsActive\" AND \"Gateway\" = 1");
+
                     b.HasIndex("Name")
                         .IsUnique();
 
@@ -906,6 +914,41 @@ namespace SportsData.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Model", (string)null);
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ModelFamily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("ModelFamily", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ModelProvider", b =>
@@ -2415,11 +2458,19 @@ namespace SportsData.Api.Migrations
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.Model", b =>
                 {
+                    b.HasOne("SportsData.Api.Infrastructure.Data.Entities.ModelFamily", "ModelFamily")
+                        .WithMany("Models")
+                        .HasForeignKey("ModelFamilyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SportsData.Api.Infrastructure.Data.Entities.ModelProvider", "ModelProvider")
                         .WithMany("Models")
                         .HasForeignKey("ModelProviderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ModelFamily");
 
                     b.Navigation("ModelProvider");
                 });
@@ -2625,6 +2676,11 @@ namespace SportsData.Api.Migrations
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.MessageThread", b =>
                 {
                     b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ModelFamily", b =>
+                {
+                    b.Navigation("Models");
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ModelProvider", b =>

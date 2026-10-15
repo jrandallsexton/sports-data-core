@@ -21,6 +21,8 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
     private readonly Guid _awayId = Guid.NewGuid();
     private readonly Guid _homeId = Guid.NewGuid();
     private readonly Guid _modelId = Guid.NewGuid();
+    private readonly Guid _familyId = Guid.NewGuid();
+    private readonly Guid _providerId = Guid.NewGuid();
     private readonly Mock<IProvideContests> _contestClient = new();
 
     private async Task SeedWeekAsync()
@@ -33,7 +35,7 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
             League = League.NCAAF,
             CommissionerUserId = Guid.NewGuid()
         };
-        var provider = new ModelProvider { Id = Guid.NewGuid(), Name = "Provider", Kind = ModelProviderKind.Anthropic };
+        var provider = new ModelProvider { Id = _providerId, Name = "Provider", Kind = ModelProviderKind.Anthropic };
 
         await DataContext.PickemGroups.AddAsync(group);
         await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
@@ -41,9 +43,10 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
             Id = Guid.NewGuid(), GroupId = group.Id, SeasonYear = 2026, SeasonWeek = 5, ContestId = _contestId
         });
         await DataContext.ModelProviders.AddAsync(provider);
+        await DataContext.ModelFamilies.AddAsync(new ModelFamily { Id = _familyId, Name = "Family A" });
         await DataContext.Models.AddAsync(new Model
         {
-            Id = _modelId, Name = "Model A", ApiModelId = "model-a", ModelProviderId = provider.Id
+            Id = _modelId, Name = "Model A", ApiModelId = "model-a", ModelProviderId = provider.Id, ModelFamilyId = _familyId
         });
         await DataContext.SaveChangesAsync();
 
@@ -65,13 +68,25 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
             .Returns(_contestClient.Object);
     }
 
-    private MatchupPreviewPrompt Capture(int? away, int? home, OverUnderPrediction? overUnder) => new()
+    private async Task<Guid> AddModelAsync(string name, Guid familyId, bool isActive)
+    {
+        var id = Guid.NewGuid();
+        await DataContext.Models.AddAsync(new Model
+        {
+            Id = id, Name = name, ApiModelId = name.ToLowerInvariant(), ModelProviderId = _providerId,
+            ModelFamilyId = familyId, Gateway = ModelGateway.OpenRouter, IsActive = isActive
+        });
+        await DataContext.SaveChangesAsync();
+        return id;
+    }
+
+    private MatchupPreviewPrompt Capture(int? away, int? home, OverUnderPrediction? overUnder, Guid? modelId = null, DateTime? createdUtc = null) => new()
     {
         Id = Guid.NewGuid(),
         ContestId = _contestId,
         Sport = Sport.FootballNcaa,
         Mode = PreviewGenerationMode.Experiment,
-        ModelId = _modelId,
+        ModelId = modelId ?? _modelId,
         PromptVersion = "prompt-v1",
         PromptText = "TEXT",
         PayloadJson = "{}",
@@ -79,7 +94,7 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
         AwayScore = away,
         HomeScore = home,
         OverUnderPrediction = overUnder,
-        CreatedUtc = Kickoff.AddDays(-2)
+        CreatedUtc = createdUtc ?? Kickoff.AddDays(-2)
     };
 
     private static GetModelLabMatrixQuery Week5() => new() { Sport = Sport.FootballNcaa, SeasonYear = 2026, Week = 5 };
@@ -119,5 +134,74 @@ public class GetModelLabMatrixQueryHandlerTests : ApiTestBase<GetModelLabMatrixQ
         Assert.Null(cell.AwayScore);
         Assert.Null(cell.HomeScore);
         Assert.Null(cell.OverUnderPrediction);
+    }
+
+    [Fact]
+    public async Task RetiredVersion_VotesStayInItsFamilyColumn()
+    {
+        // Qwen 3 Max voted, then was retired for 3.8 Max: the week keeps
+        // one Qwen column, headed by the active version, with the retired
+        // version's cell attributed to the version that produced it.
+        await SeedWeekAsync();
+        var qwen = Guid.NewGuid();
+        await DataContext.ModelFamilies.AddAsync(new ModelFamily { Id = qwen, Name = "Qwen" });
+        var retired = await AddModelAsync("Qwen 3 Max", qwen, isActive: false);
+        var active = await AddModelAsync("Qwen 3.8 Max", qwen, isActive: true);
+        await DataContext.MatchupPreviewPrompts.AddAsync(Capture(17, 31, OverUnderPrediction.Over, retired));
+        await DataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<GetModelLabMatrixQueryHandler>()
+            .ExecuteAsync(Week5(), CancellationToken.None);
+
+        var column = Assert.Single(result.Value.Families, f => f.Id == qwen);
+        Assert.Equal(active, column.ActiveModelId);
+        Assert.Equal("Qwen 3.8 Max", column.ActiveModelName);
+
+        var cell = Assert.Single(Assert.Single(result.Value.Contests).Cells);
+        Assert.Equal(qwen, cell.FamilyId);
+        Assert.Equal(retired, cell.ModelId);
+        Assert.Equal("Qwen 3 Max", cell.ModelName);
+    }
+
+    [Fact]
+    public async Task FullyRetiredFamily_AppearsOnlyInWeeksItVoted()
+    {
+        await SeedWeekAsync();
+        var gone = Guid.NewGuid();
+        await DataContext.ModelFamilies.AddAsync(new ModelFamily { Id = gone, Name = "Gone" });
+        var retired = await AddModelAsync("Gone 1", gone, isActive: false);
+        var handler = Mocker.CreateInstance<GetModelLabMatrixQueryHandler>();
+
+        var silentWeek = await handler.ExecuteAsync(Week5(), CancellationToken.None);
+        Assert.DoesNotContain(silentWeek.Value.Families, f => f.Id == gone);
+
+        await DataContext.MatchupPreviewPrompts.AddAsync(Capture(17, 31, OverUnderPrediction.Over, retired));
+        await DataContext.SaveChangesAsync();
+
+        var votedWeek = await handler.ExecuteAsync(Week5(), CancellationToken.None);
+        var column = Assert.Single(votedWeek.Value.Families, f => f.Id == gone);
+        Assert.Null(column.ActiveModelId);
+        Assert.Null(column.ActiveModelName);
+    }
+
+    [Fact]
+    public async Task LatestCapture_WinsPerFamily_AcrossVersions()
+    {
+        await SeedWeekAsync();
+        var qwen = Guid.NewGuid();
+        await DataContext.ModelFamilies.AddAsync(new ModelFamily { Id = qwen, Name = "Qwen" });
+        var retired = await AddModelAsync("Qwen 3 Max", qwen, isActive: false);
+        var active = await AddModelAsync("Qwen 3.8 Max", qwen, isActive: true);
+        await DataContext.MatchupPreviewPrompts.AddRangeAsync(
+            Capture(10, 20, OverUnderPrediction.Under, retired, Kickoff.AddDays(-3)),
+            Capture(17, 31, OverUnderPrediction.Over, active, Kickoff.AddDays(-1)));
+        await DataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<GetModelLabMatrixQueryHandler>()
+            .ExecuteAsync(Week5(), CancellationToken.None);
+
+        var cell = Assert.Single(Assert.Single(result.Value.Contests).Cells, c => c.FamilyId == qwen);
+        Assert.Equal(active, cell.ModelId);
+        Assert.Equal(17, cell.AwayScore);
     }
 }

@@ -25,6 +25,31 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.CreateModel
             return provider;
         }
 
+        private async Task<ModelFamily> SeedFamilyAsync(string name = "Claude Haiku")
+        {
+            var family = new ModelFamily { Id = Guid.NewGuid(), Name = name };
+            await DataContext.ModelFamilies.AddAsync(family);
+            await DataContext.SaveChangesAsync();
+            return family;
+        }
+
+        private async Task<Model> SeedSeatAsync(ModelProvider provider, ModelFamily family, string name, bool isActive = true, ModelGateway gateway = ModelGateway.OpenRouter)
+        {
+            var model = new Model
+            {
+                Id = Guid.NewGuid(),
+                ModelProviderId = provider.Id,
+                ModelFamilyId = family.Id,
+                Name = name,
+                ApiModelId = name.ToLowerInvariant().Replace(' ', '-'),
+                Gateway = gateway,
+                IsActive = isActive
+            };
+            await DataContext.Models.AddAsync(model);
+            await DataContext.SaveChangesAsync();
+            return model;
+        }
+
         [Fact]
         public async Task CreateModel_RequiresExistingProvider()
         {
@@ -45,10 +70,12 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.CreateModel
         public async Task CreateModel_WithDefault_FlipsPreviousDefault()
         {
             var provider = await SeedProviderAsync();
+            var family = await SeedFamilyAsync();
             var incumbent = new Model
             {
                 Id = Guid.NewGuid(),
                 ModelProviderId = provider.Id,
+                ModelFamilyId = family.Id,
                 Name = "DeepSeek V3",
                 ApiModelId = "deepseek-chat",
                 IsDefault = true
@@ -61,6 +88,7 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.CreateModel
             var result = await sut.ExecuteAsync(new CreateModelCommand
             {
                 ModelProviderId = provider.Id,
+                ModelFamilyId = family.Id,
                 Name = "Claude Haiku 4.5",
                 ApiModelId = "claude-haiku-4-5",
                 KnowledgeCutoffUtc = new DateTime(2025, 7, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -98,6 +126,70 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.CreateModel
 
             Assert.False(result.IsSuccess);
             Assert.Single(DataContext.Models);
+        }
+
+        [Fact]
+        public async Task CreateModel_RequiresExistingFamily()
+        {
+            var provider = await SeedProviderAsync();
+            var sut = Mocker.CreateInstance<CreateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new CreateModelCommand
+            {
+                ModelProviderId = provider.Id,
+                ModelFamilyId = Guid.NewGuid(),
+                Name = "Claude Haiku 4.5",
+                ApiModelId = "claude-haiku-4-5"
+            }, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Empty(DataContext.Models);
+        }
+
+        [Fact]
+        public async Task CreateModel_OpenRouterVersion_TakesTheFamilySeat()
+        {
+            var provider = await SeedProviderAsync("Alibaba", ModelProviderKind.GatewayOnly);
+            var qwen = await SeedFamilyAsync("Qwen");
+            var incumbent = await SeedSeatAsync(provider, qwen, "Qwen 3 Max");
+            var sut = Mocker.CreateInstance<CreateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new CreateModelCommand
+            {
+                ModelProviderId = provider.Id,
+                ModelFamilyId = qwen.Id,
+                Name = "Qwen 3.8 Max",
+                ApiModelId = "qwen/qwen3.8-max-0902",
+                Gateway = ModelGateway.OpenRouter
+            }, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            var seat = Assert.Single(DataContext.Models.Where(m => m.ModelFamilyId == qwen.Id && m.IsActive));
+            Assert.Equal(result.Value, seat.Id);
+            Assert.False(DataContext.Models.Single(m => m.Id == incumbent.Id).IsActive);
+        }
+
+        [Fact]
+        public async Task CreateModel_DirectRoute_LeavesTheFamilySeatAlone()
+        {
+            // The direct production DeepSeek row shares the DeepSeek family
+            // without occupying its lab seat.
+            var provider = await SeedProviderAsync("DeepSeek", ModelProviderKind.DeepSeek);
+            var deepSeek = await SeedFamilyAsync("DeepSeek");
+            var seat = await SeedSeatAsync(provider, deepSeek, "DeepSeek V3.1");
+            var sut = Mocker.CreateInstance<CreateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new CreateModelCommand
+            {
+                ModelProviderId = provider.Id,
+                ModelFamilyId = deepSeek.Id,
+                Name = "DeepSeek Chat (direct)",
+                ApiModelId = "deepseek-chat",
+                Gateway = ModelGateway.None
+            }, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.True(DataContext.Models.Single(m => m.Id == seat.Id).IsActive);
         }
     }
 }

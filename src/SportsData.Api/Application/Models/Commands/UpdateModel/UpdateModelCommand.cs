@@ -10,13 +10,18 @@ namespace SportsData.Api.Application.Models.Commands.UpdateModel;
 
 /// <summary>
 /// Edits a model's METADATA — cutoff (verification updates are the main
-/// use), evidence, costs, release date, IsActive. Identity fields
-/// (Name, ApiModelId, ModelProviderId) are deliberately immutable: a
-/// different API identifier is a different model, full stop.
+/// use), evidence, costs, release date, IsActive — and its family.
+/// Identity fields (Name, ApiModelId, ModelProviderId) are deliberately
+/// immutable: a different API identifier is a different model, full stop.
+/// Family is grouping, not identity, so it may move. Activating an
+/// OpenRouter model (or moving an active one) takes the target family's
+/// lab seat, deactivating the previous holder.
 /// </summary>
 public class UpdateModelCommand
 {
     public Guid ModelId { get; set; }
+
+    public Guid ModelFamilyId { get; set; }
 
     public DateTime? ReleaseDate { get; set; }
 
@@ -38,6 +43,7 @@ public class UpdateModelCommandValidator : AbstractValidator<UpdateModelCommand>
     public UpdateModelCommandValidator()
     {
         RuleFor(x => x.ModelId).NotEmpty();
+        RuleFor(x => x.ModelFamilyId).NotEmpty();
         RuleFor(x => x.CutoffEvidence).MaximumLength(512);
     }
 }
@@ -82,6 +88,29 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
                 [new ValidationFailure(nameof(command.ModelId), "Model not found")]);
         }
 
+        if (model.ModelFamilyId != command.ModelFamilyId)
+        {
+            var familyExists = await _dataContext.ModelFamilies
+                .AsNoTracking()
+                .AnyAsync(f => f.Id == command.ModelFamilyId, cancellationToken);
+
+            if (!familyExists)
+            {
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(command.ModelFamilyId), "Model family not found")]);
+            }
+        }
+
+        var takesSeat = LabSeat.Occupies(model.Gateway, command.IsActive)
+            && (!model.IsActive || model.ModelFamilyId != command.ModelFamilyId);
+
+        var displaced = takesSeat
+            ? await LabSeat.VacateAsync(_dataContext, command.ModelFamilyId, model.Id, _dateTimeProvider.UtcNow(), cancellationToken)
+            : new List<string>();
+
+        model.ModelFamilyId = command.ModelFamilyId;
         model.ReleaseDate = command.ReleaseDate;
         model.KnowledgeCutoffUtc = command.KnowledgeCutoffUtc;
         model.CutoffEvidence = command.CutoffEvidence;
@@ -91,11 +120,25 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
         model.IsActive = command.IsActive;
         model.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-        await _dataContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            // Vacate-old-seat + update commit in ONE SaveChanges; the
+            // partial unique index turns a concurrent race into a
+            // constraint violation here.
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (takesSeat)
+        {
+            _logger.LogWarning(ex, "Concurrent lab-seat change detected while updating model {ModelId}.", model.Id);
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(command.ModelFamilyId), "The family's lab seat changed concurrently — reload and retry.")]);
+        }
 
         _logger.LogInformation(
-            "Model updated. Id: {ModelId}, Cutoff: {Cutoff}, VerifiedUtc: {VerifiedUtc}, IsActive: {IsActive}",
-            model.Id, model.KnowledgeCutoffUtc, model.CutoffVerifiedUtc, model.IsActive);
+            "Model updated. Id: {ModelId}, Family: {FamilyId}, Cutoff: {Cutoff}, VerifiedUtc: {VerifiedUtc}, IsActive: {IsActive}, DisplacedFromSeat: {Displaced}",
+            model.Id, model.ModelFamilyId, model.KnowledgeCutoffUtc, model.CutoffVerifiedUtc, model.IsActive, displaced);
 
         return new Success<Guid>(model.Id);
     }

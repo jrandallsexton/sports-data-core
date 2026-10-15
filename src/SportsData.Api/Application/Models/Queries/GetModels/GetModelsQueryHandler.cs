@@ -14,6 +14,8 @@ public class ModelDto
     public Guid ModelProviderId { get; set; }
     public string ProviderName { get; set; } = default!;
     public ModelProviderKind ProviderKind { get; set; }
+    public Guid ModelFamilyId { get; set; }
+    public string ModelFamilyName { get; set; } = default!;
     public string Name { get; set; } = default!;
     public string ApiModelId { get; set; } = default!;
     public ModelGateway Gateway { get; set; }
@@ -47,7 +49,7 @@ public class GetModelsQueryHandler : IGetModelsQueryHandler
         var models = await _dataContext.Models
             .AsNoTracking()
             .OrderByDescending(m => m.IsDefault)
-            .ThenBy(m => m.ModelProvider!.Name)
+            .ThenBy(m => m.ModelFamily!.Name)
             .ThenBy(m => m.Name)
             .Select(m => new ModelDto
             {
@@ -55,6 +57,8 @@ public class GetModelsQueryHandler : IGetModelsQueryHandler
                 ModelProviderId = m.ModelProviderId,
                 ProviderName = m.ModelProvider!.Name,
                 ProviderKind = m.ModelProvider.Kind,
+                ModelFamilyId = m.ModelFamilyId,
+                ModelFamilyName = m.ModelFamily!.Name,
                 Name = m.Name,
                 ApiModelId = m.ApiModelId,
                 Gateway = m.Gateway,

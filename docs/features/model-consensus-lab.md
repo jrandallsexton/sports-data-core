@@ -80,7 +80,9 @@ scored on exactly what production will call.
 
 ## The matrix (admin UI, Phase 2)
 
-Rows = models; per contest: SU pick / ATS pick cells; actuals fill in on
+Columns = model families, one lab seat each (a family's cells come from any
+of its versions; see [model-family.md](model-family.md)); rows = contests,
+one SU line and one ATS line each; per contest: SU pick / ATS pick cells; actuals fill in on
 finalization; running SU% / ATS% accuracy columns accumulate. **Baseline
 rows keep everyone honest:** always-home, always-favorite (spread), and
 deetsMeter (the statistical model already predicts these games).

@@ -31,40 +31,54 @@ VALUES
   ('a0000000-0000-0000-0000-000000000006', 'Alibaba',   99, 'Gateway-only (no first-party client)', TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')
 ON CONFLICT DO NOTHING;
 
+-- Families: the lineage a lab seat follows across versions
+-- (docs/features/model-family.md). Same fixed Ids as the AddModelFamily
+-- migration, which also inserts them — so this is a no-op after it runs.
+INSERT INTO "ModelFamily" ("Id", "Name", "Description", "CreatedUtc", "CreatedBy")
+VALUES
+  ('c0000000-0000-0000-0000-000000000001', 'Claude Sonnet', NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000002', 'Claude Haiku',  NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000003', 'GPT',           NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000004', 'Gemini',        NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000005', 'Grok',          NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000006', 'DeepSeek',      NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('c0000000-0000-0000-0000-000000000007', 'Qwen',          NULL, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')
+ON CONFLICT DO NOTHING;
+
 -- Models, all Gateway = 1 (OpenRouter). KnowledgeCutoffUtc = declared
 -- TRAINING cutoff (NULL = unpublished, harness treats as higher-risk).
 INSERT INTO "Model" (
-  "Id", "ModelProviderId", "Name", "ApiModelId", "Gateway",
+  "Id", "ModelProviderId", "ModelFamilyId", "Name", "ApiModelId", "Gateway",
   "ReleaseDate", "KnowledgeCutoffUtc", "CutoffEvidence", "CutoffVerifiedUtc",
   "InputCostPerMTok", "OutputCostPerMTok", "IsActive", "IsDefault",
   "CreatedUtc", "CreatedBy")
 VALUES
-  ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002',
+  ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000001',
    'Claude Sonnet 4.6', 'anthropic/claude-sonnet-4.6', 1,
    '2026-02-17', '2025-08-01', 'llm-training-dates.md: Aug 2025 — DISPUTED (one source claims training to Jan 2026); verify at docs.anthropic.com before trusting lower-risk', NULL,
    3.00, 15.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002',
+  ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002',
    'Claude Haiku 4.5', 'anthropic/claude-haiku-4.5', 1,
    '2025-10-15', '2025-07-01', 'llm-training-dates.md: Jul 2025 (lower-risk full 2025 season; cheap floor)', NULL,
    1.00, 5.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003',
+  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000003',
    'GPT-5.2', 'openai/gpt-5.2', 1,
    '2025-12-10', '2025-08-31', 'llm-training-dates.md: Aug 31 2025 — NCAA wk0/1 sits INSIDE training; per-game comparison handles the boundary', NULL,
    1.75, 14.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004',
+  ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000004',
    'Gemini 3.1 Pro', 'google/gemini-3.1-pro-preview', 1,
    '2026-02-19', '2025-01-01', 'llm-training-dates.md: Jan 2025 (lower-risk full season + current capability); verify via model card', NULL,
    2.00, 12.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005',
+  ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005', 'c0000000-0000-0000-0000-000000000005',
    'Grok 4.3', 'x-ai/grok-4.3', 1,
    '2026-04-30', '2025-12-01', 'llm-training-dates.md: Dec 2025 (higher-risk Sep-Nov); server-side Web/X search MUST stay disabled for backtests', NULL,
    1.25, 2.50, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001',
+  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000006',
    'DeepSeek V3.1', 'deepseek/deepseek-chat-v3.1', 1,
    '2025-08-01', NULL, 'Provider publishes no cutoff (~Jul 2024 inferred, unofficial) — NULL = treated higher-risk by design', NULL,
    0.25, 0.95, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
@@ -78,12 +92,12 @@ VALUES
   -- Retired by OpenRouter 2026-10-09 (404); seeded INACTIVE so a fresh
   -- database doesn't call a dead model. Replaced by the row below
   -- (model_lab_2026-10-14_qwen38_max.sql applied the same change in prod).
-  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000006',
+  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000006', 'c0000000-0000-0000-0000-000000000007',
    'Qwen 3 Max', 'qwen/qwen3-max', 1,
    '2025-09-01', '2025-06-30', 'llm-training-dates.md: Jun 30 2025 (Tier-2 aggregator confidence — verify against Alibaba docs)', NULL,
    0.78, 3.90, FALSE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
-  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000006',
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000006', 'c0000000-0000-0000-0000-000000000007',
    'Qwen 3.8 Max (0902)', 'qwen/qwen3.8-max-0902', 1,
    '2026-09-03', NULL, 'No published cutoff (Sep 2026 release; replaces Qwen 3 Max, retired by OpenRouter 2026-10-09) — NULL = treated higher-risk by design', NULL,
    2.00, 6.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
@@ -95,7 +109,7 @@ VALUES
   -- (CommonConfig:DeepSeekClientConfig:Model = "deepseek-chat").
   -- Gateway None is unreachable by the lab resolver, so this row is NOT
   -- a matrix column — it exists as production provenance.
-  ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001',
+  ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000006',
    'DeepSeek Chat (production, direct)', 'deepseek-chat', 0,
    NULL, NULL, 'Provider publishes no cutoff — NULL = treated higher-risk by design', NULL,
    0.27, 1.10, TRUE, TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')

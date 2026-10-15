@@ -52,6 +52,8 @@ public class AppDataContext : DbContext
 
     public DbSet<ModelProvider> ModelProviders { get; set; }
 
+    public DbSet<ModelFamily> ModelFamilies { get; set; }
+
     public DbSet<Model> Models { get; set; }
 
     public DbSet<Article> Articles { get; set; }

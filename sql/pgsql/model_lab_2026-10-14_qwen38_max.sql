@@ -31,15 +31,17 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- The insert skips silently on any unique clash, so assert the seat is
--- actually filled before vacating the old one. Raising aborts the
+-- actually filled, by a row the lab can reach (Gateway 1 = OpenRouter, the
+-- only route AiModelClientResolver.CanResolve accepts), before vacating the
+-- old one. Raising aborts the
 -- transaction: Qwen 3 Max stays active and nothing changes.
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM "Model" m
     JOIN "ModelProvider" p ON p."Id" = m."ModelProviderId"
-    WHERE m."ApiModelId" = 'qwen/qwen3.8-max-0902' AND m."IsActive" AND p."IsActive") THEN
-    RAISE EXCEPTION 'Qwen 3.8 Max (0902) is not present and active; refusing to deactivate Qwen 3 Max';
+    WHERE m."ApiModelId" = 'qwen/qwen3.8-max-0902' AND m."Gateway" = 1 AND m."IsActive" AND p."IsActive") THEN
+    RAISE EXCEPTION 'Qwen 3.8 Max (0902) is not present, active and routed via OpenRouter; refusing to deactivate Qwen 3 Max';
   END IF;
 END $$;
 

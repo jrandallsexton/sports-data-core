@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 
+using SportsData.Api.Application.Models;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Infrastructure.Clients.AI;
 
@@ -64,7 +65,8 @@ public sealed class AiModelClientResolver : IAiModelClientResolver
                 _httpClientFactory.CreateClient(OpenRouterHttpClientName),
                 _openRouterConfig,
                 model.ApiModelId,
-                _loggerFactory.CreateLogger<OpenRouterClient>()),
+                _loggerFactory.CreateLogger<OpenRouterClient>(),
+                ReasoningCap.ToOpenRouter(model)),
 
             _ => throw new NotSupportedException(
                 $"No lab evaluation client for gateway {model.Gateway} / provider kind " +

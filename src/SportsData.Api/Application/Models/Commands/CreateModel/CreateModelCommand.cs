@@ -38,6 +38,12 @@ public class CreateModelCommand
 
     public decimal? OutputCostPerMTok { get; set; }
 
+    /// <summary>Reasoning cap as an effort level (OpenRouter route only; exclusive with <see cref="ReasoningMaxTokens"/>). Null = model default.</summary>
+    public ModelReasoningEffort? ReasoningEffort { get; set; }
+
+    /// <summary>Reasoning cap as a token budget (OpenRouter route only; exclusive with <see cref="ReasoningEffort"/>). Null = model default.</summary>
+    public int? ReasoningMaxTokens { get; set; }
+
     /// <summary>Make this THE production model; clears the previous default.</summary>
     public bool IsDefault { get; set; }
 }
@@ -108,6 +114,12 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
                 [new ValidationFailure(nameof(command.Gateway), "This provider is gateway-only (no first-party client) — the model must specify a gateway route.")]);
         }
 
+        var reasoningFailure = ReasoningCap.Validate(command.Gateway, command.ReasoningEffort, command.ReasoningMaxTokens);
+        if (reasoningFailure is not null)
+        {
+            return new Failure<Guid>(default!, ResultStatus.Validation, [reasoningFailure]);
+        }
+
         var familyExists = await _dataContext.ModelFamilies
             .AsNoTracking()
             .AnyAsync(f => f.Id == command.ModelFamilyId, cancellationToken);
@@ -154,6 +166,8 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             CutoffVerifiedUtc = command.CutoffVerifiedUtc,
             InputCostPerMTok = command.InputCostPerMTok,
             OutputCostPerMTok = command.OutputCostPerMTok,
+            ReasoningEffort = command.ReasoningEffort,
+            ReasoningMaxTokens = command.ReasoningMaxTokens,
             IsDefault = command.IsDefault,
             CreatedUtc = _dateTimeProvider.UtcNow()
         };
@@ -216,8 +230,8 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
         }
 
         _logger.LogInformation(
-            "Model created. Id: {ModelId}, Provider: {ProviderId}, Family: {FamilyId}, IsDefault: {IsDefault}, Cutoff: {Cutoff}, DisplacedFromSeat: {Displaced}",
-            model.Id, model.ModelProviderId, model.ModelFamilyId, model.IsDefault, model.KnowledgeCutoffUtc, displaced);
+            "Model created. Id: {ModelId}, Provider: {ProviderId}, Family: {FamilyId}, IsDefault: {IsDefault}, Cutoff: {Cutoff}, ReasoningEffort: {ReasoningEffort}, ReasoningMaxTokens: {ReasoningMaxTokens}, DisplacedFromSeat: {Displaced}",
+            model.Id, model.ModelProviderId, model.ModelFamilyId, model.IsDefault, model.KnowledgeCutoffUtc, model.ReasoningEffort, model.ReasoningMaxTokens, displaced);
 
         return new Success<Guid>(model.Id);
     }

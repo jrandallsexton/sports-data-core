@@ -84,6 +84,34 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public decimal? OutputCostPerMTok { get; set; }
 
+        /// <summary>
+        /// Caps how hard the model thinks on the OpenRouter route, as an
+        /// effort level. Null (with <see cref="ReasoningMaxTokens"/> null)
+        /// = the model's own default. Thinking is billed as output: an
+        /// uncapped Qwen 3.8 Max averaged ~10k reasoning tokens per preview
+        /// on 2026-10-15 and timed out on 1 call in 5. Mutually exclusive
+        /// with <see cref="ReasoningMaxTokens"/> (OpenRouter accepts one).
+        /// </summary>
+        public ModelReasoningEffort? ReasoningEffort { get; set; }
+
+        /// <summary>
+        /// Caps thinking as a token budget — the form Anthropic and Qwen
+        /// thinking models honour (Gemini 3, OpenAI and Grok take
+        /// <see cref="ReasoningEffort"/> instead). Bounded by
+        /// <see cref="MinReasoningMaxTokens"/>..<see cref="MaxReasoningMaxTokens"/>.
+        /// </summary>
+        public int? ReasoningMaxTokens { get; set; }
+
+        /// <summary>Anthropic's minimum thinking budget; OpenRouter raises anything lower to it.</summary>
+        public const int MinReasoningMaxTokens = 1024;
+
+        /// <summary>
+        /// Leaves 4k of the 16k request ceiling (OpenRouterClientConfig.MaxTokens)
+        /// for the answer: thinking counts against that ceiling, and
+        /// Anthropic requires it to stay strictly above the budget.
+        /// </summary>
+        public const int MaxReasoningMaxTokens = 12288;
+
         public bool IsActive { get; set; } = true;
 
         /// <summary>The single model powering production generation.</summary>
@@ -96,7 +124,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         {
             public void Configure(EntityTypeBuilder<Model> builder)
             {
-                builder.ToTable(nameof(Model));
+                builder.ToTable(nameof(Model), t => t.HasCheckConstraint(
+                    "CK_Model_ReasoningEffortOrMaxTokens",
+                    "\"ReasoningEffort\" IS NULL OR \"ReasoningMaxTokens\" IS NULL"));
                 builder.HasKey(x => x.Id);
 
                 builder.HasOne(x => x.ModelProvider)
@@ -123,6 +153,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(x => x.InputCostPerMTok).HasPrecision(10, 4);
                 builder.Property(x => x.OutputCostPerMTok).HasPrecision(10, 4);
+
+                builder.Property(x => x.ReasoningEffort).HasConversion<int?>();
 
                 builder.Property(x => x.RowVersion)
                     .HasColumnName("xmin")
@@ -161,5 +193,22 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         None = 0,
 
         OpenRouter = 1
+    }
+
+    /// <summary>
+    /// OpenRouter's reasoning effort levels, lowest-cost first. Off sends
+    /// "none" (no thinking at all, where the model allows it).
+    /// </summary>
+    public enum ModelReasoningEffort
+    {
+        Off = 0,
+
+        Minimal = 1,
+
+        Low = 2,
+
+        Medium = 3,
+
+        High = 4
     }
 }

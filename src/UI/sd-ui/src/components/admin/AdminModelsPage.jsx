@@ -40,6 +40,37 @@ const GATEWAY_OPTIONS = [
 // (mirrors Model.LabSeatGateway / IX_Model_SingleActiveLabSeat).
 const isOpenRouter = (gateway) => gateway === 'OpenRouter' || gateway === 1;
 
+// Per-model reasoning cap (OpenRouter route only): an effort level OR a
+// token budget, never both (CK_Model_ReasoningEffortOrMaxTokens). Effort
+// suits Gemini 3 / OpenAI / Grok; a budget suits Anthropic / Qwen thinking
+// models. Thinking is billed as output — uncapped, it was most of the spend.
+const REASONING_OPTIONS = [
+  { value: '', label: 'reasoning: model default (uncapped)' },
+  { value: 'Off', label: 'reasoning: off' },
+  { value: 'Minimal', label: 'reasoning effort: minimal' },
+  { value: 'Low', label: 'reasoning effort: low' },
+  { value: 'Medium', label: 'reasoning effort: medium' },
+  { value: 'High', label: 'reasoning effort: high' },
+  { value: 'Budget', label: 'reasoning token budget…' },
+];
+const REASONING_BUDGET_MIN = 1024; // Model.MinReasoningMaxTokens
+const REASONING_BUDGET_MAX = 12288; // Model.MaxReasoningMaxTokens
+
+const reasoningFromModel = (m) => {
+  if (m.reasoningEffort) return m.reasoningEffort;
+  return m.reasoningMaxTokens != null ? 'Budget' : '';
+};
+
+const reasoningPayload = (f) => ({
+  reasoningEffort: f.reasoning && f.reasoning !== 'Budget' ? f.reasoning : null,
+  reasoningMaxTokens: f.reasoning === 'Budget' && f.reasoningMaxTokens !== '' ? Number(f.reasoningMaxTokens) : null,
+});
+
+const reasoningLabel = (m) => {
+  if (m.reasoningEffort) return `reasoning: ${m.reasoningEffort.toLowerCase()}`;
+  return m.reasoningMaxTokens != null ? `reasoning ≤ ${m.reasoningMaxTokens} tok` : null;
+};
+
 const EMPTY_FORM = {
   modelProviderId: '',
   modelFamilyId: '',
@@ -52,6 +83,8 @@ const EMPTY_FORM = {
   cutoffVerifiedUtc: '',
   inputCostPerMTok: '',
   outputCostPerMTok: '',
+  reasoning: '',
+  reasoningMaxTokens: '',
   isDefault: false,
   isActive: true,
 };
@@ -127,6 +160,8 @@ export default function AdminModelsPage() {
       cutoffVerifiedUtc: toDateInput(m.cutoffVerifiedUtc),
       inputCostPerMTok: m.inputCostPerMTok ?? '',
       outputCostPerMTok: m.outputCostPerMTok ?? '',
+      reasoning: reasoningFromModel(m),
+      reasoningMaxTokens: m.reasoningMaxTokens ?? '',
       isDefault: m.isDefault,
       isActive: m.isActive,
     });
@@ -198,6 +233,7 @@ export default function AdminModelsPage() {
           cutoffVerifiedUtc: fromDateInput(form.cutoffVerifiedUtc),
           inputCostPerMTok: form.inputCostPerMTok === '' ? null : Number(form.inputCostPerMTok),
           outputCostPerMTok: form.outputCostPerMTok === '' ? null : Number(form.outputCostPerMTok),
+          ...reasoningPayload(form),
           isActive: form.isActive,
         });
         toast.success(replaced ? `Model updated — replaced ${replaced} in the family's lab seat.` : 'Model updated.');
@@ -221,6 +257,7 @@ export default function AdminModelsPage() {
           cutoffVerifiedUtc: fromDateInput(form.cutoffVerifiedUtc),
           inputCostPerMTok: form.inputCostPerMTok === '' ? null : Number(form.inputCostPerMTok),
           outputCostPerMTok: form.outputCostPerMTok === '' ? null : Number(form.outputCostPerMTok),
+          ...(isOpenRouter(form.gateway) ? reasoningPayload(form) : {}),
           isDefault: form.isDefault,
         });
         toast.success(replaced ? `Model created — replaced ${replaced} in the family's lab seat.` : 'Model created.');
@@ -264,6 +301,8 @@ export default function AdminModelsPage() {
         cutoffVerifiedUtc: m.cutoffVerifiedUtc,
         inputCostPerMTok: m.inputCostPerMTok,
         outputCostPerMTok: m.outputCostPerMTok,
+        reasoningEffort: m.reasoningEffort ?? null,
+        reasoningMaxTokens: m.reasoningMaxTokens ?? null,
         isActive: !m.isActive,
       });
       toast.success(m.isActive
@@ -397,6 +436,7 @@ export default function AdminModelsPage() {
                       <span>{m.apiModelId}</span>
                       <span>cutoff: {m.knowledgeCutoffUtc ? m.knowledgeCutoffUtc.substring(0, 10) : '—'}</span>
                       <span>{m.cutoffVerifiedUtc ? `verified ${m.cutoffVerifiedUtc.substring(0, 10)}` : 'UNVERIFIED'}</span>
+                      {reasoningLabel(m) && <span>{reasoningLabel(m)}</span>}
                     </div>
                     <div style={{ fontSize: '0.8rem', fontWeight: 700, color: risk.color, marginTop: 4 }}>
                       {risk.label}
@@ -543,6 +583,33 @@ export default function AdminModelsPage() {
                     onChange={(e) => setForm(f => ({ ...f, outputCostPerMTok: e.target.value }))}
                     style={{ width: 100, padding: '4px 6px' }} />
                 </label>
+              </div>
+
+              {isOpenRouter(form.gateway) && (
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <select
+                    aria-label="Reasoning cap"
+                    value={form.reasoning}
+                    onChange={(e) => setForm(f => ({ ...f, reasoning: e.target.value }))}
+                    title="Caps thinking tokens (billed as output). Effort for Gemini 3 / OpenAI / Grok; a token budget for Anthropic / Qwen thinking models."
+                    style={{ padding: '6px 8px' }}
+                  >
+                    {REASONING_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {form.reasoning === 'Budget' && (
+                    <input type="number" step="256" min={REASONING_BUDGET_MIN} max={REASONING_BUDGET_MAX}
+                      aria-label="Reasoning token budget"
+                      value={form.reasoningMaxTokens}
+                      onChange={(e) => setForm(f => ({ ...f, reasoningMaxTokens: e.target.value }))}
+                      placeholder={`${REASONING_BUDGET_MIN}–${REASONING_BUDGET_MAX}`}
+                      style={{ width: 110, padding: '4px 6px' }} />
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 {mode === 'create' ? (
                   <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <input type="checkbox" checked={form.isDefault}

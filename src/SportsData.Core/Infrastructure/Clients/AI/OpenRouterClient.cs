@@ -35,17 +35,24 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
     private readonly HttpClient _httpClient;
     private readonly OpenRouterClientConfig _config;
     private readonly string _model;
+    private readonly OpenRouterReasoning? _reasoning;
     private readonly ILogger _logger;
 
+    /// <param name="reasoning">
+    /// Per-model reasoning cap (the catalog row's setting); null sends no
+    /// reasoning parameter, leaving the model's own default.
+    /// </param>
     public OpenRouterClient(
         HttpClient httpClient,
         OpenRouterClientConfig config,
         string model,
-        ILogger logger)
+        ILogger logger,
+        OpenRouterReasoning? reasoning = null)
     {
         _httpClient = httpClient;
         _config = config;
         _model = model;
+        _reasoning = reasoning;
         _logger = logger;
 
         _httpClient.DefaultRequestHeaders.Authorization =
@@ -70,6 +77,7 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
             // MODELS, and sampling noise inside one model muddies that signal.
             Temperature = _config.Temperature,
             MaxTokens = _config.MaxTokens,
+            Reasoning = _reasoning,
             Stream = false
         };
 
@@ -116,10 +124,13 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
             var finishReason = chatResponse!.Choices![0].FinishReason;
 
             _logger.LogInformation(
-                "OpenRouter response. Model={Model}, PromptTokens={PromptTokens}, CompletionTokens={CompletionTokens}, LatencyMs={LatencyMs}, FinishReason={FinishReason}",
+                "OpenRouter response. Model={Model}, PromptTokens={PromptTokens}, CompletionTokens={CompletionTokens}, ReasoningTokens={ReasoningTokens}, ReasoningEffort={ReasoningEffort}, ReasoningMaxTokens={ReasoningMaxTokens}, LatencyMs={LatencyMs}, FinishReason={FinishReason}",
                 _model,
                 chatResponse.Usage?.PromptTokens,
                 chatResponse.Usage?.CompletionTokens,
+                chatResponse.Usage?.CompletionTokensDetails?.ReasoningTokens,
+                _reasoning?.Effort,
+                _reasoning?.MaxTokens,
                 stopwatch.ElapsedMilliseconds,
                 finishReason);
 
@@ -206,6 +217,9 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
         [JsonPropertyName("max_tokens")]
         public int MaxTokens { get; set; }
 
+        [JsonPropertyName("reasoning")]
+        public OpenRouterReasoning? Reasoning { get; set; }
+
         [JsonPropertyName("stream")]
         public bool Stream { get; set; }
     }
@@ -244,9 +258,38 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
 
         [JsonPropertyName("completion_tokens")]
         public int? CompletionTokens { get; set; }
+
+        [JsonPropertyName("completion_tokens_details")]
+        public ChatCompletionTokensDetails? CompletionTokensDetails { get; set; }
+    }
+
+    private class ChatCompletionTokensDetails
+    {
+        /// <summary>Thinking tokens, already counted in completion_tokens (and billed at the output rate).</summary>
+        [JsonPropertyName("reasoning_tokens")]
+        public int? ReasoningTokens { get; set; }
     }
 
     #endregion
+}
+
+/// <summary>
+/// OpenRouter's unified <c>reasoning</c> request parameter. Set EITHER
+/// <see cref="Effort"/> OR <see cref="MaxTokens"/> — OpenRouter rejects both.
+/// Token budgets suit Anthropic and Qwen thinking models; Gemini 3, OpenAI
+/// and Grok take an effort level (OpenRouter converts a budget to an effort
+/// for effort-only models, but not reliably the other way). Thinking tokens
+/// are billed as output and count against the request's max_tokens, so a
+/// budget must stay below <see cref="OpenRouterClientConfig.MaxTokens"/>.
+/// </summary>
+public sealed class OpenRouterReasoning
+{
+    /// <summary>"none", "minimal", "low", "medium" or "high".</summary>
+    [JsonPropertyName("effort")]
+    public string? Effort { get; init; }
+
+    [JsonPropertyName("max_tokens")]
+    public int? MaxTokens { get; init; }
 }
 
 /// <summary>

@@ -45,6 +45,8 @@ public class GetModelByIdQueryHandler : IGetModelByIdQueryHandler
                 CutoffVerifiedUtc = m.CutoffVerifiedUtc,
                 InputCostPerMTok = m.InputCostPerMTok,
                 OutputCostPerMTok = m.OutputCostPerMTok,
+                ReasoningEffort = m.ReasoningEffort,
+                ReasoningMaxTokens = m.ReasoningMaxTokens,
                 IsActive = m.IsActive,
                 IsDefault = m.IsDefault,
                 CreatedUtc = m.CreatedUtc

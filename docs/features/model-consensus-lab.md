@@ -77,6 +77,30 @@ scored on exactly what production will call.
   `CanResolve(gateway, kind)` is the single source of truth for
   reachability — an unreachable route is a logged skip, never a Hangfire
   retry loop. Existing preview pipeline untouched.
+- **Reasoning cap (per model, 2026-10-16)**: thinking tokens bill at the
+  output rate and count against the request's 16k `max_tokens`. On the
+  2026-10-15 slate, uncapped Qwen 3.8 Max averaged ~10k reasoning tokens
+  per preview and hit the 5-minute timeout on 11 of 56 calls, all of them
+  billed. Gemini 3.1 Pro and Sonnet were 62% of the lab's lifetime spend.
+  Each OpenRouter row may therefore carry ONE of:
+  - `ReasoningEffort`: Off, Minimal, Low, Medium or High. This is the only
+    control Gemini 3, OpenAI and Grok honour.
+  - `ReasoningMaxTokens`: a token budget, from 1024 (Anthropic's minimum)
+    to 12288 (which leaves 4k for the answer). This suits Anthropic and
+    Qwen thinking models.
+
+  The client sends it as OpenRouter's `reasoning` parameter. Null keeps the
+  model's default. Rules:
+  - The database check `CK_Model_ReasoningEffortOrMaxTokens` forbids
+    setting both.
+  - The handlers reject a cap on a direct (non-OpenRouter) row, which would
+    be stored and silently ignored.
+  - The response log records `ReasoningTokens`, so the first capped run
+    shows whether the model honoured the cap.
+
+  A cap changes the evaluand: the model's votes are then "that model at
+  that effort". This is acceptable for the audition, but note the change
+  when comparing weeks.
 
 ## The matrix (admin UI, Phase 2)
 

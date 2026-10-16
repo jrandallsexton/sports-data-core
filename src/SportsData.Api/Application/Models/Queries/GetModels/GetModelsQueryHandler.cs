@@ -25,6 +25,8 @@ public class ModelDto
     public DateTime? CutoffVerifiedUtc { get; set; }
     public decimal? InputCostPerMTok { get; set; }
     public decimal? OutputCostPerMTok { get; set; }
+    public ModelReasoningEffort? ReasoningEffort { get; set; }
+    public int? ReasoningMaxTokens { get; set; }
     public bool IsActive { get; set; }
     public bool IsDefault { get; set; }
     public DateTime CreatedUtc { get; set; }
@@ -68,6 +70,8 @@ public class GetModelsQueryHandler : IGetModelsQueryHandler
                 CutoffVerifiedUtc = m.CutoffVerifiedUtc,
                 InputCostPerMTok = m.InputCostPerMTok,
                 OutputCostPerMTok = m.OutputCostPerMTok,
+                ReasoningEffort = m.ReasoningEffort,
+                ReasoningMaxTokens = m.ReasoningMaxTokens,
                 IsActive = m.IsActive,
                 IsDefault = m.IsDefault,
                 CreatedUtc = m.CreatedUtc

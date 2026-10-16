@@ -191,5 +191,59 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.CreateModel
             Assert.True(result.IsSuccess);
             Assert.True(DataContext.Models.Single(m => m.Id == seat.Id).IsActive);
         }
+
+        [Theory]
+        [InlineData(ModelReasoningEffort.Low, null)]
+        [InlineData(null, 4096)]
+        public async Task CreateModel_OpenRouter_PersistsReasoningCap(ModelReasoningEffort? effort, int? maxTokens)
+        {
+            var provider = await SeedProviderAsync("Alibaba", ModelProviderKind.GatewayOnly);
+            var family = await SeedFamilyAsync("Qwen");
+            var sut = Mocker.CreateInstance<CreateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new CreateModelCommand
+            {
+                ModelProviderId = provider.Id,
+                ModelFamilyId = family.Id,
+                Name = "Qwen 3.8 Max (0902)",
+                ApiModelId = "qwen/qwen3.8-max-0902",
+                Gateway = ModelGateway.OpenRouter,
+                ReasoningEffort = effort,
+                ReasoningMaxTokens = maxTokens
+            }, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            var saved = DataContext.Models.Single(m => m.Id == result.Value);
+            Assert.Equal(effort, saved.ReasoningEffort);
+            Assert.Equal(maxTokens, saved.ReasoningMaxTokens);
+        }
+
+        [Theory]
+        [InlineData(ModelGateway.OpenRouter, ModelReasoningEffort.Low, 4096)]   // both: OpenRouter accepts one
+        [InlineData(ModelGateway.OpenRouter, null, 512)]                        // below Anthropic's minimum budget
+        [InlineData(ModelGateway.OpenRouter, null, 16384)]                      // leaves no room for the answer
+        [InlineData(ModelGateway.OpenRouter, (ModelReasoningEffort)42, null)]   // unknown effort
+        [InlineData(ModelGateway.None, ModelReasoningEffort.Low, null)]         // direct route never sends it
+        public async Task CreateModel_RejectsInvalidReasoningCap(ModelGateway gateway, ModelReasoningEffort? effort, int? maxTokens)
+        {
+            var provider = await SeedProviderAsync();
+            var family = await SeedFamilyAsync();
+            var sut = Mocker.CreateInstance<CreateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new CreateModelCommand
+            {
+                ModelProviderId = provider.Id,
+                ModelFamilyId = family.Id,
+                Name = "Claude Haiku 4.5",
+                ApiModelId = gateway == ModelGateway.OpenRouter ? "anthropic/claude-haiku-4.5" : "claude-haiku-4-5",
+                Gateway = gateway,
+                ReasoningEffort = effort,
+                ReasoningMaxTokens = maxTokens
+            }, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Validation, result.Status);
+            Assert.Empty(DataContext.Models);
+        }
     }
 }

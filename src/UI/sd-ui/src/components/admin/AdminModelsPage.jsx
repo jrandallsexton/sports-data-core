@@ -605,7 +605,7 @@ export default function AdminModelsPage() {
                     ))}
                   </select>
                   {form.reasoning === 'Budget' && (
-                    <input type="number" step="256" min={REASONING_BUDGET_MIN} max={REASONING_BUDGET_MAX}
+                    <input type="number" step="1" min={REASONING_BUDGET_MIN} max={REASONING_BUDGET_MAX}
                       aria-label="Reasoning token budget"
                       value={form.reasoningMaxTokens}
                       onChange={(e) => setForm(f => ({ ...f, reasoningMaxTokens: e.target.value }))}

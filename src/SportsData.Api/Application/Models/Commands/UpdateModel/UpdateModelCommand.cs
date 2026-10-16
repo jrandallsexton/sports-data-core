@@ -4,13 +4,15 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Models.Commands.UpdateModel;
 
 /// <summary>
 /// Edits a model's METADATA — cutoff (verification updates are the main
-/// use), evidence, costs, release date, IsActive — and its family.
+/// use), evidence, costs, reasoning cap, release date, IsActive — and its
+/// family.
 /// Identity fields (Name, ApiModelId, ModelProviderId) are deliberately
 /// immutable: a different API identifier is a different model, full stop.
 /// Family is grouping, not identity, so it may move. Activating an
@@ -34,6 +36,12 @@ public class UpdateModelCommand
     public decimal? InputCostPerMTok { get; set; }
 
     public decimal? OutputCostPerMTok { get; set; }
+
+    /// <summary>Reasoning cap as an effort level (OpenRouter route only; exclusive with <see cref="ReasoningMaxTokens"/>). Null = model default.</summary>
+    public ModelReasoningEffort? ReasoningEffort { get; set; }
+
+    /// <summary>Reasoning cap as a token budget (OpenRouter route only; exclusive with <see cref="ReasoningEffort"/>). Null = model default.</summary>
+    public int? ReasoningMaxTokens { get; set; }
 
     public bool IsActive { get; set; } = true;
 }
@@ -87,6 +95,13 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
                 default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.ModelId), "Model not found")]);
+        }
+
+        // Gateway is create-only, so the pre-read's value holds for the attempt.
+        var reasoningFailure = ReasoningCap.Validate(model.Gateway, command.ReasoningEffort, command.ReasoningMaxTokens);
+        if (reasoningFailure is not null)
+        {
+            return new Failure<Guid>(default!, ResultStatus.Validation, [reasoningFailure]);
         }
 
         if (model.ModelFamilyId != command.ModelFamilyId)
@@ -150,6 +165,8 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
                 current.CutoffVerifiedUtc = command.CutoffVerifiedUtc;
                 current.InputCostPerMTok = command.InputCostPerMTok;
                 current.OutputCostPerMTok = command.OutputCostPerMTok;
+                current.ReasoningEffort = command.ReasoningEffort;
+                current.ReasoningMaxTokens = command.ReasoningMaxTokens;
                 current.IsActive = command.IsActive;
                 current.ModifiedUtc = _dateTimeProvider.UtcNow();
 
@@ -169,8 +186,8 @@ public class UpdateModelCommandHandler : IUpdateModelCommandHandler
         }
 
         _logger.LogInformation(
-            "Model updated. Id: {ModelId}, Family: {FamilyId}, Cutoff: {Cutoff}, VerifiedUtc: {VerifiedUtc}, IsActive: {IsActive}, DisplacedFromSeat: {Displaced}",
-            model.Id, command.ModelFamilyId, command.KnowledgeCutoffUtc, command.CutoffVerifiedUtc, command.IsActive, displaced);
+            "Model updated. Id: {ModelId}, Family: {FamilyId}, Cutoff: {Cutoff}, VerifiedUtc: {VerifiedUtc}, ReasoningEffort: {ReasoningEffort}, ReasoningMaxTokens: {ReasoningMaxTokens}, IsActive: {IsActive}, DisplacedFromSeat: {Displaced}",
+            model.Id, command.ModelFamilyId, command.KnowledgeCutoffUtc, command.CutoffVerifiedUtc, command.ReasoningEffort, command.ReasoningMaxTokens, command.IsActive, displaced);
 
         return new Success<Guid>(model.Id);
     }

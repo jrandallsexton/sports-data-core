@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 using Moq;
 
 using SportsData.Api.Application.Models.Commands.UpdateModel;
@@ -167,6 +169,59 @@ namespace SportsData.Api.Tests.Unit.Application.Models.Commands.UpdateModel
 
             Assert.False(result.IsSuccess);
             Assert.Equal(family.Id, DataContext.Models.Single(m => m.Id == model.Id).ModelFamilyId);
+        }
+
+        [Fact]
+        public async Task UpdateModel_SetsThenClearsReasoningCap()
+        {
+            var provider = await SeedProviderAsync("Alibaba", ModelProviderKind.GatewayOnly);
+            var family = await SeedFamilyAsync("Qwen");
+            var model = await SeedSeatAsync(provider, family, "Qwen 3.8 Max");
+            var sut = Mocker.CreateInstance<UpdateModelCommandHandler>();
+
+            var capped = await sut.ExecuteAsync(new UpdateModelCommand
+            {
+                ModelId = model.Id,
+                ModelFamilyId = family.Id,
+                ReasoningMaxTokens = 4096,
+                IsActive = true
+            }, CancellationToken.None);
+
+            Assert.True(capped.IsSuccess);
+            Assert.Equal(4096, DataContext.Models.AsNoTracking().Single(m => m.Id == model.Id).ReasoningMaxTokens);
+
+            var cleared = await sut.ExecuteAsync(new UpdateModelCommand
+            {
+                ModelId = model.Id,
+                ModelFamilyId = family.Id,
+                IsActive = true
+            }, CancellationToken.None);
+
+            Assert.True(cleared.IsSuccess);
+            var saved = DataContext.Models.AsNoTracking().Single(m => m.Id == model.Id);
+            Assert.Null(saved.ReasoningMaxTokens);
+            Assert.Null(saved.ReasoningEffort);
+        }
+
+        [Fact]
+        public async Task UpdateModel_RejectsReasoningCapOnDirectRoute()
+        {
+            var provider = await SeedProviderAsync("DeepSeek", ModelProviderKind.DeepSeek);
+            var family = await SeedFamilyAsync("DeepSeek");
+            var model = await SeedSeatAsync(provider, family, "DeepSeek Chat", gateway: ModelGateway.None);
+            var sut = Mocker.CreateInstance<UpdateModelCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new UpdateModelCommand
+            {
+                ModelId = model.Id,
+                ModelFamilyId = family.Id,
+                ReasoningEffort = ModelReasoningEffort.Low,
+                IsActive = true
+            }, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Validation, result.Status);
+            Assert.Null(DataContext.Models.AsNoTracking().Single(m => m.Id == model.Id).ReasoningEffort);
         }
     }
 }

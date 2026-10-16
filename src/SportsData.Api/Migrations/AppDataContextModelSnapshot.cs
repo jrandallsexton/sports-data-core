@@ -886,6 +886,12 @@ namespace SportsData.Api.Migrations
                         .HasPrecision(10, 4)
                         .HasColumnType("numeric(10,4)");
 
+                    b.Property<int?>("ReasoningEffort")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReasoningMaxTokens")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -913,7 +919,10 @@ namespace SportsData.Api.Migrations
                     b.HasIndex("ModelProviderId", "ApiModelId")
                         .IsUnique();
 
-                    b.ToTable("Model", (string)null);
+                    b.ToTable("Model", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Model_ReasoningEffortOrMaxTokens", "\"ReasoningEffort\" IS NULL OR \"ReasoningMaxTokens\" IS NULL");
+                        });
                 });
 
             modelBuilder.Entity("SportsData.Api.Infrastructure.Data.Entities.ModelFamily", b =>

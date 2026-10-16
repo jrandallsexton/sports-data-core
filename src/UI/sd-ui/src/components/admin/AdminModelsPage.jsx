@@ -220,6 +220,12 @@ export default function AdminModelsPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // An empty budget would send no cap at all — the server reads that as
+      // "model default" and would silently drop (or clear) the intended cap.
+      if (isOpenRouter(form.gateway) && form.reasoning === 'Budget' && form.reasoningMaxTokens === '') {
+        toast.error(`Enter a reasoning token budget (${REASONING_BUDGET_MIN}–${REASONING_BUDGET_MAX}), or pick another reasoning option.`);
+        return;
+      }
       if (mode === 'edit') {
         const current = models.find(x => x.id === selectedId);
         const replaced = form.isActive && isOpenRouter(current?.gateway)

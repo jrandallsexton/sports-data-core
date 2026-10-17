@@ -14,71 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutCompetitors.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutPlays.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetCompletedFbsContestsBySeasonWeekId.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetCompletedSeasonWeeks.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentAndLastWeekSeasonWeeks.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatistics.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupByContestId.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupForPreviewGeneration.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupResultByContestId.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupsForCurrentWeek.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupsForPreviewGeneration_Batch.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetMatchupsForSeasonWeek.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetRankingsByPollBySeasonByWeek.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCard.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamCardSchedule.sql" />
-    <None Remove="Infrastructure\Data\Canonical\Sql\GetTeamSeasons.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupByContestId.sql" />
     <EmbeddedResource Include="Application\Common\Moderation\profanity-wordlist.txt" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutCompetitors.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutPlays.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutDrives.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\Errors\CompetitionsWithoutMetrics.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCompletedFbsContestsBySeasonWeekId.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCompletedSeasonWeeks.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewGameInfo.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewPlayLog.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewQuarterScores.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestOverviewWinProbabilityPoints.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetContestResultsByContestIds.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentAndLastWeekSeasonWeeks.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetCurrentSeasonWeek.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatistics.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetFranchiseSeasonStatisticsForPreviewGeneration.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetLeagueMatchupsByContestIds.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupForPreviewGeneration.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupResultByContestId.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupsForCurrentWeek.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupsForPreviewGeneration_Batch.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupsForSeasonWeek.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetRankingsByPollBySeasonByWeek.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamCard.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamCardSchedule.sql" />
-    <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetTeamSeasons.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.89" />
     <PackageReference Include="FirebaseAdmin" Version="3.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
     <PackageReference Include="Microsoft.Azure.SignalR" Version="1.32.0" />

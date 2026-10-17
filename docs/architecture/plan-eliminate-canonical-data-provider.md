@@ -1,5 +1,32 @@
 # Plan: Eliminate CanonicalDataProvider
 
+## Status (2026-10-17)
+
+Phases 1–4 are complete. `CanonicalDataProvider` and `IProvideCanonicalData` were gone before this date, but `CanonicalDataQueryProvider` was still registered and its 23 SQL files were still embedded, with no callers.
+
+The one remaining direct reader was `CanonicalAdminDataProvider`, which this plan never listed. It backed the four admin diagnostics in API's `DiagnosticsController`. Branch `feat/producer-diagnostics-competitors` finishes the job and completes Phase 5.
+
+**The diagnostics moved to Producer.** They are now EF LINQ handlers under `Application/Competitions/Queries`:
+- `GET api/competitions/without-competitors`
+- `GET api/competitions/without-plays`
+- `GET api/competitions/without-drives`
+- `GET api/competitions/without-metrics`
+
+API aggregates every sport's answer through `Application/Diagnostics/ProducerFanOut`. That helper calls an explicit sport list in parallel and is all or nothing: if any Producer fails, the request fails and names the sport.
+
+**Behaviour changes, deliberate rather than a verbatim port:**
+- The plays, drives and metrics checks no longer hard-code FBS 2025. They run against a season (`?seasonYear=`, defaulting to the latest season with a started contest), on the pod's own sport.
+- The FBS filter applies only on the NCAA pod, the same rule as `RefreshAllCompetitionMediaCommandHandler`.
+- For FBS 2025 on local NCAA data, the results match the old SQL exactly.
+- The competitors check now returns `StartDateUtc`, which the old SQL never selected.
+
+**Deleted from API:**
+- The whole `Infrastructure/Data/Canonical` folder: both query providers, the admin provider, and every embedded SQL file.
+- The canonical `IDbConnection` registration.
+- The `Dapper` package.
+
+**Remaining owner action:** remove `SportsData.Api:CanonicalDataProvider:ConnectionString` from API's App Config. Nothing reads it any more.
+
 ## Context
 
 `CanonicalDataProvider` in the API project uses Dapper to query Producer's PostgreSQL database directly via a single `IDbConnection`. This violates the service boundary (API should call Producer via HTTP) and is broken for multi-sport — the single connection string can only point to one Producer database. With NFL sourcing active, this must be fixed before UI work can proceed.

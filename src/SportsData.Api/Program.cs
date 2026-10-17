@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 
-using Npgsql;
-
 using SportsData.Api.Application.Auth;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Config;
@@ -27,7 +25,6 @@ using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Middleware.Health;
 using SportsData.Core.Processing;
 
-using System.Data;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -211,12 +208,6 @@ namespace SportsData.Api
                     Credential = GoogleCredential.FromJson(firebaseJson)
                 });
             }
-
-            builder.Services.AddScoped<IDbConnection>(sp =>
-            {
-                var connString = config["SportsData.Api:CanonicalDataProvider:ConnectionString"];
-                return new NpgsqlConnection(connString);
-            });
 
             services.AddCoreServices(config);
 

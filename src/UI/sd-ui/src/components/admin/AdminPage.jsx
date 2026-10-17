@@ -8,6 +8,13 @@ import CompetitionsWithoutPlays from './CompetitionsWithoutPlays';
 import CompetitionsWithoutDrives from './CompetitionsWithoutDrives';
 import SystemHealth from './SystemHealth';
 import RecentErrors from './RecentErrors';
+// The diagnostics endpoints aggregate every sport's Producer and fail whole
+// when one is down; the API's errors name the failed sport(s).
+const apiErrorMessage = (err, fallback) => {
+  const apiErrors = err?.response?.data?.errors?.map(e => e.errorMessage).filter(Boolean);
+  return apiErrors?.length ? apiErrors.join(' ') : (err?.message || fallback);
+};
+
 export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,6 +29,8 @@ export default function AdminPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [pageDrives, setPageDrives] = useState(0);
   const [rowsPerPageDrives, setRowsPerPageDrives] = useState(5);
+  const [pageCompetitors, setPageCompetitors] = useState(0);
+  const [rowsPerPageCompetitors, setRowsPerPageCompetitors] = useState(5);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +43,7 @@ export default function AdminPage() {
           setItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Failed to fetch');
+        if (!cancelled) setError(apiErrorMessage(err, 'Failed to fetch'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -43,6 +52,20 @@ export default function AdminPage() {
     load();
     return () => { cancelled = true; };
   }, []);
+
+  const loadCompetitors = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiWrapper.Admin.getCompetitionsWithoutCompetitors();
+      setItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
+      setPageCompetitors(0);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to fetch'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Load competitions without plays
   useEffect(() => {
@@ -54,7 +77,7 @@ export default function AdminPage() {
         const res = await apiWrapper.Admin.getCompetitionsWithoutPlays();
         if (!cancelled) setPlaysItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
       } catch (err) {
-        if (!cancelled) setPlaysError(err.message || 'Failed to fetch plays dataset');
+        if (!cancelled) setPlaysError(apiErrorMessage(err, 'Failed to fetch plays dataset'));
       } finally {
         if (!cancelled) setPlaysLoading(false);
       }
@@ -71,7 +94,7 @@ export default function AdminPage() {
       const res = await apiWrapper.Admin.getCompetitionsWithoutPlays();
       setPlaysItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
     } catch (err) {
-      setPlaysError(err.message || 'Failed to fetch plays dataset');
+      setPlaysError(apiErrorMessage(err, 'Failed to fetch plays dataset'));
     } finally {
       setPlaysLoading(false);
     }
@@ -87,7 +110,7 @@ export default function AdminPage() {
         const res = await apiWrapper.Admin.getCompetitionsWithoutDrives();
         if (!cancelled) setDrivesItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
       } catch (err) {
-        if (!cancelled) setDrivesError(err.message || 'Failed to fetch drives dataset');
+        if (!cancelled) setDrivesError(apiErrorMessage(err, 'Failed to fetch drives dataset'));
       } finally {
         if (!cancelled) setDrivesLoading(false);
       }
@@ -103,7 +126,7 @@ export default function AdminPage() {
       const res = await apiWrapper.Admin.getCompetitionsWithoutDrives();
       setDrivesItems(Array.isArray(res.data) ? res.data : res.data?.items ?? []);
     } catch (err) {
-      setDrivesError(err.message || 'Failed to fetch drives dataset');
+      setDrivesError(apiErrorMessage(err, 'Failed to fetch drives dataset'));
     } finally {
       setDrivesLoading(false);
     }
@@ -116,6 +139,15 @@ export default function AdminPage() {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleChangePageCompetitors = (event, newPage) => {
+    setPageCompetitors(newPage);
+  };
+
+  const handleChangeRowsPerPageCompetitors = (event) => {
+    setRowsPerPageCompetitors(parseInt(event.target.value, 10));
+    setPageCompetitors(0);
   };
 
   const handleChangePageDrives = (event, newPage) => {
@@ -155,7 +187,16 @@ export default function AdminPage() {
             <RecentErrors />
           </div>
 
-          <CompetitionsWithoutCompetitors items={items} loading={loading} error={error} />
+          <CompetitionsWithoutCompetitors
+            items={items}
+            loading={loading}
+            error={error}
+            page={pageCompetitors}
+            rowsPerPage={rowsPerPageCompetitors}
+            handleChangePage={handleChangePageCompetitors}
+            handleChangeRowsPerPage={handleChangeRowsPerPageCompetitors}
+            refresh={loadCompetitors}
+          />
         </div>
 
         <div className="admin-plays">

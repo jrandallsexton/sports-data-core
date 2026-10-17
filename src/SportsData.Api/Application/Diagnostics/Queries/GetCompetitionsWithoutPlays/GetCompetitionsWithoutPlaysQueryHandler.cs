@@ -1,8 +1,6 @@
-using FluentValidation.Results;
-
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Competition;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutPlays;
 
@@ -13,35 +11,34 @@ public interface IGetCompetitionsWithoutPlaysQueryHandler
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Aggregates every Producer's competitions-without-plays answer (one sport
+/// each, rows stamped with their sport). Producer owns the query; see
+/// <see cref="ProducerFanOut"/>.
+/// </summary>
 public class GetCompetitionsWithoutPlaysQueryHandler : IGetCompetitionsWithoutPlaysQueryHandler
 {
-    private readonly IProvideCanonicalAdminData _canonicalAdminData;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly ILogger<GetCompetitionsWithoutPlaysQueryHandler> _logger;
 
     public GetCompetitionsWithoutPlaysQueryHandler(
-        IProvideCanonicalAdminData canonicalAdminData,
+        IContestClientFactory contestClientFactory,
         ILogger<GetCompetitionsWithoutPlaysQueryHandler> logger)
     {
-        _canonicalAdminData = canonicalAdminData;
+        _contestClientFactory = contestClientFactory;
         _logger = logger;
     }
 
-    public async Task<Result<List<CompetitionWithoutPlaysDto>>> ExecuteAsync(
+    public Task<Result<List<CompetitionWithoutPlaysDto>>> ExecuteAsync(
         GetCompetitionsWithoutPlaysQuery query,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutPlays(cancellationToken);
-            return new Success<List<CompetitionWithoutPlaysDto>>(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get competitions without plays");
-            return new Failure<List<CompetitionWithoutPlaysDto>>(
-                new List<CompetitionWithoutPlaysDto>(),
-                ResultStatus.Error,
-                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without plays")]);
-        }
+        return ProducerFanOut.CollectAsync(
+            ProducerFanOut.Sports,
+            (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutPlays(query.SeasonYear, ct),
+            row => row.Sport,
+            _logger,
+            "competitions without plays",
+            cancellationToken);
     }
 }

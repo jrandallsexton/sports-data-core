@@ -1,88 +1,119 @@
 using FluentAssertions;
 
+using FluentValidation.Results;
+
 using Moq;
 
 using SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutDrives;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Competition;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.Diagnostics.Queries.GetCompetitionsWithoutDrives;
 
+/// <summary>
+/// API aggregates each sport's Producer answer (it never queries a Producer
+/// database). All or nothing: a missing sport would read as "clean".
+/// </summary>
 public class GetCompetitionsWithoutDrivesQueryHandlerTests : ApiTestBase<GetCompetitionsWithoutDrivesQueryHandler>
 {
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnSuccess_WhenDataProviderReturnsResults()
+    private readonly Dictionary<Sport, Mock<IProvideContests>> _producers = new()
     {
-        // Arrange
-        var expectedResults = new List<CompetitionWithoutDrivesDto>
+        [Sport.FootballNcaa] = new Mock<IProvideContests>(),
+        [Sport.FootballNfl] = new Mock<IProvideContests>()
+    };
+
+    public GetCompetitionsWithoutDrivesQueryHandlerTests()
+    {
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns((Sport sport) => _producers.TryGetValue(sport, out var producer)
+                ? producer.Object
+                : throw new InvalidOperationException($"Unexpected Producer call for {sport}"));
+    }
+
+    private void ProducerReturns(Sport sport, params CompetitionWithoutDrivesDto[] rows) =>
+        _producers[sport]
+            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<CompetitionWithoutDrivesDto>>(rows.ToList()));
+
+    private static CompetitionWithoutDrivesDto Row(Sport sport, string name) => new()
+    {
+        Sport = sport,
+        CompetitionId = Guid.NewGuid(),
+        ContestId = Guid.NewGuid(),
+        ContestName = name
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_MergesEveryProducer_InSportOrder()
+    {
+        var ncaa = Row(Sport.FootballNcaa, "Army at Navy");
+        var nfl = Row(Sport.FootballNfl, "Bears at Packers");
+        ProducerReturns(Sport.FootballNcaa, ncaa);
+        ProducerReturns(Sport.FootballNfl, nfl);
+
+        var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Equal(ncaa, nfl);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PassesTheSeasonYearToEveryProducer()
+    {
+        ProducerReturns(Sport.FootballNcaa);
+        ProducerReturns(Sport.FootballNfl);
+
+        var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
+
+        await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(2025), CancellationToken.None);
+
+        foreach (var producer in _producers.Values)
         {
-            new() { CompetitionId = Guid.NewGuid(), ContestName = "Test Competition 1" },
-            new() { CompetitionId = Guid.NewGuid(), ContestName = "Test Competition 2" }
-        };
-
-        Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
-
-        var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
-        var query = new GetCompetitionsWithoutDrivesQuery();
-
-        // Act
-        var result = await handler.ExecuteAsync(query, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Should().BeOfType<Success<List<CompetitionWithoutDrivesDto>>>();
-        var success = (Success<List<CompetitionWithoutDrivesDto>>)result;
-        success.Value.Should().HaveCount(2);
-        success.Value.Should().BeEquivalentTo(expectedResults);
+            producer.Verify(x => x.GetCompetitionsWithoutDrives(2025, It.IsAny<CancellationToken>()), Times.Once);
+        }
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnEmptyList_WhenNoResultsFound()
+    public async Task ExecuteAsync_FailsWhole_NamingTheSport_WhenOneProducerFails()
     {
-        // Arrange
-        var expectedResults = new List<CompetitionWithoutDrivesDto>();
-
-        Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResults);
+        ProducerReturns(Sport.FootballNcaa, Row(Sport.FootballNcaa, "Army at Navy"));
+        _producers[Sport.FootballNfl]
+            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<List<CompetitionWithoutDrivesDto>>(
+                [], ResultStatus.Error, [new ValidationFailure("x", "boom")]));
 
         var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
-        var query = new GetCompetitionsWithoutDrivesQuery();
 
-        // Act
-        var result = await handler.ExecuteAsync(query, CancellationToken.None);
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(), CancellationToken.None);
 
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        var success = (Success<List<CompetitionWithoutDrivesDto>>)result;
-        success.Value.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ShouldReturnError_WhenDataProviderThrowsException()
-    {
-        // Arrange
-        Mocker.GetMock<IProvideCanonicalAdminData>()
-            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Database error"));
-
-        var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
-        var query = new GetCompetitionsWithoutDrivesQuery();
-
-        // Act
-        var result = await handler.ExecuteAsync(query, CancellationToken.None);
-
-        // Assert
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.Error);
-        result.Should().BeOfType<Failure<List<CompetitionWithoutDrivesDto>>>();
         var failure = (Failure<List<CompetitionWithoutDrivesDto>>)result;
-        failure.Errors.Should().Contain(e => e.ErrorMessage == "An error occurred while retrieving competitions without drives");
-        failure.Value.Should().BeEmpty();
+        failure.Value.Should().BeEmpty("a partial list would report the failed sport as clean");
+        failure.Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(Sport.FootballNfl));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FailsWhole_WhenAProducerIsUnreachable()
+    {
+        ProducerReturns(Sport.FootballNfl, Row(Sport.FootballNfl, "Bears at Packers"));
+        _producers[Sport.FootballNcaa]
+            .Setup(x => x.GetCompetitionsWithoutDrives(It.IsAny<int?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("connection refused"));
+
+        var handler = Mocker.CreateInstance<GetCompetitionsWithoutDrivesQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        ((Failure<List<CompetitionWithoutDrivesDto>>)result).Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(Sport.FootballNcaa));
     }
 }

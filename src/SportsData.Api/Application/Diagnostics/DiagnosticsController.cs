@@ -17,7 +17,9 @@ namespace SportsData.Api.Application.Diagnostics;
 /// <summary>
 /// Operator diagnostics: data-integrity queries (competitions missing a child
 /// dataset), an AI connectivity check, and URL-identity generation. Every
-/// action is admin-only: [AdminApiToken] is on the class.
+/// action is admin-only: [AdminApiToken] is on the class. The integrity
+/// queries run in each sport's Producer; API aggregates them
+/// (<see cref="ProducerFanOut"/>) and never reads Producer's database.
 /// </summary>
 [ApiController]
 [Route("api/diagnostics")]
@@ -45,9 +47,10 @@ public class DiagnosticsController : ApiControllerBase
     [HttpGet("competitions-without-plays")]
     public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(
         [FromServices] IGetCompetitionsWithoutPlaysQueryHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? seasonYear = null)
     {
-        var query = new GetCompetitionsWithoutPlaysQuery();
+        var query = new GetCompetitionsWithoutPlaysQuery(seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
         return result.ToActionResult();
     }
@@ -55,9 +58,10 @@ public class DiagnosticsController : ApiControllerBase
     [HttpGet("competitions-without-drives")]
     public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
         [FromServices] IGetCompetitionsWithoutDrivesQueryHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? seasonYear = null)
     {
-        var query = new GetCompetitionsWithoutDrivesQuery();
+        var query = new GetCompetitionsWithoutDrivesQuery(seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
         return result.ToActionResult();
     }
@@ -65,9 +69,10 @@ public class DiagnosticsController : ApiControllerBase
     [HttpGet("competitions-without-metrics")]
     public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(
         [FromServices] IGetCompetitionsWithoutMetricsQueryHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? seasonYear = null)
     {
-        var query = new GetCompetitionsWithoutMetricsQuery();
+        var query = new GetCompetitionsWithoutMetricsQuery(seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
         return result.ToActionResult();
     }

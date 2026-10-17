@@ -86,7 +86,6 @@ using SportsData.Api.Application.User.Queries.GetNotificationPreferences;
 using SportsData.Api.Application.User.Queries.GetUserOptions;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Auth;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
@@ -385,9 +384,6 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddSingleton<CanonicalDataQueryProvider>();
-            services.AddScoped<IProvideCanonicalAdminData, CanonicalAdminDataProvider>();
-            services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IAuditMatchupRecords, MatchupRecordAuditProcessor>();
             services.AddScoped<IApplyMatchupOdds, MatchupOddsProcessor>();

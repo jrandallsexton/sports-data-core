@@ -69,7 +69,8 @@ public class CompetitionDiagnosticsQueryHandlerTests : ProducerTestBase<GetCompe
         int playsWithDrive = 0,
         bool withMetric = false,
         Guid? homeFranchiseSeasonId = null,
-        Guid? awayFranchiseSeasonId = null)
+        Guid? awayFranchiseSeasonId = null,
+        bool cancelled = false)
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
@@ -86,7 +87,8 @@ public class CompetitionDiagnosticsQueryHandlerTests : ProducerTestBase<GetCompe
             ShortName = name,
             StartDateUtc = start,
             HomeTeamFranchiseSeasonId = homeFranchiseSeasonId ?? Guid.Empty,
-            AwayTeamFranchiseSeasonId = awayFranchiseSeasonId ?? Guid.Empty
+            AwayTeamFranchiseSeasonId = awayFranchiseSeasonId ?? Guid.Empty,
+            CancelledUtc = cancelled ? start.AddHours(-1) : null
         });
         FootballDataContext.Competitions.Add(new FootballCompetition
         {
@@ -266,5 +268,22 @@ public class CompetitionDiagnosticsQueryHandlerTests : ProducerTestBase<GetCompe
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task Scope_ExcludesCancelledContests_FromResultsAndSeasonSelection()
+    {
+        UseScope(Sport.FootballNfl);
+        var played = await SeedCompetitionAsync("Played", seasonYear: 2026);
+        await SeedCompetitionAsync("Cancelled", seasonYear: 2026, cancelled: true);
+        // A cancelled game alone must neither move the default season nor make an explicit season "started".
+        await SeedCompetitionAsync("Cancelled next season", seasonYear: 2027, startDateUtc: Now.AddDays(-1), cancelled: true);
+
+        var sut = Mocker.CreateInstance<GetCompetitionsWithoutPlaysQueryHandler>();
+
+        (await sut.ExecuteAsync(new GetCompetitionsWithoutPlaysQuery(null)))
+            .Value.Select(x => x.CompetitionId).Should().Equal(played);
+        (await sut.ExecuteAsync(new GetCompetitionsWithoutPlaysQuery(2027)))
+            .Status.Should().Be(ResultStatus.NotFound);
     }
 }

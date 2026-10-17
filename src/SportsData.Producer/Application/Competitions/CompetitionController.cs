@@ -56,9 +56,15 @@ public class CompetitionController : ControllerBase
     [HttpGet("without-drives")]
     public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
         [FromQuery] int? seasonYear,
+        [FromServices] IAppMode appMode,
         CancellationToken cancellationToken)
     {
-        // Resolved per call: the handler is registered on football pods only.
+        // Football-only handler. Resolved manually after the mode guard so
+        // non-football pods return a typed BadRequest instead of a DI
+        // resolution InvalidOperationException.
+        if (appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+            return BadRequest($"GetCompetitionsWithoutDrives is football-only. CurrentSport={appMode.CurrentSport}");
+
         var handler = HttpContext.RequestServices.GetRequiredService<IGetCompetitionsWithoutDrivesQueryHandler>();
         var result = await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(seasonYear), cancellationToken);
 

@@ -12,7 +12,8 @@ namespace SportsData.Producer.Application.Competitions.Queries;
 
 /// <summary>
 /// The competitions a data-coverage diagnostic (plays, drives, metrics)
-/// expects data for: this pod's sport, one season, already started. On the
+/// expects data for: this pod's sport, one season, already started and not
+/// cancelled (a cancelled contest is terminal and never gets data). On the
 /// NCAA pod, only games with at least one FBS team, the same rule as
 /// RefreshAllCompetitionMediaCommandHandler; other sports are unfiltered.
 /// Replaces API's embedded SQL, which hard-coded FBS 2025: it returned
@@ -61,14 +62,14 @@ public class CompetitionDiagnosticsScope : ICompetitionDiagnosticsScope
 
         var season = seasonYear ?? await dataContext.Contests
             .AsNoTracking()
-            .Where(c => c.Sport == sport && c.StartDateUtc < now)
+            .Where(c => c.Sport == sport && c.StartDateUtc < now && c.CancelledUtc == null)
             .MaxAsync(c => (int?)c.SeasonYear, cancellationToken);
 
         if (seasonYear is not null)
         {
             var seasonStarted = await dataContext.Contests
                 .AsNoTracking()
-                .AnyAsync(c => c.Sport == sport && c.SeasonYear == seasonYear && c.StartDateUtc < now, cancellationToken);
+                .AnyAsync(c => c.Sport == sport && c.SeasonYear == seasonYear && c.StartDateUtc < now && c.CancelledUtc == null, cancellationToken);
 
             if (!seasonStarted)
             {
@@ -83,7 +84,8 @@ public class CompetitionDiagnosticsScope : ICompetitionDiagnosticsScope
             .AsNoTracking()
             .Where(c => c.Contest.Sport == sport
                         && c.Contest.SeasonYear == season
-                        && c.Contest.StartDateUtc < now);
+                        && c.Contest.StartDateUtc < now
+                        && c.Contest.CancelledUtc == null);
 
         if (season is null || sport != Sport.FootballNcaa)
         {

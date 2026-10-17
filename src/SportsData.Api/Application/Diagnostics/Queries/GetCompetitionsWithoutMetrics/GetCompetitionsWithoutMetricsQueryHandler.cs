@@ -1,8 +1,6 @@
-using FluentValidation.Results;
-
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Competition;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutMetrics;
 
@@ -13,35 +11,33 @@ public interface IGetCompetitionsWithoutMetricsQueryHandler
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Aggregates every Producer's competitions-without-metrics answer (one sport
+/// each, rows stamped with their sport). Producer owns the query; see
+/// <see cref="ProducerFanOut"/>.
+/// </summary>
 public class GetCompetitionsWithoutMetricsQueryHandler : IGetCompetitionsWithoutMetricsQueryHandler
 {
-    private readonly IProvideCanonicalAdminData _canonicalAdminData;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly ILogger<GetCompetitionsWithoutMetricsQueryHandler> _logger;
 
     public GetCompetitionsWithoutMetricsQueryHandler(
-        IProvideCanonicalAdminData canonicalAdminData,
+        IContestClientFactory contestClientFactory,
         ILogger<GetCompetitionsWithoutMetricsQueryHandler> logger)
     {
-        _canonicalAdminData = canonicalAdminData;
+        _contestClientFactory = contestClientFactory;
         _logger = logger;
     }
 
-    public async Task<Result<List<CompetitionWithoutMetricsDto>>> ExecuteAsync(
+    public Task<Result<List<CompetitionWithoutMetricsDto>>> ExecuteAsync(
         GetCompetitionsWithoutMetricsQuery query,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutMetrics(cancellationToken);
-            return new Success<List<CompetitionWithoutMetricsDto>>(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get competitions without metrics");
-            return new Failure<List<CompetitionWithoutMetricsDto>>(
-                new List<CompetitionWithoutMetricsDto>(),
-                ResultStatus.Error,
-                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without metrics")]);
-        }
+        return ProducerFanOut.CollectAsync(
+            ProducerFanOut.Sports,
+            (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutMetrics(query.SeasonYear, ct),
+            _logger,
+            "competitions without metrics",
+            cancellationToken);
     }
 }

@@ -10,7 +10,7 @@ import TablePagination from '@mui/material/TablePagination';
 import { FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
-import { contestLink } from '../../utils/sportLinks';
+import { contestLink, resolveSportLeague } from '../../utils/sportLinks';
 import './AdminPage.css';
 
 export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading, playsError, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, refreshPlays }) {
@@ -40,9 +40,10 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
       ) : (
         <>
           <TableContainer component={Paper} sx={{ background: '#23272f', color: '#f8f9fa' }}>
-            <Table aria-label="competitions-without-plays" sx={{ minWidth: 920, tableLayout: 'fixed' }}>
+            <Table aria-label="competitions-without-plays" sx={{ minWidth: 1030, tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow>
+                  <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 110 }}>Sport</TableCell>
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>CompetitionId</TableCell>
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 180 }}>ContestId</TableCell>
                   <TableCell sx={{ color: '#61dafb', backgroundColor: '#23272f', borderBottom: '2px solid rgba(97,218,251,0.12)', width: 340 }}>ContestName</TableCell>
@@ -68,12 +69,13 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
 
                   return (
                     <TableRow key={it.competitionId ?? it.contestId} hover sx={{ '& td': { color: '#f8f9fa', borderBottom: '1px solid rgba(255,255,255,0.04)' } }}>
+                      <TableCell sx={{ width: 110 }}>{it.sport ?? '-'}</TableCell>
                       <TableCell sx={{ width: 180, whiteSpace: 'normal', wordBreak: 'break-all', fontFamily: 'monospace' }}>{it.competitionId}</TableCell>
                       <TableCell sx={{ width: 180, whiteSpace: 'normal', wordBreak: 'break-all', fontFamily: 'monospace' }}>{it.contestId}</TableCell>
                       <TableCell sx={{ width: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {it.contestId && it.contestName ? (
+                        {it.contestId && it.contestName && resolveSportLeague(it.sport) ? (
                           <a
-                            href={contestLink(it.contestId)}
+                            href={contestLink(it.contestId, resolveSportLeague(it.sport).sport, resolveSportLeague(it.sport).league)}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#61dafb', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}

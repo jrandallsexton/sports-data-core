@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Dtos.Competition;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Middleware.Health;
@@ -101,6 +102,21 @@ public interface IProvideContests : IProvideHealthChecks
 
     // Matchup query endpoints (Phase 2)
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
+
+    /// <summary>
+    /// Diagnostics: this Producer's competitions whose competitor count is
+    /// not 2. One sport per call; API fans out across sports and aggregates.
+    /// </summary>
+    Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(CancellationToken ct = default);
+
+    /// <summary>Diagnostics: this Producer's started competitions without plays for a season (null = latest started).</summary>
+    Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(int? seasonYear, CancellationToken ct = default);
+
+    /// <summary>Diagnostics: this Producer's started competitions without drives for a season (null = latest started).</summary>
+    Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(int? seasonYear, CancellationToken ct = default);
+
+    /// <summary>Diagnostics: this Producer's started competitions without metrics for a season (null = latest started).</summary>
+    Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(int? seasonYear, CancellationToken ct = default);
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
 
     /// <summary>
@@ -471,6 +487,34 @@ public class ContestClient : ClientBase, IProvideContests
     }
 
     // ========== Matchup query methods (Phase 2) ==========
+
+    public async Task<Result<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(CancellationToken ct = default)
+    {
+        return await GetAsync<List<CompetitionWithoutCompetitorsDto>>(
+            "competitions/without-competitors",
+            new List<CompetitionWithoutCompetitorsDto>(), "Competitions without competitors", ResultStatus.Error, ct);
+    }
+
+    public async Task<Result<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(int? seasonYear, CancellationToken ct = default)
+    {
+        return await GetAsync<List<CompetitionWithoutPlaysDto>>(
+            seasonYear is null ? "competitions/without-plays" : $"competitions/without-plays?seasonYear={seasonYear}",
+            new List<CompetitionWithoutPlaysDto>(), "Competitions without plays", ResultStatus.Error, ct);
+    }
+
+    public async Task<Result<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(int? seasonYear, CancellationToken ct = default)
+    {
+        return await GetAsync<List<CompetitionWithoutDrivesDto>>(
+            seasonYear is null ? "competitions/without-drives" : $"competitions/without-drives?seasonYear={seasonYear}",
+            new List<CompetitionWithoutDrivesDto>(), "Competitions without drives", ResultStatus.Error, ct);
+    }
+
+    public async Task<Result<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(int? seasonYear, CancellationToken ct = default)
+    {
+        return await GetAsync<List<CompetitionWithoutMetricsDto>>(
+            seasonYear is null ? "competitions/without-metrics" : $"competitions/without-metrics?seasonYear={seasonYear}",
+            new List<CompetitionWithoutMetricsDto>(), "Competitions without metrics", ResultStatus.Error, ct);
+    }
 
     public async Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default)
     {

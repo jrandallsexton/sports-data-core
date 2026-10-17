@@ -16,6 +16,11 @@ using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMe
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Queries;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutCompetitors;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutDrives;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutMetrics;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Commands.FinalizeContestsBySeasonYear;
@@ -304,10 +309,18 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
                 services.AddScoped<ICalculateCompetitionMetricsCommandHandler, CalculateCompetitionMetricsCommandHandler>();
                 services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
+                // Drives diagnostic reads FootballCompetitionPlay.DriveId (FootballDataContext).
+                services.AddScoped<IGetCompetitionsWithoutDrivesQueryHandler, GetCompetitionsWithoutDrivesQueryHandler>();
             }
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
             services.AddScoped<IRefreshAllCompetitionMediaCommandHandler, RefreshAllCompetitionMediaCommandHandler>();
+
+            // Competition Queries (diagnostics; any sport — TeamSportDataContext only)
+            services.AddScoped<IGetCompetitionsWithoutCompetitorsQueryHandler, GetCompetitionsWithoutCompetitorsQueryHandler>();
+            services.AddScoped<ICompetitionDiagnosticsScope, CompetitionDiagnosticsScope>();
+            services.AddScoped<IGetCompetitionsWithoutPlaysQueryHandler, GetCompetitionsWithoutPlaysQueryHandler>();
+            services.AddScoped<IGetCompetitionsWithoutMetricsQueryHandler, GetCompetitionsWithoutMetricsQueryHandler>();
 
             // Athlete Queries
             services.AddScoped<IGetAthleteByIdQueryHandler, GetAthleteByIdQueryHandler>();

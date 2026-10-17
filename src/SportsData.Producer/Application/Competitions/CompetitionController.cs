@@ -8,6 +8,11 @@ using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMe
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutCompetitors;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutDrives;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutMetrics;
+using SportsData.Producer.Application.Competitions.Queries.GetCompetitionsWithoutPlays;
+using SportsData.Core.Dtos.Competition;
 
 namespace SportsData.Producer.Application.Competitions;
 
@@ -15,6 +20,66 @@ namespace SportsData.Producer.Application.Competitions;
 [ApiController]
 public class CompetitionController : ControllerBase
 {
+    /// <summary>
+    /// Diagnostics: this sport's competitions whose competitor count is not 2.
+    /// API aggregates every Producer's answer (api/diagnostics/competitions-without-competitors).
+    /// </summary>
+    [HttpGet("without-competitors")]
+    public async Task<ActionResult<List<CompetitionWithoutCompetitorsDto>>> GetCompetitionsWithoutCompetitors(
+        [FromServices] IGetCompetitionsWithoutCompetitorsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutCompetitorsQuery(), cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Diagnostics: started competitions with 10 or fewer plays, for one
+    /// season (default: the latest started). FBS-involved only on the NCAA pod.
+    /// </summary>
+    [HttpGet("without-plays")]
+    public async Task<ActionResult<List<CompetitionWithoutPlaysDto>>> GetCompetitionsWithoutPlays(
+        [FromQuery] int? seasonYear,
+        [FromServices] IGetCompetitionsWithoutPlaysQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutPlaysQuery(seasonYear), cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Diagnostics (football only): started competitions with plays but no
+    /// drive links, for one season (default: the latest started).
+    /// </summary>
+    [HttpGet("without-drives")]
+    public async Task<ActionResult<List<CompetitionWithoutDrivesDto>>> GetCompetitionsWithoutDrives(
+        [FromQuery] int? seasonYear,
+        CancellationToken cancellationToken)
+    {
+        // Resolved per call: the handler is registered on football pods only.
+        var handler = HttpContext.RequestServices.GetRequiredService<IGetCompetitionsWithoutDrivesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutDrivesQuery(seasonYear), cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Diagnostics: started competitions with no CompetitionMetric rows, for
+    /// one season (default: the latest started).
+    /// </summary>
+    [HttpGet("without-metrics")]
+    public async Task<ActionResult<List<CompetitionWithoutMetricsDto>>> GetCompetitionsWithoutMetrics(
+        [FromQuery] int? seasonYear,
+        [FromServices] IGetCompetitionsWithoutMetricsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutMetricsQuery(seasonYear), cancellationToken);
+
+        return result.ToActionResult();
+    }
+
     [HttpPost("{competitionId}/metrics/generate")]
     public async Task<ActionResult<Guid>> GenerateMetrics(
         [FromRoute] Guid competitionId,

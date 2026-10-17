@@ -1,47 +1,43 @@
-using FluentValidation.Results;
-
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Competition;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.Diagnostics.Queries.GetCompetitionsWithoutCompetitors;
 
 public interface IGetCompetitionsWithoutCompetitorsQueryHandler
 {
     Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
-        GetCompetitionsWithoutCompetitorsQuery query, 
+        GetCompetitionsWithoutCompetitorsQuery query,
         CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Aggregates every Producer's competitions-without-competitors answer (one
+/// sport each, rows stamped with their sport). Producer owns the query; see
+/// <see cref="ProducerFanOut"/>.
+/// </summary>
 public class GetCompetitionsWithoutCompetitorsQueryHandler : IGetCompetitionsWithoutCompetitorsQueryHandler
 {
-    private readonly IProvideCanonicalAdminData _canonicalAdminData;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly ILogger<GetCompetitionsWithoutCompetitorsQueryHandler> _logger;
 
     public GetCompetitionsWithoutCompetitorsQueryHandler(
-        IProvideCanonicalAdminData canonicalAdminData,
+        IContestClientFactory contestClientFactory,
         ILogger<GetCompetitionsWithoutCompetitorsQueryHandler> logger)
     {
-        _canonicalAdminData = canonicalAdminData;
+        _contestClientFactory = contestClientFactory;
         _logger = logger;
     }
 
-    public async Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
+    public Task<Result<List<CompetitionWithoutCompetitorsDto>>> ExecuteAsync(
         GetCompetitionsWithoutCompetitorsQuery query,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _canonicalAdminData.GetCompetitionsWithoutCompetitors(cancellationToken);
-            return new Success<List<CompetitionWithoutCompetitorsDto>>(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get competitions without competitors");
-            return new Failure<List<CompetitionWithoutCompetitorsDto>>(
-                new List<CompetitionWithoutCompetitorsDto>(),
-                ResultStatus.Error,
-                [new ValidationFailure("competitions", "An error occurred while retrieving competitions without competitors")]);
-        }
+        return ProducerFanOut.CollectAsync(
+            ProducerFanOut.Sports,
+            (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutCompetitors(ct),
+            _logger,
+            "competitions without competitors",
+            cancellationToken);
     }
 }

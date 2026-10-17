@@ -36,6 +36,7 @@ public class GetCompetitionsWithoutMetricsQueryHandler : IGetCompetitionsWithout
         return ProducerFanOut.CollectAsync(
             ProducerFanOut.Sports,
             (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutMetrics(query.SeasonYear, ct),
+            row => row.Sport,
             _logger,
             "competitions without metrics",
             cancellationToken);

@@ -1,3 +1,5 @@
+using FluentValidation.Results;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -22,7 +24,11 @@ public interface ICompetitionDiagnosticsScope
     /// The caller's context. The query composes on it, so a handler on
     /// FootballDataContext (drives) can extend it with football-only sets.
     /// </param>
-    /// <param name="seasonYear">Null = the latest season with a started contest.</param>
+    /// <param name="seasonYear">
+    /// Null = the latest season with a started contest. An explicit season
+    /// with no started contests is NotFound, not an empty (clean-looking)
+    /// result: a typo'd year must not read as "no problems".
+    /// </param>
     Task<Result<IQueryable<CompetitionBase>>> GetStartedCompetitionsAsync(
         TeamSportDataContext dataContext,
         int? seasonYear,
@@ -57,6 +63,21 @@ public class CompetitionDiagnosticsScope : ICompetitionDiagnosticsScope
             .AsNoTracking()
             .Where(c => c.Sport == sport && c.StartDateUtc < now)
             .MaxAsync(c => (int?)c.SeasonYear, cancellationToken);
+
+        if (seasonYear is not null)
+        {
+            var seasonStarted = await dataContext.Contests
+                .AsNoTracking()
+                .AnyAsync(c => c.Sport == sport && c.SeasonYear == seasonYear && c.StartDateUtc < now, cancellationToken);
+
+            if (!seasonStarted)
+            {
+                return new Failure<IQueryable<CompetitionBase>>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure(nameof(seasonYear), $"No started {sport} contests in season {seasonYear}.")]);
+            }
+        }
 
         var competitions = dataContext.Competitions
             .AsNoTracking()

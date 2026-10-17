@@ -36,6 +36,7 @@ public class GetCompetitionsWithoutCompetitorsQueryHandler : IGetCompetitionsWit
         return ProducerFanOut.CollectAsync(
             ProducerFanOut.Sports,
             (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutCompetitors(ct),
+            row => row.Sport,
             _logger,
             "competitions without competitors",
             cancellationToken);

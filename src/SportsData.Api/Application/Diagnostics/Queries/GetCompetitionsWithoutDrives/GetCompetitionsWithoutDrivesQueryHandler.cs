@@ -36,6 +36,7 @@ public class GetCompetitionsWithoutDrivesQueryHandler : IGetCompetitionsWithoutD
         return ProducerFanOut.CollectAsync(
             ProducerFanOut.Sports,
             (sport, ct) => _contestClientFactory.Resolve(sport).GetCompetitionsWithoutDrives(query.SeasonYear, ct),
+            row => row.Sport,
             _logger,
             "competitions without drives",
             cancellationToken);

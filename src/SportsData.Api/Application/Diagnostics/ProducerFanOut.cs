@@ -16,20 +16,25 @@ internal static class ProducerFanOut
     /// The Producers the diagnostics read. Explicit on purpose:
     /// ContestClientFactory falls back to the default Producer URI for a
     /// sport with none configured, so iterating every Sport value would query
-    /// the default Producer more than once and double-count its rows.
+    /// the default Producer more than once. The same fallback can misroute a
+    /// listed sport whose URI is missing; <see cref="CollectAsync{T}"/> catches
+    /// that from the rows' own Sport.
     /// </summary>
     public static readonly IReadOnlyList<Sport> Sports = [Sport.FootballNcaa, Sport.FootballNfl];
 
     /// <summary>
     /// Calls <paramref name="query"/> for every sport in parallel and
     /// concatenates the rows in sport order. All or nothing: if any Producer
-    /// fails or is unreachable, the result is a failure naming each failed
-    /// sport. A diagnostic that silently drops a sport would report that
-    /// sport as clean.
+    /// fails, is unreachable, or answers with another sport's rows (a missing
+    /// sport-specific URI falls back to the default Producer), the result is
+    /// a failure naming each failed sport. A diagnostic that silently drops
+    /// or double-counts a sport would misreport it.
     /// </summary>
+    /// <param name="sportOf">The sport a row belongs to (each Producer stamps its rows).</param>
     public static async Task<Result<List<T>>> CollectAsync<T>(
         IReadOnlyList<Sport> sports,
         Func<Sport, CancellationToken, Task<Result<List<T>>>> query,
+        Func<T, Sport> sportOf,
         ILogger logger,
         string what,
         CancellationToken cancellationToken)
@@ -38,15 +43,31 @@ internal static class ProducerFanOut
         {
             try
             {
-                return (Sport: sport, Result: await query(sport, cancellationToken));
+                var result = await query(sport, cancellationToken);
+
+                var foreign = result.IsSuccess
+                    ? (result.Value ?? []).Select(sportOf).Where(s => s != sport).Distinct().ToList()
+                    : [];
+                if (foreign.Count > 0)
+                {
+                    logger.LogError(
+                        "Producer slot {Sport} answered {What} with rows for {ForeignSports}; check its sport-specific Producer URI",
+                        sport, what, foreign);
+                    return (Sport: sport, Result: (Result<List<T>>)new Failure<List<T>>(
+                        [],
+                        ResultStatus.Error,
+                        [new ValidationFailure(sport.ToString(),
+                            $"The {sport} Producer call returned {string.Join(", ", foreign)} rows; its Producer URI is likely missing or wrong.")]));
+                }
+
+                return (Sport: sport, Result: result);
             }
-            // Transport failures throw from HttpClient rather than returning
-            // a Failure. Caller cancellation still propagates.
-            catch (Exception ex) when (
-                ex is HttpRequestException
-                || (ex is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+            // Transport failures (and anything else, such as a client with no
+            // base address) throw rather than return a Failure; name the
+            // sport. Caller cancellation still propagates.
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
-                logger.LogError(ex, "Producer {Sport} unreachable while fetching {What}", sport, what);
+                logger.LogError(ex, "Producer {Sport} call failed while fetching {What}", sport, what);
                 return (Sport: sport, Result: (Result<List<T>>)new Failure<List<T>>(
                     [],
                     ResultStatus.Error,

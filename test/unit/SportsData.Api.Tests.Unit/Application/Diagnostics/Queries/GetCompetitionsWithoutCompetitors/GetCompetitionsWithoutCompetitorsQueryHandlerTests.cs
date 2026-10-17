@@ -138,4 +138,38 @@ public class GetCompetitionsWithoutCompetitorsQueryHandlerTests : ApiTestBase<Ge
 
         await act.Should().ThrowAsync<TaskCanceledException>();
     }
+
+    [Fact]
+    public async Task ExecuteAsync_FailsWhole_WhenASportsSlotAnswersWithAnotherSportsRows()
+    {
+        // A missing NFL Producer URI falls back to the default (NCAA)
+        // Producer: its rows must not be merged in as the NFL answer.
+        ProducerReturns(Sport.FootballNcaa, Row(Sport.FootballNcaa, "Army at Navy"));
+        ProducerReturns(Sport.FootballNfl, Row(Sport.FootballNcaa, "Army at Navy"));
+
+        var handler = Mocker.CreateInstance<GetCompetitionsWithoutCompetitorsQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutCompetitorsQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        ((Failure<List<CompetitionWithoutCompetitorsDto>>)result).Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(Sport.FootballNfl));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FailsWhole_NamingTheSport_OnANonTransportException()
+    {
+        ProducerReturns(Sport.FootballNfl, Row(Sport.FootballNfl, "Bears at Packers"));
+        _producers[Sport.FootballNcaa]
+            .Setup(x => x.GetCompetitionsWithoutCompetitors(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("An invalid request URI was provided."));
+
+        var handler = Mocker.CreateInstance<GetCompetitionsWithoutCompetitorsQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetCompetitionsWithoutCompetitorsQuery(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        ((Failure<List<CompetitionWithoutCompetitorsDto>>)result).Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(Sport.FootballNcaa));
+    }
 }

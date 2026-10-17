@@ -253,4 +253,18 @@ public class CompetitionDiagnosticsQueryHandlerTests : ProducerTestBase<GetCompe
         row.MetricCount.Should().Be(0);
         row.Sport.Should().Be(Sport.FootballNfl);
     }
+
+    [Fact]
+    public async Task Scope_AnExplicitSeasonWithNoStartedContests_IsNotFound_NotAnEmptyClean()
+    {
+        UseScope(Sport.FootballNfl);
+        await SeedCompetitionAsync("This season");
+
+        var sut = Mocker.CreateInstance<GetCompetitionsWithoutPlaysQueryHandler>();
+
+        var result = await sut.ExecuteAsync(new GetCompetitionsWithoutPlaysQuery(2052));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+    }
 }

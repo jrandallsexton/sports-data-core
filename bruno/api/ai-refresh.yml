@@ -5,23 +5,19 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/synthetics/refresh?week=3"
+  url: "{{baseUrlApi}}/api/synthetics/refresh?week=3"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
   params:
     - name: week
       value: "3"
       type: query
-  headers:
-    - name: X-Admin-Token
-      value: "{{adminToken}}"
   auth: inherit
-  docs: |-
-    Ensures every synthetic is in every league and has picks for the week.
-    StatBot's picks are written by the preview event handlers as previews
-    land; this is the catch-all sweep. `week` defaults to the current week;
-    name a past week (of the current season) to backfill it.
 
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+  forwardAuthorizationHeader: true

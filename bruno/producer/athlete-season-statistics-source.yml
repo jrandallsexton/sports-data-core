@@ -1,0 +1,29 @@
+info:
+  name: athlete-season-statistics-source
+  type: http
+  seq: 16
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/athletes/seasonYear/2026/statistics/source"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "seasonType": 2
+      }
+
+docs: |-
+  Requests the season statistics document for every ACTIVE athlete rostered (with a team) in the season year,
+  for the sport of the Producer you point at (environment). Runs as a background job; returns 202 with the
+  correlation id to search in Seq. seasonType: 2 = regular season (what the in-season refresh writes),
+  3 = through postseason (the API default when omitted). Safe to re-run.
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -16,6 +16,24 @@
 -- Target DB: API (AppDataContext). Re-runnable: the insert skips on any
 -- unique clash, the update is a no-op once applied.
 
+SELECT "Id", "Name", "ApiModelId", "Gateway", "IsActive", "IsDefault"
+FROM "Model" ORDER BY "Name";
+
+SELECT "Id", "Name", "IsActive" FROM "ModelProvider"
+WHERE "Id" = 'a0000000-0000-0000-0000-000000000006';   -- Alibaba
+
+SELECT max("MigrationId") FROM "__EFMigrationsHistory";  -- expect 20261001112525_UserPickBetPoints
+
+SELECT max("MigrationId") FROM "__EFMigrationsHistory";  -- 20261015093833_AddModelFamily
+
+SELECT f."Name" AS family, m."Name", m."Gateway", m."IsActive"
+FROM "Model" m JOIN "ModelFamily" f ON f."Id" = m."ModelFamilyId"
+ORDER BY 1, 2;
+
+-- Must return NO rows (IX_Model_SingleActiveLabSeat also guarantees it):
+SELECT "ModelFamilyId", count(*) FROM "Model"
+WHERE "IsActive" AND "Gateway" = 1 GROUP BY 1 HAVING count(*) > 1;
+
 BEGIN;
 
 INSERT INTO "Model" (

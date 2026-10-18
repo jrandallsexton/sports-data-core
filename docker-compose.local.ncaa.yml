@@ -125,6 +125,9 @@ services:
       # Provider (e.g. ProviderClient.GetExternalImage during image processing)
       # would refuse-connect. Route to the Provider container via Docker DNS.
       CommonConfig__ProviderClientConfig__ApiUrl: http://provider-ncaa:8080/api/
+      # Instant-analysis kill switch (off unless "true"). Per-game rollout is
+      # still CompetitionStream.LiveAnalysisEnabled.
+      SportsData.Producer__InstantAnalysis__Enabled: "true"
     command: ["dotnet", "SportsData.Producer.dll", "-mode", "FootballNcaa"]
     healthcheck: *service-healthcheck
     # Producer's image-fetch path (ProviderClient.GetExternalImage) hits
@@ -162,6 +165,11 @@ services:
   # CommonConfig:Notification:AdminApiKey from App Config (keyvault ref) via
   # the AZURE_* credentials already in the common env.
   notification:
+    # Opt-in (`--profile notification`). Its PickemGroupCreatedConsumer shares
+    # the API's queue name on the single local broker, so with both running
+    # each league-create event reaches only one of them; when Notification
+    # wins, the API never bootstraps the league's weeks.
+    profiles: ["notification"]
     build:
       context: .
       dockerfile: src/SportsData.Notification/Dockerfile
@@ -246,8 +254,7 @@ services:
     # still has the MLB client URL in env; nothing calls it on NCAA
     # routes, so it's a no-op until the SEGV is fixed.
     depends_on:
-      notification:
-        condition: service_healthy
+      # notification is opt-in (profile) — see its service block.
       producer-nfl-api:
         condition: service_healthy
       producer-ncaa:

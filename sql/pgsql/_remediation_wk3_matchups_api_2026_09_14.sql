@@ -17,52 +17,52 @@
 
 BEGIN;
 
-DROP TABLE IF EXISTS _wk6;
-CREATE TEMP TABLE _wk6 AS
+DROP TABLE IF EXISTS _wk7;
+CREATE TEMP TABLE _wk7 AS
 SELECT DISTINCT m."ContestId", m."GroupId"
 FROM public."PickemGroupMatchup" m
-WHERE m."SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4';
+WHERE m."SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa';
 
 -- 1) Preview: what is about to go.
-SELECT 'PickemGroupWeek (reset, not deleted)' AS what, count(*) FROM public."PickemGroupWeek" WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4'
-UNION ALL SELECT 'PickemGroupMatchup',            count(*) FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4'
-UNION ALL SELECT 'distinct contests',             count(DISTINCT "ContestId") FROM _wk6
-UNION ALL SELECT 'UserPick',                      count(*) FROM public."UserPick" p WHERE p."Week" = 6 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk6)
-UNION ALL SELECT 'PickResult',                    count(*) FROM public."PickResult" r WHERE r."UserPickId" IN (SELECT p."Id" FROM public."UserPick" p WHERE p."Week" = 6 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk6))
-UNION ALL SELECT 'MatchupPreviewPrompt',          count(*) FROM public."MatchupPreviewPrompt" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk6)
-UNION ALL SELECT 'MatchupPreview',                count(*) FROM public."MatchupPreview" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk6)
-UNION ALL SELECT 'PickemGroupWeekResult wk6',     count(*) FROM public."PickemGroupWeekResult" r WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 6 AND r."PickemGroupId" IN (SELECT DISTINCT "GroupId" FROM _wk6);
+SELECT 'PickemGroupWeek (reset, not deleted)' AS what, count(*) FROM public."PickemGroupWeek" WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa'
+UNION ALL SELECT 'PickemGroupMatchup',            count(*) FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa'
+UNION ALL SELECT 'distinct contests',             count(DISTINCT "ContestId") FROM _wk7
+UNION ALL SELECT 'UserPick',                      count(*) FROM public."UserPick" p WHERE p."Week" = 7 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk7)
+UNION ALL SELECT 'PickResult',                    count(*) FROM public."PickResult" r WHERE r."UserPickId" IN (SELECT p."Id" FROM public."UserPick" p WHERE p."Week" = 7 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk7))
+UNION ALL SELECT 'MatchupPreviewPrompt',          count(*) FROM public."MatchupPreviewPrompt" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk7)
+UNION ALL SELECT 'MatchupPreview',                count(*) FROM public."MatchupPreview" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk7)
+UNION ALL SELECT 'PickemGroupWeekResult wk6',     count(*) FROM public."PickemGroupWeekResult" r WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 7 AND r."PickemGroupId" IN (SELECT DISTINCT "GroupId" FROM _wk7);
 
 -- 2) Previews and their prompt audit rows (prompt rows point at the preview
 --    with SetNull, so order does not matter; delete both for a clean regen).
-DELETE FROM public."MatchupPreviewPrompt" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk6);
-DELETE FROM public."MatchupPreview"       WHERE "ContestId" IN (SELECT "ContestId" FROM _wk6);
+DELETE FROM public."MatchupPreviewPrompt" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk7);
+DELETE FROM public."MatchupPreview"       WHERE "ContestId" IN (SELECT "ContestId" FROM _wk7);
 
 -- 3) Picks made against the wiped matchups (week 6, these groups, these contests).
 DELETE FROM public."PickResult"
 WHERE "UserPickId" IN (
     SELECT p."Id" FROM public."UserPick" p
-    WHERE p."Week" = 6 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk6));
+    WHERE p."Week" = 7 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk7));
 DELETE FROM public."UserPick" p
-WHERE p."Week" = 6 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk6);
+WHERE p."Week" = 7 AND (p."PickemGroupId", p."ContestId") IN (SELECT "GroupId", "ContestId" FROM _wk7);
 
 -- 4) Week-6 standings rows (recomputed by LeagueWeekScoringJob once games score).
 DELETE FROM public."PickemGroupWeekResult" r
-WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 6 AND r."PickemGroupId" IN (SELECT DISTINCT "GroupId" FROM _wk6);
+WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 7 AND r."PickemGroupId" IN (SELECT DISTINCT "GroupId" FROM _wk7);
 
 -- 5) The matchups themselves.
-DELETE FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4';
+DELETE FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa';
 
 -- 6) Un-latch the week so MatchupScheduler regenerates it.
 UPDATE public."PickemGroupWeek"
 SET "AreMatchupsGenerated" = false,
     "ModifiedUtc" = now(),
     "ModifiedBy"  = '00000000-0000-0000-0000-000000000000'
-WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4';
+WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa';
 
 -- 7) Verify: expect 0 matchups, 0 previews for those contests, weeks un-latched.
-SELECT 'matchups left' AS what, count(*) FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4'
-UNION ALL SELECT 'previews left',   count(*) FROM public."MatchupPreview" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk6    )
-UNION ALL SELECT 'weeks still latched', count(*) FROM public."PickemGroupWeek" WHERE "SeasonWeekId" = '3f4484bd-4827-67fe-268a-0ed517abaec4' AND "AreMatchupsGenerated";
+SELECT 'matchups left' AS what, count(*) FROM public."PickemGroupMatchup" WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa'
+UNION ALL SELECT 'previews left',   count(*) FROM public."MatchupPreview" WHERE "ContestId" IN (SELECT "ContestId" FROM _wk7    )
+UNION ALL SELECT 'weeks still latched', count(*) FROM public."PickemGroupWeek" WHERE "SeasonWeekId" = 'de05aae9-cd50-cd3b-6581-88bfe8da70aa' AND "AreMatchupsGenerated";
 
-ROLLBACK; COMMIT--;   -- change to COMMIT
+COMMIT; --ROLLBACK; COMMIT--;   -- change to COMMIT

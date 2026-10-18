@@ -19,19 +19,19 @@ BEGIN;
 SELECT 'PickemGroupMatchups wk3 (NCAAFB)' AS what, count(*)
 FROM public."PickemGroupMatchups" m
 JOIN public."PickemGroups" g ON g."Id" = m."PickemGroupId"
-WHERE m."SeasonYear" = 2026 AND m."SeasonWeek" = 6 AND g."Sport" = 2
+WHERE m."SeasonYear" = 2026 AND m."SeasonWeek" = 7 AND g."Sport" = 2
 UNION ALL
 SELECT 'NotificationMatchupsReady wk3 (NCAAFB) - ' || r."Result", count(*)
 FROM public."NotificationMatchupsReady" r
 JOIN public."PickemGroups" g ON g."Id" = r."LeagueId"
-WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 6 AND g."Sport" = 2
+WHERE r."SeasonYear" = 2026 AND r."SeasonWeek" = 7 AND g."Sport" = 2
 GROUP BY r."Result";
 
 -- 2) Stale matchup replica rows.
 DELETE FROM public."PickemGroupMatchups" m
 USING public."PickemGroups" g
 WHERE g."Id" = m."PickemGroupId"
-  AND m."SeasonYear" = 2026 AND m."SeasonWeek" = 6 AND g."Sport" = 2;
+  AND m."SeasonYear" = 2026 AND m."SeasonWeek" = 7 AND g."Sport" = 2;
 
 -- 3) OPTIONAL - re-arm the "matchups ready" push for week 6.
 --    Uncomment only if members should be notified again after regeneration.
@@ -44,6 +44,6 @@ WHERE g."Id" = m."PickemGroupId"
 SELECT count(*) AS "StaleMatchupsLeft"
 FROM public."PickemGroupMatchups" m
 JOIN public."PickemGroups" g ON g."Id" = m."PickemGroupId"
-WHERE m."SeasonYear" = 2026 AND m."SeasonWeek" = 6 AND g."Sport" = 2;
+WHERE m."SeasonYear" = 2026 AND m."SeasonWeek" = 7 AND g."Sport" = 2;
 
 COMMIT; --ROLLBACK; --;   -- change to COMMIT

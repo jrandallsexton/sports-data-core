@@ -1,0 +1,1180 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Football Card Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Rubik:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: scoreboard + field across the top, action desk and play-by-play side by side, your hands along the bottom like a table. */
+:root {
+  color-scheme: light;
+  --table: #e9e2d2;      /* felt-less card table: warm paper */
+  --paper: #f6efdd;      /* card stock */
+  --ink: #17140f;
+  --ink-soft: #5a5246;
+  --turf: oklch(0.56 0.12 150);
+  --turf-dark: oklch(0.42 0.1 150);
+  --chalk: #fbf8f0;
+  --cat-play: oklch(0.66 0.12 245);
+  --cat-modifier: oklch(0.74 0.17 150);
+  --cat-power: oklch(0.66 0.2 25);
+  --cat-counter: oklch(0.66 0.14 300);
+  --cat-read: oklch(0.83 0.15 85);
+  --gold: oklch(0.82 0.15 85);
+  --warn: oklch(0.6 0.2 25);
+  --font-display: 'Alfa Slab One', 'Rockwell', Georgia, serif;
+  --font-body: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --shadow: 3px 3px 0 var(--ink);
+}
+html, body { background: var(--table); color: var(--ink); }
+body { font-family: var(--font-body); font-size: 14px; line-height: 1.4; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 40px; display: flex; flex-direction: column; gap: 14px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+button { font: inherit; }
+.mono { font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; font-size: 11px; }
+
+/* Scoreboard */
+.board { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; background: var(--ink); color: var(--chalk); border-radius: 12px; padding: 10px 16px; }
+.team { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.team.right { justify-content: flex-end; }
+.team .name { font-family: var(--font-display); font-size: 20px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team .score { font-family: var(--font-display); font-size: 34px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.team .ball { color: var(--gold); font-size: 13px; }
+.mid { text-align: center; display: flex; flex-direction: column; gap: 2px; }
+.mid .dd { font-family: var(--font-display); font-size: 18px; }
+.mid .sub { opacity: .75; }
+
+/* Field */
+.field { position: relative; height: 64px; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; background:
+  repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(255,255,255,.55) calc(10% - 1px) 10%), var(--turf); box-shadow: var(--shadow); }
+.field .ez { position: absolute; top: 0; bottom: 0; width: 6%; background: var(--turf-dark); display: flex; align-items: center; justify-content: center; color: var(--chalk); font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; writing-mode: vertical-rl; }
+.field .ez.l { left: 0; } .field .ez.r { right: 0; }
+.field .play { position: absolute; left: 6%; right: 6%; top: 0; bottom: 0; }
+.field .los { position: absolute; top: 0; bottom: 0; width: 3px; background: #2a6fdb; transform: translateX(-1px); }
+.field .fd { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--gold); transform: translateX(-1px); }
+.field .fb { position: absolute; top: 50%; width: 22px; height: 14px; border-radius: 50%; background: #7a3f1d; border: 2px solid var(--ink); transform: translate(-50%, -50%); transition: left .5s ease; }
+.field .fb::after { content: ''; position: absolute; left: 4px; right: 4px; top: 4px; height: 2px; background: var(--chalk); }
+.field .nums { position: absolute; left: 6%; right: 6%; bottom: 2px; height: 14px; color: var(--chalk); font-family: var(--font-mono); font-size: 10px; pointer-events: none; }
+.field .nums span { position: absolute; transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { .field .fb { transition: none; } }
+
+/* Desk */
+.desk { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.panel { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.meters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.meter { border: 1.5px dashed var(--ink-soft); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.meter h3 { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.pips { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.pips .lab { font-family: var(--font-mono); font-size: 10px; width: 44px; color: var(--ink-soft); text-transform: uppercase; }
+.pip { width: 14px; height: 14px; border: 2px solid var(--ink); border-radius: 50%; background: transparent; }
+.pip.on { background: var(--gold); }
+.pip.sq { border-radius: 3px; }
+.pip.sq.on { background: var(--cat-modifier); }
+.pip.def.on { background: var(--cat-power); }
+.pips .num { font-family: var(--font-mono); font-size: 11px; margin-left: 4px; }
+
+.snap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.slot { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; }
+.slot .mono { color: var(--ink-soft); }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.flag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 8px; background: var(--chalk); }
+
+.prompt { background: var(--ink); color: var(--chalk); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.prompt h2 { font-family: var(--font-display); font-size: 18px; font-weight: 400; letter-spacing: .01em; }
+.prompt p { margin: 0; opacity: .85; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { border: 2px solid var(--chalk); background: transparent; color: var(--chalk); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-weight: 700; }
+.btn.primary { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.btn:hover { filter: brightness(1.1); }
+.btn:focus-visible, .card:focus-visible { outline: 3px solid #2a6fdb; outline-offset: 2px; }
+.btn.light { border-color: var(--ink); color: var(--ink); background: var(--chalk); }
+
+.loghead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.logtabs { display: flex; gap: 4px; }
+.logtab { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; border: 1.5px solid var(--ink); background: var(--chalk); color: var(--ink); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.logtab[aria-pressed="true"] { background: var(--ink); color: var(--chalk); }
+.log { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font-size: 13px; padding-right: 4px; }
+.log .e { padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
+.log .e.off { border-left-color: var(--cat-play); }
+.log .e.def { border-left-color: var(--cat-power); }
+.log .e.sys { color: var(--ink-soft); font-size: 12px; }
+.log .e.big { font-weight: 800; border-left-color: var(--gold); }
+.log .e.head { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-top: 8px; color: var(--ink-soft); }
+
+/* Hands */
+.hands { display: flex; flex-direction: column; gap: 12px; }
+.hand { display: flex; flex-direction: column; gap: 6px; }
+.hand .hh { display: flex; gap: 10px; align-items: baseline; }
+.hand .hh h3 { font-family: var(--font-display); font-weight: 400; font-size: 16px; text-transform: uppercase; }
+.hand.dim .row { opacity: .55; }
+.row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4px 10px; }
+.opp { display: flex; flex-wrap: wrap; gap: 8px; color: var(--ink-soft); }
+
+/* Cards: 2a frame direction (slab name ribbon, window strip, corner index) */
+.card { --cat: var(--cat-modifier); flex: none; width: 148px; min-height: 206px; box-sizing: border-box; background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; overflow: hidden; text-align: left; padding: 0; color: var(--ink); position: relative; cursor: default; }
+.card.cat-play { --cat: var(--cat-play); } .card.cat-power-play { --cat: var(--cat-power); } .card.cat-counter { --cat: var(--cat-counter); } .card.cat-read { --cat: var(--cat-read); }
+.card .art { height: 46px; background: repeating-linear-gradient(135deg, var(--cat) 0 8px, color-mix(in oklab, var(--cat) 82%, white) 8px 16px); position: relative; border-bottom: 2px solid var(--ink); }
+.card.side-def .art { background: repeating-linear-gradient(45deg, var(--cat) 0 4px, color-mix(in oklab, var(--cat) 70%, black) 4px 6px); }
+.card .cost { position: absolute; top: 6px; left: 6px; width: 28px; height: 28px; border-radius: 50%; background: var(--chalk); border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 14px; }
+.card .cost.all { font-size: 9px; line-height: 1; text-align: center; }
+.card .side { position: absolute; top: 8px; right: 6px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; background: var(--ink); color: var(--chalk); padding: 2px 5px; border-radius: 4px; letter-spacing: .08em; }
+.card .nm { background: var(--ink); color: var(--chalk); font-family: var(--font-display); font-size: 13px; line-height: 1.1; padding: 5px 7px; text-transform: uppercase; border-bottom: 3px solid var(--cat); }
+.card .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 5px 6px 0; }
+.card .strip span { font-family: var(--font-mono); font-size: 7.5px; text-align: center; border: 1px solid var(--ink-soft); border-radius: 3px; padding: 1px 0; color: var(--ink-soft); }
+.card .strip span.on { background: var(--ink); color: var(--chalk); border-color: var(--ink); }
+.card .strip.commit span { grid-column: 1 / -1; background: var(--ink); color: var(--chalk); }
+.card .yd { display: flex; align-items: baseline; gap: 6px; padding: 4px 8px 0; }
+.card .yd b { font-family: var(--font-display); font-size: 30px; line-height: 1; font-weight: 400; }
+.card .yd span { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.card .yd .rd, .gcard .y .rd { margin-left: auto; border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 4px; background: var(--chalk); }
+.gcard .y .rd { margin: 0; padding: 0 3px; border-width: 1px; line-height: 1.3; }
+.gcard .yt { display: flex; align-items: center; justify-content: space-between; gap: 3px; flex-wrap: wrap; }
+.card .rules { font-size: 10.5px; line-height: 1.3; padding: 5px 8px 6px; flex: 1; }
+.card .foot { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 8.5px; padding: 0 8px 6px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; }
+.card.legal { cursor: pointer; outline: 3px solid var(--gold); outline-offset: 1px; transform: translateY(-4px); transition: transform .12s; }
+.card.legal:hover { transform: translateY(-8px); }
+.card.illegal { opacity: .55; }
+.card.small { width: 128px; min-height: 0; }
+.card.small .rules { display: none; }
+.back { flex: none; width: 128px; height: 120px; border: 2px solid var(--ink); border-radius: 10px; background: repeating-linear-gradient(45deg, var(--ink) 0 6px, #34302a 6px 12px); box-shadow: var(--shadow); display: flex; align-items: center; justify-content: center; }
+.back span { background: var(--gold); color: var(--ink); font-family: var(--font-display); font-size: 12px; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { .card.legal, .card.legal:hover { transform: none; transition: none; } }
+
+.intro { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; }
+.intro h1 { font-family: var(--font-display); font-weight: 400; font-size: 40px; line-height: 1; text-transform: uppercase; }
+.intro p { margin: 0; max-width: 62ch; }
+details { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; padding: 10px 14px; }
+details summary { cursor: pointer; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+details ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; max-width: 75ch; }
+.err { background: var(--warn); color: var(--chalk); padding: 12px 14px; border-radius: 10px; }
+
+/* Phone layout: one fixed screen, no page scroll, and the hand is the hero. Every card in the
+   active hands is visible at once (5-column grid), so a decision never needs a sideways scroll.
+   Mirrors the planned React Native screen. */
+#phone { display: none; }
+body.phone .wrap { display: none; }
+body.phone #phone { display: flex; }
+#phone { flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; overflow: hidden; position: relative; background: var(--table); }
+body.phone { margin: 0; }
+body.phone.framed { padding: 16px 0; }
+body.phone.framed #phone { width: 390px; height: 844px; border: 2px solid var(--ink); border-radius: 28px; box-shadow: var(--shadow); }
+
+/* Score bar: each team's stamina rides under its name */
+.pbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; background: var(--ink); color: var(--chalk); padding: 8px 10px 7px; flex: none; }
+.pbar .t { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pbar .t.r { align-items: flex-end; }
+.pbar .tn { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.pbar .tn span { font-family: var(--font-display); font-size: 13px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbar .tn b { font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+.pbar .tn i { color: var(--gold); font-style: normal; font-size: 10px; }
+.pbar .st { display: flex; gap: 4px; min-height: 16px; }
+.chip { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .04em; border: 1.5px solid rgba(251, 248, 240, .45); border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+.chip b { color: var(--gold); }
+.chip.def b { color: oklch(0.78 0.15 25); }
+.pbar .m { text-align: center; display: flex; flex-direction: column; }
+.pbar .m b { font-family: var(--font-display); font-weight: 400; font-size: 16px; }
+.pbar .m span { font-family: var(--font-mono); font-size: 9.5px; opacity: .75; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+#phone .field { height: 18px; border-radius: 0; border-width: 0 0 2px; box-shadow: none; flex: none; }
+#phone .field .nums, #phone .field .ez { display: none; }
+#phone .field .play { left: 0; right: 0; }
+#phone .field .fb { width: 14px; height: 9px; border-width: 1.5px; }
+#phone .field .fb::after { display: none; }
+
+/* Snap row: read, play, and a short feed of what just happened */
+.psnap { display: grid; grid-template-columns: var(--slotw, 66px) var(--slotw, 66px) minmax(0, 1fr); gap: 8px; padding: 8px 10px; background: var(--paper); border-bottom: 2px solid var(--ink); flex: none; }
+.psnap .slot { display: flex; flex-direction: column; gap: 3px; align-items: stretch; }
+.psnap .slot .mono { font-size: 8.5px; color: var(--ink-soft); text-align: center; letter-spacing: .04em; }
+.psnap .hole { aspect-ratio: 5 / 7; border: 1.5px dashed var(--ink-soft); border-radius: 7px; }
+.psnap .back { width: auto; height: auto; aspect-ratio: 5 / 7; border-radius: 7px; box-shadow: none; }
+.psnap .back span { font-size: 9px; padding: 2px 5px; }
+.pfeed { min-width: 0; display: flex; flex-direction: column; gap: 2px; font: inherit; font-size: 12px; line-height: 1.3; text-align: left; background: none; border: 0; padding: 0; color: inherit; cursor: pointer; }
+.pfeed .e { padding-left: 6px; border-left: 3px solid transparent; }
+.pfeed .e.off { border-left-color: var(--cat-play); } .pfeed .e.def { border-left-color: var(--cat-power); }
+.pfeed .e.sys { color: var(--ink-soft); font-size: 11px; } .pfeed .e.big { font-weight: 800; border-left-color: var(--gold); }
+.pfeed .e.head { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; color: var(--ink-soft); }
+.pfeed .more { margin-top: auto; font-family: var(--font-mono); font-size: 9px; color: var(--ink-soft); letter-spacing: .05em; text-transform: uppercase; }
+.pflags { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 2px; }
+.pflags .flag { font-size: 8.5px; padding: 0 5px; }
+
+/* Prompt bar: the question, the selected card's rules, and the buttons */
+.pprompt { background: var(--ink); color: var(--chalk); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; flex: none; min-height: 52px; box-sizing: border-box; }
+.pprompt h2 { font-family: var(--font-display); font-weight: 400; font-size: 15px; line-height: 1.15; }
+.pprompt p { margin: 0; font-size: 12px; opacity: .85; }
+.pprompt .selrules { font-size: 12px; line-height: 1.35; opacity: 1; }
+.pprompt .selrules b { color: var(--gold); text-transform: uppercase; font-family: var(--font-display); font-weight: 400; margin-right: 4px; }
+.pprompt .btns { gap: 6px; }
+.pprompt .btn { padding: 6px 10px; font-size: 13px; }
+
+/* Hand: every active card visible */
+.phand { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+.psec h4 { margin: 0 0 5px; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.pgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.phand.c4 .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.phand.c3 .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pgrid .empty { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); padding: 6px 0; }
+.pother { display: flex; justify-content: space-between; align-items: center; width: 100%; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 8px; padding: 8px 10px; color: var(--ink); cursor: pointer; }
+
+/* Grid card: compact face -- cost, name, yards or window */
+.gcard { --cat: var(--cat-modifier); container-type: inline-size; width: 100%; aspect-ratio: 5 / 7; height: var(--gh, auto); box-sizing: border-box; background: var(--paper); border: 2px solid var(--ink); border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; position: relative; cursor: pointer; padding: 0; text-align: left; color: var(--ink); font: inherit; transition: transform .1s; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.gcard.cat-play { --cat: var(--cat-play); } .gcard.cat-power-play { --cat: var(--cat-power); } .gcard.cat-counter { --cat: var(--cat-counter); } .gcard.cat-read { --cat: var(--cat-read); }
+.gcard > * { flex-shrink: 0; }
+.gcard .a { height: 27cqw; background: var(--cat); flex: none; position: relative; }
+.gcard.side-def .a { background: repeating-linear-gradient(45deg, var(--cat) 0 3px, color-mix(in oklab, var(--cat) 70%, black) 3px 5px); }
+.gcard .c { position: absolute; top: 2px; left: 2px; width: 23cqw; height: 23cqw; border-radius: 50%; background: var(--chalk); border: 1.5px solid var(--ink); font-family: var(--font-display); font-size: 14cqw; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 1; box-sizing: border-box; }
+.gcard .c.all { font-size: 9cqw; }
+/* Center the digit itself (baseline to cap height), not the font's line box, which sits digits high in this face. */
+.card .cost > i, .gcard .c > i { display: block; font-style: normal; line-height: 1; text-box: trim-both cap alphabetic; font-variant-numeric: lining-nums; }
+.gcard .n { background: var(--ink); color: var(--chalk); font-family: var(--font-display); font-size: 12cqw; line-height: 1.1; padding: 3px 3px 3px 4px; text-transform: uppercase; border-bottom: 2px solid var(--cat); min-height: 2.3em; display: flex; align-items: flex-end; overflow-wrap: anywhere; }
+.gcard .y { padding: 2px 4px 0; display: flex; flex-direction: column; }
+.gcard .y b { font-family: var(--font-display); font-weight: 400; font-size: 28cqw; line-height: 1; }
+.gcard .y span, .gcard .w { font-family: var(--font-mono); font-size: 10.5cqw; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.gcard .r { font-size: 10cqw; line-height: 1.25; padding: 3px 4px 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; flex-shrink: 1; min-height: 0; }
+.gcard .w { margin-top: auto; padding: 0 4px 3px; color: var(--ink-soft); }
+.gcard.legal { outline: 3px solid var(--gold); outline-offset: 1px; }
+.gcard.dim { opacity: .4; }
+.gcard.sel { outline: 3px solid #2a6fdb; outline-offset: 1px; transform: translateY(-3px); }
+@media (prefers-reduced-motion: reduce) { .gcard { transition: none; } .gcard.sel { transform: none; } }
+
+/* Sheets: full log, view-only hands */
+.psheet { position: absolute; inset: 0; background: rgba(23, 20, 15, .55); display: flex; align-items: flex-end; z-index: 5; }
+.psheet .in { background: var(--paper); border-top: 2px solid var(--ink); border-radius: 16px 16px 0 0; width: 100%; height: 80%; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; }
+.psheet .sh { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.psheet .body { flex: 1; min-height: 0; overflow-y: auto; }
+.psheet .log { max-height: none; }
+.psheet .cards { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.psheet .cards .card { width: 156px; }
+.pintro { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 24px; }
+.pintro h1 { font-family: var(--font-display); font-weight: 400; font-size: 38px; line-height: 1; text-transform: uppercase; }
+.pintro p { margin: 0; }
+.pconfirm { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+.pconfirm input { width: 18px; height: 18px; accent-color: var(--ink); }
+
+@media (max-width: 860px) {
+  .desk, .intro { grid-template-columns: 1fr; }
+  .log { max-height: 200px; }
+  .team .score { font-size: 26px; }
+  .team .name { font-size: 15px; }
+}
+@media (max-width: 480px) {
+  .meters, .snap { grid-template-columns: 1fr; }
+  .board { grid-template-columns: 1fr 1fr; }
+  .mid { grid-column: 1 / -1; order: 3; }
+  .card { width: 132px; }
+}
+</style>
+
+<div class="wrap">
+  <div class="board" id="board"></div>
+  <div class="field" id="field" aria-hidden="true"></div>
+  <div class="desk">
+    <div class="panel" id="desk"></div>
+    <div class="panel"><div class="loghead"><h3 class="mono">Play-by-play</h3><div class="logtabs"><button class="logtab" data-view="recent" aria-pressed="true">Last play</button><button class="logtab" data-view="all" aria-pressed="false">All</button></div></div><div class="log recent" id="log" aria-live="polite"></div></div>
+  </div>
+  <div class="hands" id="hands"></div>
+  <details>
+    <summary>How a snap works</summary>
+    <ul>
+      <li>5 possessions each, every drive from your own 25. No punting: on 4th down, go for it or kick.</li>
+      <li><b>Stamina.</b> The offense starts each drive with level 1 and bank 1. Cards cost stamina from the bank. After every snap the bank gains the current level (bank max 6). A play that isn't stuffed raises the level by 1 (max 5). The bank resets each drive.</li>
+      <li><b>Defense commits a read first</b> (Run, Pass, or Blitz) face-down; then the offense commits a play card or attempts a field goal.</li>
+      <li><b>Correct read = held to the play's read yards</b> (the smaller number on the card, often 0), and the offense's level holds. On a 2-point try a correct read stops the play. Blitz counts as a Pass read; a wrong Blitz against a Run gives up +3 yards.</li>
+      <li>Special cards are played in windows: Drive, Pre-snap, Post-reveal, Post-snap. Offense first, then defense, one card each per window. Counters can answer the card they name.</li>
+      <li>The defense banks 1 stamina per stop (max 5), starting each drive at 1.</li>
+      <li>Field goals: good from 40 yards or less; spend 2 stamina for +10 range. Kick distance = yards to the end zone + 17.</li>
+      <li>Ties go to overtime: rounds 1-2 are drives from the 25, then 2-point tries.</li>
+    </ul>
+  </details>
+</div>
+<div id="phone"></div>
+
+<script>
+'use strict';
+const CARDS_URL = 'cards.json';
+const AUTO = location.hash === '#autoplay';
+const AI_DELAY = AUTO ? 0 : 550;
+let DB = {};
+let G = null;
+let pending = null;
+let uidSeq = 0;
+
+const HAND_MAX = { plays: 7, ospec: 5, dspec: 7 };
+const DECK_NAME = { plays: 'play', ospec: 'offense specials', dspec: 'defense specials' };
+const WIN_ORDER = ['drive', 'pre-snap', 'post-reveal', 'post-snap'];
+const WIN_LABEL = { commit: 'Commit', drive: 'Drive', 'pre-snap': 'Pre-snap', 'post-reveal': 'Post-reveal', 'post-snap': 'Post-snap' };
+const WIN_SHORT = { drive: 'Drive', 'pre-snap': 'Pre', 'post-reveal': 'Reveal', 'post-snap': 'Post' };
+const RESPONSE_ONLY = new Set(['161', '162', '165', '166', '269']);
+const BASE = [{ uid: 'base-141', id: '141', base: true }, { uid: 'base-142', id: '142', base: true }];
+const READS = [{ uid: 'read-201', id: '201', read: 'run' }, { uid: 'read-202', id: '202', read: 'pass' }, { uid: 'read-203', id: '203', read: 'blitz' }];
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pause = () => AI_DELAY ? sleep(AI_DELAY) : Promise.resolve();
+const rnd = () => Math.random();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ord = n => ['1st', '2nd', '3rd', '4th'][n - 1] || n + 'th';
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function weighted(opts) { const t = opts.reduce((s, o) => s + o[1], 0); let r = rnd() * t; for (const [v, w] of opts) { r -= w; if (r <= 0) return v; } return opts[opts.length - 1][0]; }
+
+/* ---------- decks & hands ---------- */
+function buildDeck(name) {
+  const d = [];
+  for (const c of Object.values(DB)) { const n = (c.copies || {})[name] || 0; for (let i = 0; i < n; i++) d.push({ uid: 'c' + (++uidSeq), id: c.id }); }
+  return shuffle(d);
+}
+function newPlayer(name, human) {
+  return { name, human, score: 0,
+    decks: { plays: { draw: buildDeck('offense-plays'), discard: [] }, ospec: { draw: buildDeck('offense-specials'), discard: [] }, dspec: { draw: buildDeck('defense-specials'), discard: [] } },
+    hand: { plays: [], ospec: [], dspec: [] } };
+}
+function draw(p, k, n = 1) {
+  for (let i = 0; i < n; i++) {
+    if (p.hand[k].length >= HAND_MAX[k]) return;
+    const d = p.decks[k];
+    if (!d.draw.length) {
+      if (!d.discard.length) return;
+      d.draw = shuffle(d.discard); d.discard = [];
+      log(`${p.name}: ${DECK_NAME[k]} deck reshuffled.`, 'sys');
+    }
+    const inst = d.draw.pop(); inst.k = k; p.hand[k].push(inst);
+  }
+}
+function drawUpTo(p, k, n) { let guard = 20; while (p.hand[k].length < n && guard--) { const b = p.hand[k].length; draw(p, k, 1); if (p.hand[k].length === b) break; } }
+function takeFromHand(p, inst) { if (inst.base || inst.read) return; const h = p.hand[inst.k]; const i = h.findIndex(x => x.uid === inst.uid); if (i >= 0) h.splice(i, 1); }
+function toDiscard(p, inst) { if (inst.base || inst.read) return; p.decks[inst.k].discard.push(inst); }
+function toHand(p, inst) { if (inst.base || inst.read) return; p.hand[inst.k].push(inst); }
+
+/* ---------- state helpers ---------- */
+const P = (S, side) => side === 'off' ? S.offP : S.defP;
+const handKey = side => side === 'off' ? 'ospec' : 'dspec';
+const bankOf = (S, side) => side === 'off' ? S.d.off : S.d.def;
+const bankMax = side => side === 'off' ? 6 : 5;
+const other = side => side === 'off' ? 'def' : 'off';
+const playInfo = S => { const c = DB[S.play.id]; return { id: c.id, type: c.play.type, yards: c.play.yards || 0, readYards: c.play.readYards || 0 }; };
+function costOf(S, side, inst) {
+  const c = DB[inst.id].cost; if (!c) return 0;
+  if (c.kind === 'all') return bankOf(S, side).bank;
+  return c.value;
+}
+function affordable(S, side, inst) {
+  const c = DB[inst.id].cost; if (!c) return true;
+  const bank = bankOf(S, side).bank;
+  return c.kind === 'all' ? bank >= c.min : bank >= c.value;
+}
+function log(text, cls = '') { if (!G) return; G.log.push({ text, cls, seq: ++G.seq });if (G.log.length > 400) G.log.shift(); renderLog(); }
+
+/* ---------- card effects (window cards) ---------- */
+const E = {
+  '151': { can: S => !S.d.sticky, apply: S => { S.d.sticky = true; log('Sticky Fingers: no interception cards on 6+ yards to go this possession.', 'off'); } },
+  '152': { can: S => !S.isTry && !S.isKick && S.d.down === 4 && S.d.dist <= 1 && S.d.ytg > 50,
+    apply: S => { S.abort = { type: 'td', text: '4TH AND OMG! Touchdown!' }; } },
+  '153': { can: S => !S.isKick && S.play, apply: async S => { log(`Hard Count: the defense shows ${S.read.toUpperCase()}.`, 'off'); S.readShown = true; await swapPlay(S, 'any'); } },
+  '154': { can: S => S.play && !S.play.isSpecialPlay, apply: async S => { await swapPlay(S, 'same'); } },
+  '155': { can: S => S.play && playInfo(S).type === 'pass' && S.play.id !== '159', apply: S => { S.playAction = true; } },
+  '156': { can: S => !S.d.hurry, apply: S => { S.d.hurry = true; log('Hurry-Up: after a successful play, the defense must repeat its read.', 'off'); } },
+  '157': { can: S => !!S.R, apply: S => { S.forceLevel = true; } },
+  '158': { can: S => S.R && S.R.stuffed && !S.R.sacked && playInfo(S).type === 'run' && playInfo(S).yards - 3 > S.R.yards,
+    apply: S => { S.R.yards = playInfo(S).yards - 3; log(`Broken Tackle: gains ${S.R.yards} instead.`, 'off'); } },
+  '160': { can: S => !S.isTry && !S.isKick && S.d.down === 4 && S.d.dist <= 5, apply: S => { S.abort = { type: 'firstdown', text: 'Fake punt! First down.' }; } },
+  '164': { can: S => S.play && playInfo(S).type === 'pass' && S.read === 'blitz', apply: S => { S.hotRoute = true; } },
+  '167': { can: S => S.isKick, apply: S => { S.kick.bigLeg = true; } },
+  '168': { can: () => true, apply: S => { S.d.off.bank = Math.min(6, S.d.off.bank + 2); } },
+  '169': { can: S => S.isTry, apply: S => { S.abort = { type: 'good', text: 'Swinging Gate! Two points.' }; } },
+  '251': { can: S => !S.isTry && !S.isKick, apply: S => {
+      const d = S.d; const back = Math.min(5, 99 - d.ytg);
+      d.ytg += back; d.dist += back; d.off.level = Math.max(1, d.off.level - 1); S.gotchya = true;
+      log(`Gotchya! False start, ${back} yards back, offense level down to ${d.off.level}. Replay the down.`, 'def'); } },
+  '252': { can: S => S.R && S.R.stuffed && !S.R.sacked && !S.isTry && S.read === 'blitz' && playInfo(S).type === 'pass' && !S.zoneBlitz && !S.hotRoute,
+    apply: S => { S.R.yards = -7; S.R.sacked = true; S.R.levelReset = true; S.d.def.bank = Math.min(5, S.d.def.bank + 1); log('SACK! Loss of 7, offense level resets to 1.', 'def big'); } },
+  '253': { can: S => S.R && !S.R.turnover && !S.R.stuffed && S.R.yards > 0 && playInfo(S).type === 'run',
+    apply: S => { S.R.turnover = 'fumble'; log('PUNCHBALL! Fumble, the defense recovers.', 'def big'); } },
+  '254': { can: S => S.R && !S.R.turnover && !S.R.stuffed && playInfo(S).type === 'pass' && !(S.d.sticky && S.d.dist > 5),
+    apply: S => { S.R.turnover = 'int'; S.R.hijacked = true; log('HIJACKED! Intercepted.', 'def big'); } },
+  '255': { can: S => S.read === 'blitz', apply: S => { S.stunt = true; } },
+  '256': { can: S => S.play && playInfo(S).type === 'pass', apply: S => { S.bracket = true; } },
+  '257': { can: S => S.d.off.level > 1, apply: S => { S.d.off.level = Math.max(1, S.d.off.level - 1); log(`Crowd Noise: offense level down to ${S.d.off.level}.`, 'def'); } },
+  '258': { can: S => S.R && S.R.hijacked && !S.isTry && !(S.d.sticky && S.d.dist > 5), apply: S => { S.R.defScore = 7; log('PICK SIX! The defense scores.', 'def big'); } },
+  '259': { can: S => S.R && S.R.sacked && !S.R.turnover, apply: S => { S.R.turnover = 'fumble'; log('STRIP SACK! Ball is out, defense recovers.', 'def big'); } },
+  '260': { can: S => S.d.ytg <= 5 && !S.isKick, apply: S => { S.goalLine = true; log('Goal Line Stand: a Run read also stuffs Passes this snap.', 'def'); } },
+  '261': { can: S => S.isKick, apply: S => { S.kick.iced = true; } },
+  '262': { can: S => !S.d.filmStudy, apply: S => { S.d.filmStudy = true; log('Film Study: the defense sees the offense\'s play hand this drive.', 'def'); } },
+  '263': { can: S => S.read === 'blitz', apply: S => { S.zoneBlitz = true; } },
+  '264': { can: S => S.play && playInfo(S).type === 'run', apply: S => { S.spy = true; } },
+  '265': { can: S => S.play && playInfo(S).type === 'pass', apply: S => { S.prevent = true; } },
+  '266': { can: S => S.R && !S.R.turnover && S.R.yards >= 10 && !S.isTry,
+    apply: S => { S.R.yards = -10; S.R.stuffed = true; S.R.replayDown = true; log('Holding! The gain comes back, 10-yard penalty, replay the down.', 'def'); } },
+  '267': { can: S => S.isKick, apply: S => { S.kick.blocked = true; } },
+  '268': { can: S => S.isKick && S.kick.dist >= 41, apply: S => { S.kick.blocked = true; S.kick.six = true; } },
+  '270': { can: S => S.d.hurry, apply: S => { S.d.hurry = false; log('Timeout: Hurry-Up is over.', 'def'); } },
+  '271': { can: () => true, apply: S => { S.d.def.bank = Math.min(5, S.d.def.bank + 2); } },
+  '301': { can: S => !!S.R, apply: S => { S.R.negated = true; log('Flag on the play: result negated, replay the down.', 'sys'); } },
+};
+/* extra effects when a counter cancels a card */
+const RESP = {
+  '162': S => { if (S.R) { S.R.bonus = 15; S.R.autoFirst = true; S.R.turnover = null; S.R.hijacked = false; S.R.defScore = 0; } log('Pass interference: +15 and a first down.', 'off'); },
+  '166': S => { if (S.R) { S.R.yards = 0; S.R.sacked = false; S.R.levelReset = false; S.R.turnover = null; S.R.bonus = 15; S.R.autoFirst = true; } log('Roughing the passer: +15 and a first down.', 'off'); },
+  '161': S => { if (S.R) S.R.turnover = null; },
+  '301': S => { if (S.R) S.R.negated = true; },
+};
+
+/* ---------- AI ---------- */
+function aiRead(S) {
+  const d = S.d;
+  if (d.hurry && d.lastSuccess && d.prevRead) return d.prevRead;
+  let w = d.dist <= 3 ? { run: .55, pass: .3, blitz: .15 } : d.dist >= 8 ? { run: .2, pass: .5, blitz: .3 } : { run: .4, pass: .4, blitz: .2 };
+  if (S.isTry) w = { run: .45, pass: .4, blitz: .15 };
+  if (d.filmStudy) {
+    const hand = S.offP.hand.plays.filter(i => DB[i.id].cost.value <= d.off.bank);
+    const runs = hand.filter(i => DB[i.id].play.type === 'run').length, passes = hand.length - runs;
+    if (runs > passes) w.run += .3; else if (passes > runs) { w.pass += .2; w.blitz += .1; }
+  }
+  return weighted(Object.entries(w));
+}
+function playOptions(S) {
+  const bank = S.d.off.bank, p = S.offP;
+  const opts = p.hand.plays.filter(i => DB[i.id].cost.value <= bank).concat(BASE);
+  if (!S.isTry) for (const i of p.hand.ospec) if (DB[i.id].window === 'commit' && affordable(S, 'off', i)) opts.push(i);
+  return opts;
+}
+function kickRange(S, boost) { return 40 + (boost ? 10 : 0); }
+function aiCommit(S) {
+  const d = S.d, bank = d.off.bank, kd = d.ytg + 17;
+  if (!S.isTry && d.down === 4) {
+    const omg = S.offP.hand.ospec.some(i => i.id === '152') && bank >= 3 && d.dist <= 1 && d.ytg > 50;
+    const fake = S.offP.hand.ospec.some(i => i.id === '160') && bank >= 2 && d.dist <= 5;
+    if (!omg && !fake) {
+      if (kd <= 40) return { kind: 'kick', boost: false };
+      if (kd <= 50 && bank >= 2) return { kind: 'kick', boost: true };
+      const bigLeg = S.offP.hand.ospec.some(i => i.id === '167');
+      if (kd <= 50 && bigLeg && bank >= 1) return { kind: 'kick', boost: false };
+    }
+  }
+  let opts = playOptions(S).filter(i => !(i.id === '159' && !(d.down >= 3 && d.ytg > 30 && rnd() < .5)) && !(i.id === '163' && rnd() < .5));
+  if (!opts.length) opts = BASE.slice();
+  if (rnd() < .22) return { kind: 'play', inst: opts[Math.floor(rnd() * opts.length)] };
+  const yards = i => DB[i.id].play ? (DB[i.id].play.yards ?? 30) : 0;
+  const cost = i => costOf(S, 'off', i);
+  const reach = opts.filter(i => yards(i) >= d.dist).sort((a, b) => cost(a) - cost(b) || yards(a) - yards(b));
+  if (reach.length && (d.down >= 2 || rnd() < .6)) return { kind: 'play', inst: reach[0] };
+  opts.sort((a, b) => yards(b) - yards(a));
+  return { kind: 'play', inst: opts[0] };
+}
+function aiWants(S, side, inst) {
+  const id = inst.id, d = S.d, R = S.R;
+  const info = S.play ? playInfo(S) : null;
+  switch (id) {
+    case '151': return info && info.type === 'pass' && d.dist > 5 ? .6 : .1;
+    case '152': case '160': case '169': return 1;
+    case '153': return .35;
+    case '154': return info && !S.isTry && S.read !== (info.type === 'run' ? 'run' : 'pass') && S.offP.hand.plays.some(i => DB[i.id].play.type === info.type && DB[i.id].play.yards > info.yards && DB[i.id].cost.value - costOf(S, 'off', S.play) <= d.off.bank) ? .9 : 0;
+    case '155': case '164': return 1;
+    case '156': return d.lastSuccess ? .4 : .1;
+    case '157': return R && R.stuffed && !R.sacked ? .7 : 0;
+    case '158': return 1;
+    case '167': return S.kick && S.kick.dist > kickRange(S, S.kick.boost) ? 1 : 0;
+    case '168': return d.off.bank <= 3 ? .5 : .1;
+    case '251': return .2;
+    case '252': case '258': case '259': case '268': return 1;
+    case '253': case '254': return R && (R.yards >= 6 || d.ytg - R.yards < 15) ? .75 : .35;
+    case '255': case '263': return info && info.type === 'run' ? 1 : 0;
+    case '256': return R === null && info && S.read === 'run' && info.yards >= 8 ? .9 : .1;
+    case '257': return d.off.level >= 3 ? .6 : .15;
+    case '260': return .5; // pre-snap: visible before the reveal, so it can't depend on the hidden read
+    case '261': return S.kick && S.kick.dist > 38 ? .9 : .3;
+    case '262': return .3;
+    case '264': return info && S.read !== 'run' && info.yards >= 7 ? .9 : .1;
+    case '265': return info && (['159', '163'].includes(info.id) || (S.read === 'run' && info.yards > 12)) ? 1 : .05;
+    case '266': return 1;
+    case '267': return .9;
+    case '270': return .7;
+    case '271': return d.def.bank <= 2 ? .5 : .1;
+    case '301': return side === 'def' ? (R && R.yards >= 15 ? .6 : 0) : (R && (R.turnover || R.sacked) ? .8 : 0);
+    default: return 0;
+  }
+}
+
+/* ---------- human prompts ---------- */
+function ask(req) {
+  return new Promise(res => { pending = { ...req, resolve: v => { pending = null; res(v); render(); } }; render(); });
+}
+
+/* ---------- choosing ---------- */
+function legalWindowCards(S, side) {
+  const p = P(S, side);
+  return p.hand[handKey(side)].filter(i => {
+    const c = DB[i.id];
+    if (c.window !== S.window || RESPONSE_ONLY.has(i.id)) return false;
+    const e = E[i.id]; if (!e) return false;
+    return e.can(S, side) && affordable(S, side, i);
+  });
+}
+async function chooseWindowCard(S, side, follow = false) {
+  let legal = legalWindowCards(S, side);
+  if (follow) legal = legal.filter(i => i.id === '258' || i.id === '259');
+  else legal = legal.filter(i => i.id !== '258' && i.id !== '259');
+  if (!legal.length) return null;
+  const p = P(S, side);
+  if (p.human) {
+    return await ask({ kind: 'window', title: follow ? 'Follow up?' : `${WIN_LABEL[S.window]} window`,
+      text: side === 'off' ? 'Play an offense card, or pass.' : 'Play a defense card, or pass.', cards: legal, buttons: [{ label: 'Pass', value: null }] });
+  }
+  await pause();
+  for (const i of shuffle(legal.slice())) if (rnd() < aiWants(S, side, i)) return i;
+  return null;
+}
+async function chooseResponse(S, side, played) {
+  const p = P(S, side);
+  const legal = p.hand[handKey(side)].filter(i => {
+    const c = DB[i.id];
+    const names = (c.counters || []).includes(played.id);
+    const flag = i.id === '301' && S.window === 'post-snap';
+    return (names || flag) && affordable(S, side, i);
+  });
+  if (!legal.length) return null;
+  if (p.human) {
+    return await ask({ kind: 'response', title: `${P(S, other(side)).name} played ${DB[played.id].name}`, text: 'Answer it with a counter?', cards: legal, buttons: [{ label: 'No response', value: null }] });
+  }
+  await pause();
+  const named = legal.find(i => i.id !== '301');
+  if (named) return named;
+  return rnd() < aiWants(S, side, legal[0]) && ['253', '254', '252', '259', '258', '266'].includes(played.id) ? legal[0] : null;
+}
+async function playCard(S, side, inst) {
+  const p = P(S, side), c = DB[inst.id];
+  const cost = costOf(S, side, inst);
+  bankOf(S, side).bank -= cost;
+  takeFromHand(p, inst); toDiscard(p, inst);
+  log(`${p.name} ${p.name === 'You' ? 'play' : 'plays'} ${c.name}${cost ? ` (${cost})` : ''}.`, side);
+  render();
+  const resp = await chooseResponse(S, other(side), inst);
+  if (resp) {
+    const q = P(S, other(side)), rc = DB[resp.id];
+    const rcost = costOf(S, other(side), resp);
+    bankOf(S, other(side)).bank -= rcost;
+    takeFromHand(q, resp); toDiscard(q, resp);
+    log(`${q.name} ${q.name === 'You' ? 'answer' : 'answers'} with ${rc.name}: ${c.name} is canceled.`, other(side));
+    // A flagged card is canceled like any other: its effect (e.g. Sack's +1 bank) never applies.
+    if (resp.id === '301') { RESP['301'](S); return; }
+    if (RESP[resp.id]) RESP[resp.id](S);
+    return;
+  }
+  await E[inst.id].apply(S, side, inst);
+  render();
+}
+async function runWindow(S) {
+  for (const side of ['off', 'def']) {
+    if (S.abort || S.gotchya) return;
+    const inst = await chooseWindowCard(S, side);
+    if (inst) await playCard(S, side, inst);
+    if (side === 'def' && S.window === 'post-snap') {
+      for (let k = 0; k < 2; k++) { const f = await chooseWindowCard(S, 'def', true); if (!f) break; await playCard(S, 'def', f); }
+    }
+  }
+}
+async function swapPlay(S, mode) {
+  const cur = S.play, curCost = S.playCost, bank = S.d.off.bank + curCost;
+  const curType = playInfo(S).type;
+  const opts = S.offP.hand.plays.concat(BASE).filter(i => i.uid !== cur.uid && DB[i.id].cost.value <= bank && (mode === 'any' || DB[i.id].play.type === curType));
+  if (!opts.length) return;
+  let pick = null;
+  if (S.offP.human) {
+    pick = await ask({ kind: 'swap', title: mode === 'any' ? 'Hard Count: swap your play?' : 'Audible: swap to the same type?', text: `The defense read ${S.read.toUpperCase()}.`, cards: opts, buttons: [{ label: 'Keep my play', value: null }] });
+  } else {
+    await pause();
+    const readType = S.read === 'run' ? 'run' : 'pass';
+    const good = opts.filter(i => mode === 'same' || DB[i.id].play.type !== readType || i.id === '116' && S.read === 'blitz').sort((a, b) => DB[b.id].play.yards - DB[a.id].play.yards);
+    const curGood = curType !== readType;
+    if (good.length && (!curGood || DB[good[0].id].play.yards > playInfo(S).yards)) pick = good[0];
+  }
+  if (!pick) return;
+  S.d.off.bank += curCost; if (!cur.base) toHand(S.offP, cur);
+  takeFromHand(S.offP, pick); S.play = pick; S.playCost = DB[pick.id].cost.value; S.d.off.bank -= S.playCost;
+  log(`${S.offP.name} switch${S.offP.human ? '' : 'es'} to ${DB[pick.id].name}.`, 'off');
+}
+
+/* ---------- commits ---------- */
+async function commitRead(S) {
+  const d = S.d, p = S.defP;
+  const locked = d.hurry && d.lastSuccess && d.prevRead;
+  if (p.human) {
+    const cards = READS.filter(r => !locked || r.read === d.prevRead);
+    const v = await ask({ kind: 'read', title: 'Defense: commit your read', text: locked ? `Hurry-Up: you must repeat ${d.prevRead.toUpperCase()}.` : (S.isTry ? '2-point try from the 3.' : `${ord(d.down)} & ${d.dist >= d.ytg ? 'Goal' : d.dist}, ${spot(d.ytg)}.`), cards, buttons: [] });
+    return v.read;
+  }
+  await pause();
+  return aiRead(S);
+}
+async function commitPlay(S) {
+  const d = S.d, p = S.offP;
+  if (p.human) {
+    const opts = playOptions(S);
+    const kd = d.ytg + 17, buttons = [];
+    // No Huddle (D26): a 0-cost base play is always available.
+    if (!S.isTry) {
+      if (kd <= 40) buttons.push({ label: `Kick ${kd}-yd FG`, value: { kind: 'kick', boost: false } });
+      else if (kd <= 60) buttons.push({ label: `Kick ${kd}-yd FG (needs range)`, value: { kind: 'kick', boost: false } });
+      if (kd > 40 && kd <= 60 && d.off.bank >= 2) buttons.push({ label: `Kick ${kd}-yd FG +10 range (2 stamina)`, value: { kind: 'kick', boost: true } });
+    }
+    const v = await ask({ kind: 'commit', title: S.isTry ? '2-point try: commit a play' : 'Offense: commit a play', text: `Bank ${d.off.bank}. The defense has committed its read.`, cards: opts, buttons });
+    if (v && v.uid) return { kind: 'play', inst: v };
+    return v;
+  }
+  await pause();
+  return aiCommit(S);
+}
+
+/* ---------- snap ---------- */
+async function playSnap(d, isTry = false) {
+  const S = { d, offP: G.players[d.offIdx], defP: G.players[1 - d.offIdx], isTry, read: null, play: null, playCost: 0, R: null, window: null };
+  markPlay();
+  G.S = S; render();
+  if (!isTry) { S.window = 'drive'; await runWindow(S); }
+  for (let guard = 0; guard < 6; guard++) {
+    S.window = 'commit'; S.gotchya = false; S.read = null; S.play = null; render();
+    S.read = await commitRead(S);
+    const c = await commitPlay(S);
+    if (c.kind === 'kick') return await attemptFG(S, c.boost);
+    S.play = c.inst; S.playCost = costOf(S, 'off', c.inst); d.off.bank -= S.playCost; if (!c.inst.base) takeFromHand(S.offP, c.inst);
+    S.play.isSpecialPlay = DB[c.inst.id].category !== 'play';
+    render();
+    S.window = 'pre-snap'; await runWindow(S);
+    if (S.abort) return finishAbort(S);
+    if (S.gotchya) { d.off.bank += S.playCost; if (!S.play.base) toHand(S.offP, S.play); S.play = null; continue; }
+    break;
+  }
+  S.revealed = true;
+  const info = playInfo(S);
+  log(`${S.defP.name} read ${S.read.toUpperCase()}. ${S.offP.name} ran ${DB[S.play.id].name} (${info.type}${DB[S.play.id].play.yards ? ', ' + info.yards : ''}).`, 'sys');
+  render(); await pause();
+  S.window = 'post-reveal'; await runWindow(S);
+  S.R = resolvePlay(S);
+  if (S.R.text) log(S.R.text, S.R.td ? 'big' : '');
+  render();
+  S.window = 'post-snap'; await runWindow(S);
+  return applyResult(S);
+}
+function resolvePlay(S) {
+  const { id, type } = playInfo(S); let y = playInfo(S).yards;
+  const read = S.read, readType = read === 'run' ? 'run' : 'pass';
+  let stuffed = readType === type;
+  if (id === '116' && read === 'blitz') stuffed = false;
+  if (id === '107') stuffed = read !== 'run';
+  if (id === '163') stuffed = read === 'pass';
+  if (S.zoneBlitz && read === 'blitz' && type === 'run') stuffed = true;
+  if (S.goalLine && read === 'run' && type === 'pass') stuffed = true;
+  const R = { stuffed: false, yards: 0 };
+  if (id === '159') {
+    if (S.prevent) { R.stuffed = true; R.text = 'Prevent defense knocks the Hail Mary down.'; return R; }
+    if (read === 'run') { R.td = true; R.text = 'HAIL MARY... CAUGHT! Touchdown!'; return R; }
+    R.stuffed = true; R.text = 'Hail Mary falls incomplete.'; return R;
+  }
+  if (id === '163' && S.prevent) { R.stuffed = true; R.text = 'Prevent defense sniffs out the Flea Flicker.'; return R; }
+  if (stuffed && S.hotRoute && read === 'blitz' && type === 'pass') { stuffed = false; y = Math.max(playInfo(S).readYards, Math.floor(y / 2)); log('Hot Route beats the blitz.', 'off'); }
+  R.stuffed = stuffed;
+  // A correct read holds the play to its read yards (D20). On a 2-point try there's no room: a read stops it.
+  if (stuffed) { R.yards = S.isTry ? 0 : playInfo(S).readYards; return R; }
+  if (type === 'run' && read === 'blitz' && !S.stunt) y += 3;
+  if ((id === '106' || id === '116') && read === 'blitz') y += 6;
+  if (S.playAction && type === 'pass' && read === 'run') y *= 2;
+  if (S.bracket && type === 'pass') y = Math.floor(y / 2);
+  if (S.spy && type === 'run') y = Math.floor(y / 2);
+  if (S.prevent && type === 'pass') y = Math.min(12, y);
+  R.yards = y;
+  return R;
+}
+function discardPlay(S) { if (S.play && !S.play.base) toDiscard(S.offP, S.play); }
+function afterSnapDraws(S) { draw(S.offP, 'plays', 1); draw(S.defP, 'dspec', 1); }
+function applyResult(S) {
+  const d = S.d, R = S.R;
+  discardPlay(S);
+  if (S.isTry) {
+    if (R.negated) return null;
+    const good = !R.turnover && (R.td || R.yards >= d.ytg || R.autoFirst);
+    return { type: good ? 'good' : 'nogood' };
+  }
+  // Every snap draws, including one that ends the drive (doc: offense draws after each play,
+  // defense after each snap); otherwise a hand above its drive-start refill target loses a card.
+  afterSnapDraws(S);
+  if (R.negated) return null;
+  if (R.defScore) { S.defP.score += R.defScore; return { type: 'turnover', text: 'Pick six.' }; }
+  if (R.turnover) return { type: 'turnover', text: R.turnover === 'int' ? 'Interception.' : 'Fumble.' };
+  if (R.td) return { type: 'td' };
+  const gain = R.yards + (R.bonus || 0);
+  d.ytg -= gain; d.dist -= gain;
+  if (!R.text) log(R.stuffed ? (gain < 0 ? `Loss of ${-gain}.` : gain === 0 ? 'Read. No gain.' : `Read. Held to ${gain}.`) : gain < 0 ? `Loss of ${-gain}.` : `Gain of ${gain}.`, '');
+  if (d.ytg <= 0) return { type: 'td' };
+  if (d.ytg >= 100) return { type: 'safety' };
+  if (R.levelReset) d.off.level = 1;
+  else if (!R.stuffed || S.forceLevel) d.off.level = Math.min(5, d.off.level + 1);
+  if (R.stuffed || gain < 0) d.def.bank = Math.min(5, d.def.bank + 1);
+  d.off.bank = Math.min(6, d.off.bank + d.off.level);
+  d.lastSuccess = !R.stuffed; d.prevRead = S.read;
+  if (R.replayDown) return null;
+  if (d.dist <= 0 || R.autoFirst) { d.down = 1; d.dist = Math.min(10, d.ytg); draw(S.offP, 'ospec', 1); log('First down.', 'off'); return null; }
+  d.down++;
+  if (d.down > 4) return { type: 'downs' };
+  return null;
+}
+function finishAbort(S) {
+  const d = S.d, a = S.abort;
+  d.off.bank += S.playCost; if (S.play && !S.play.base) toHand(S.offP, S.play);
+  log(a.text, 'big');
+  if (a.type === 'td' || a.type === 'good') return { type: a.type };
+  if (a.type === 'firstdown') {
+    d.off.level = Math.min(5, d.off.level + 1); d.off.bank = Math.min(6, d.off.bank + d.off.level);
+    d.down = 1; d.dist = Math.min(10, d.ytg); afterSnapDraws(S); draw(S.offP, 'ospec', 1);
+  }
+  return null;
+}
+async function attemptFG(S, boost) {
+  const d = S.d;
+  S.isKick = true; S.kick = { dist: d.ytg + 17, boost, bigLeg: false, iced: false, blocked: false, six: false };
+  if (boost) d.off.bank -= 2;
+  log(`${S.offP.name} line${S.offP.human ? '' : 's'} up for a ${S.kick.dist}-yard field goal${boost ? ' (+10 range)' : ''}.`, 'off');
+  S.window = 'pre-snap'; render(); await runWindow(S);
+  const k = S.kick;
+  const range = 40 + (k.iced ? 0 : (k.boost ? 10 : 0) + (k.bigLeg ? 10 : 0));
+  await pause();
+  if (k.blocked) {
+    if (k.six) { S.defP.score += 7; log('KICK SIX! Blocked and returned for a touchdown.', 'def big'); return { type: 'turnover', text: '' }; }
+    log('BLOCKED! No good.', 'def big'); return { type: 'missed' };
+  }
+  if (k.iced) log('The kicker is iced: no range bonus.', 'def');
+  if (k.dist <= range) { log(`The kick is GOOD from ${k.dist}.`, 'big'); return { type: 'fg' }; }
+  log(`No good: ${k.dist} yards is beyond the ${range}-yard range.`, 'off'); return { type: 'missed' };
+}
+
+/* ---------- drives, tries, game ---------- */
+const spot = ytg => ytg > 50 ? `own ${100 - ytg}` : ytg === 50 ? 'midfield' : `opp ${ytg}`;
+async function playDrive(offIdx, ytg, label) {
+  const offP = G.players[offIdx], defP = G.players[1 - offIdx];
+  const d = { offIdx, ytg, down: 1, dist: Math.min(10, ytg), off: { level: 1, bank: 1 }, def: { bank: 1 }, sticky: false, hurry: false, prevRead: null, lastSuccess: false, filmStudy: false, label };
+  G.d = d;
+  drawUpTo(offP, 'plays', 5); drawUpTo(offP, 'ospec', 3); drawUpTo(defP, 'dspec', 4);
+  log(`${label}: ${offP.name} ball, ${spot(ytg)}`, 'head');
+  render();
+  let end = null;
+  for (let guard = 0; guard < 60 && !end; guard++) { end = await playSnap(d); render(); }
+  if (!end) end = { type: 'downs' };
+  switch (end.type) {
+    case 'td': offP.score += 6; log(`TOUCHDOWN, ${offP.name}!`, 'big'); render(); await afterTouchdown(d); break;
+    case 'fg': offP.score += 3; break;
+    case 'missed': break;
+    case 'turnover': if (end.text) log(end.text, 'def'); break;
+    case 'downs': log('Turnover on downs.', 'def'); break;
+    case 'safety': defP.score += 2; log('SAFETY! Two points for the defense.', 'def big'); break;
+  }
+  G.S = null; render(); await pause(); await pause();
+}
+async function runTry(d) {
+  d.ytg = 3; d.dist = 3; d.down = 1;
+  for (let k = 0; k < 4; k++) { const r = await playSnap(d, true); if (r) return r.type === 'good'; }
+  return false;
+}
+async function afterTouchdown(d) {
+  const offP = G.players[d.offIdx], defP = G.players[1 - d.offIdx];
+  let goTwo;
+  if (offP.human) goTwo = await ask({ kind: 'pat', title: 'Extra point', text: 'Kick is automatic for 1. A 2-point try is one snap from the 3.', cards: [], buttons: [{ label: 'Kick (1)', value: false, primary: true }, { label: 'Go for 2', value: true }] });
+  else { await pause(); const diff = offP.score - defP.score; goTwo = diff === -2 || diff === -5 || diff === 1 || offP.hand.ospec.some(i => i.id === '169') && rnd() < .5; }
+  if (!goTwo) { offP.score += 1; log('Extra point is good.', ''); return; }
+  log(`${offP.name} go${offP.human ? '' : 'es'} for two.`, 'off');
+  const ok = await runTry(d);
+  if (ok) { offP.score += 2; log('Two-point try is GOOD.', 'big'); } else log('Two-point try fails.', 'def');
+}
+async function shootoutTry(offIdx) {
+  const offP = G.players[offIdx];
+  const d = { offIdx, ytg: 3, down: 1, dist: 3, off: { level: 1, bank: 1 }, def: { bank: 1 }, sticky: false, hurry: false, prevRead: null, lastSuccess: false, filmStudy: false, label: '2-point shootout' };
+  G.d = d; drawUpTo(offP, 'plays', 5); drawUpTo(offP, 'ospec', 3); drawUpTo(G.players[1 - offIdx], 'dspec', 4);
+  log(`2-point shootout: ${offP.name}`, 'head');
+  const ok = await runTry(d);
+  if (ok) { offP.score += 2; log('GOOD.', 'big'); } else log('No good.', 'def');
+  G.S = null; render(); await pause();
+}
+async function runGame() {
+  const [a, b] = G.players;
+  log(`Coin toss: ${G.players[G.first].name} receive${G.players[G.first].human ? '' : 's'} first.`, 'sys');
+  for (let i = 0; i < 10; i++) { G.poss = i + 1; await playDrive((G.first + i) % 2, 75, `Possession ${i + 1} of 10`); }
+  let round = 0;
+  while (a.score === b.score && round < 8) {
+    round++; G.ot = round;
+    for (let k = 0; k < 2; k++) {
+      const off = (G.first + k) % 2;
+      if (round < 3) await playDrive(off, 25, `Overtime ${round}`); else await shootoutTry(off);
+    }
+  }
+  G.over = true; G.d = null; G.S = null;
+  log(a.score === b.score ? 'Final: a tie.' : `Final: ${a.score > b.score ? a.name : b.name} win${(a.score > b.score ? a : b).human ? '' : 's'}, ${Math.max(a.score, b.score)}-${Math.min(a.score, b.score)}.`, 'big');
+  render();
+  if (AUTO) document.body.dataset.done = `${a.score}-${b.score}`;
+}
+function newGame() {
+  pending = null;
+  G = { players: [newPlayer(AUTO ? 'CPU A' : 'You', !AUTO), newPlayer(AUTO ? 'CPU B' : 'CPU', false)], log: [], seq: 0, playAt: 1, prevPlayAt: 1, poss: 0, ot: 0, over: false, d: null, S: null, started: true };
+  G.first = rnd() < .5 ? 0 : 1;
+  render();
+  runGame().catch(err => { console.error(err); log('Something broke: ' + err.message, 'big'); });
+}
+
+/* ---------- rendering ---------- */
+function cardHTML(inst, opts = {}) {
+  const c = DB[inst.id]; if (!c) return '';
+  const cls = ['card', 'cat-' + c.category, 'side-' + (c.side === 'defense' ? 'def' : 'off')];
+  if (opts.legal) cls.push('legal'); if (opts.illegal) cls.push('illegal'); if (opts.small) cls.push('small');
+  const cost = c.cost ? (c.cost.kind === 'all' ? `<span class="cost all">ALL<br>${c.cost.min}+</span>` : `<span class="cost"><i>${c.cost.value}</i></span>`) : '';
+  const side = c.side === 'either' ? 'ANY' : c.side === 'offense' ? 'OFF' : 'DEF';
+  const strip = (c.window === 'commit')
+    ? `<div class="strip commit"><span>${c.category === 'read' ? 'Commit read' : 'Commit play'}</span></div>`
+    : `<div class="strip">${WIN_ORDER.map(w => `<span class="${w === c.window ? 'on' : ''}">${WIN_SHORT[w]}</span>`).join('')}</div>`;
+  const rdy = c.play && c.play.readYards != null ? `<span class="rd">READ ${c.play.readYards}</span>` : '';
+  const yd = c.play ? `<div class="yd"><b>${c.play.yards ?? 'TD?'}</b><span>${c.play.type.toUpperCase()}${c.play.yards != null ? ' YDS' : ''}</span>${rdy}</div>` : '';
+  const rules = c.category === 'play' ? (c.rulesText.split('. ').slice(2).join('. ') || '') : c.rulesText;
+  const copies = Object.values(c.copies || {}).reduce((s, n) => s + n, 0);
+  const tag = inst.base || inst.read ? 'Reusable' : (c.rarity === 'legendary' ? '★ 1 per deck' : `x${copies}`);
+  return `<div class="${cls.join(' ')}" data-uid="${esc(inst.uid)}" ${opts.legal ? 'tabindex="0" role="button"' : ''} aria-label="${esc(c.name)}">
+    <div class="art">${cost}<span class="side">${side}</span></div>
+    <div class="nm">${esc(c.name)}</div>${strip}${yd}
+    <div class="rules">${esc(rules)}</div>
+    <div class="foot"><span>${esc(c.category.replace('-', ' '))}</span><span>${esc(tag)}</span></div></div>`;
+}
+function renderBoard() {
+  const el = document.getElementById('board');
+  if (!G) { el.innerHTML = `<div class="team"><span class="name">You</span><span class="score">0</span></div><div class="mid"><span class="dd">Kickoff</span><span class="sub mono">5 possessions each</span></div><div class="team right"><span class="score">0</span><span class="name">CPU</span></div>`; return; }
+  const [a, b] = G.players, d = G.d;
+  const ball = i => d && d.offIdx === i ? '<span class="ball" title="Has the ball">●</span>' : '';
+  let mid = '';
+  if (G.over) mid = `<span class="dd">Final</span><span class="sub mono">${G.ot ? 'after overtime' : '10 possessions'}</span>`;
+  else if (d && d.ytg <= 0) mid = `<span class="dd">Touchdown</span><span class="sub mono">${esc(d.label)}</span>`;
+  else if (d) {
+    const dd = G.S && G.S.isTry ? '2-pt try' : `${ord(d.down)} & ${d.dist >= d.ytg ? 'Goal' : d.dist}`;
+    mid = `<span class="dd">${dd}</span><span class="sub mono">${esc(d.label)} · ${spot(d.ytg)}</span>`;
+  } else mid = `<span class="dd">Kickoff</span><span class="sub mono">5 possessions each</span>`;
+  el.innerHTML = `<div class="team">${ball(0)}<span class="name">${esc(a.name)}</span><span class="score">${a.score}</span></div><div class="mid">${mid}</div><div class="team right"><span class="score">${b.score}</span><span class="name">${esc(b.name)}</span>${ball(1)}</div>`;
+}
+function renderField(el = document.getElementById('field')) {
+  const d = G && G.d;
+  const pos = d ? Math.min(100, 100 - d.ytg) : 25, fd = d ? Math.min(100, 100 - d.ytg + d.dist) : 35;
+  el.innerHTML = `<div class="ez l">OWN</div><div class="ez r">GOAL</div><div class="play">
+    <div class="los" style="left:${pos}%"></div>${d && !(G.S && G.S.isTry) ? `<div class="fd" style="left:${fd}%"></div>` : ''}<div class="fb" style="left:${pos}%"></div></div>
+    <div class="nums">${[10, 20, 30, 40, 50, 40, 30, 20, 10].map((n, i) => `<span style="left:${(i + 1) * 10}%">${n}</span>`).join('')}</div>`;
+}
+function pips(n, max, cls) { let s = ''; for (let i = 0; i < max; i++) s += `<span class="pip ${cls} ${i < n ? 'on' : ''}"></span>`; return s; }
+function renderDesk() {
+  const el = document.getElementById('desk');
+  if (!G) { el.innerHTML = `<div class="intro"><div style="display:flex;flex-direction:column;gap:10px"><h1>Football<br>Card Game</h1><p>A playtest build. You play a full game against the CPU: offense on your possessions, defense on theirs. Every rule and card comes from <code>cards.json</code>, so edit the JSON and reload to try a change.</p></div><div class="prompt"><h2>Ready?</h2><p>5 possessions each. Highest score wins.</p><div class="btns"><button class="btn primary" id="start">Kick off</button></div></div></div>`; document.getElementById('start').onclick = newGame; return; }
+  const d = G.d, S = G.S;
+  let html = '';
+  if (d) {
+    const offName = G.players[d.offIdx].name, defName = G.players[1 - d.offIdx].name;
+    html += `<div class="meters"><div class="meter"><h3>Offense · ${esc(offName)}</h3>
+      <div class="pips"><span class="lab">Level</span>${pips(d.off.level, 5, '')}<span class="num">${d.off.level}</span></div>
+      <div class="pips"><span class="lab">Bank</span>${pips(d.off.bank, 6, 'sq')}<span class="num">${d.off.bank}</span></div></div>
+      <div class="meter"><h3>Defense · ${esc(defName)}</h3>
+      <div class="pips"><span class="lab">Bank</span>${pips(d.def.bank, 5, 'sq def')}<span class="num">${d.def.bank}</span></div></div></div>`;
+    const flags = [];
+    if (d.sticky) flags.push('Sticky Fingers'); if (d.hurry) flags.push('Hurry-Up'); if (d.filmStudy) flags.push('Film Study');
+    if (S) { if (S.goalLine) flags.push('Goal Line Stand'); if (S.playAction) flags.push('Play Action'); if (S.hotRoute) flags.push('Hot Route'); if (S.stunt) flags.push('Stunt'); if (S.bracket) flags.push('Bracket'); if (S.spy) flags.push('QB Spy'); if (S.prevent) flags.push('Prevent'); if (S.zoneBlitz) flags.push('Zone Blitz'); if (S.forceLevel) flags.push('Two-Minute'); }
+    if (flags.length) html += `<div class="flags">${flags.map(f => `<span class="flag">${esc(f)}</span>`).join('')}</div>`;
+    if (S && !S.isKick) {
+      const humanDef = S.defP.human, humanOff = S.offP.human;
+      const readCard = S.read ? (S.revealed || humanDef || S.readShown && humanOff ? cardHTML(READS.find(r => r.read === S.read), { small: true }) : '<div class="back"><span>Read</span></div>') : '<div class="mono">Waiting</div>';
+      const playCard = S.play ? (S.revealed || humanOff ? cardHTML(S.play, { small: true }) : '<div class="back"><span>Play</span></div>') : '<div class="mono">Waiting</div>';
+      html += `<div class="snap"><div class="slot"><span class="mono">Defense read</span>${readCard}</div><div class="slot"><span class="mono">Offense play</span>${playCard}</div></div>`;
+    }
+  }
+  if (pending) {
+    html += `<div class="prompt"><h2>${esc(pending.title)}</h2>${pending.text ? `<p>${esc(pending.text)}</p>` : ''}
+      ${pending.cards && pending.cards.length ? `<p class="mono" style="opacity:.7">Click a highlighted card${pending.kind === 'read' ? ' in Reusable' : ''}.</p>` : ''}
+      <div class="btns">${(pending.buttons || []).map((b, i) => `<button class="btn ${b.primary ? 'primary' : ''}" data-btn="${i}">${esc(b.label)}</button>`).join('')}</div></div>`;
+    if (pending.kind === 'swap' || pending.kind === 'response') html += `<div class="row">${pending.cards.map(i => cardHTML(i, { legal: true })).join('')}</div>`;
+  } else if (G.over) {
+    const [a, b] = G.players;
+    html += `<div class="prompt"><h2>${a.score === b.score ? 'A tie' : (a.score > b.score ? a.name : b.name) + ' win' + ((a.score > b.score ? a : b).human ? '' : 's')}: ${a.score}-${b.score}</h2><div class="btns"><button class="btn primary" id="again">Play again</button></div></div>`;
+  } else {
+    html += `<div class="prompt"><h2>${esc(G.players[1].name)} is thinking…</h2></div>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('[data-btn]').forEach(b => b.onclick = () => pending && pending.resolve(pending.buttons[+b.dataset.btn].value));
+  const again = document.getElementById('again'); if (again) again.onclick = newGame;
+}
+function renderHands() {
+  const el = document.getElementById('hands');
+  if (!G) { el.innerHTML = ''; return; }
+  const me = G.players.find(p => p.human);
+  const opp = G.players.find(p => !p.human) || G.players[1];
+  if (!me) { el.innerHTML = `<div class="panel"><span class="mono">Autoplay: CPU vs CPU</span></div>`; return; }
+  const d = G.d, onOff = d && G.players[d.offIdx] === me;
+  const legal = new Set(pending && pending.cards && pending.kind !== 'swap' && pending.kind !== 'response' ? pending.cards.map(c => c.uid) : []);
+  const cardsFor = (list, activeHand) => list.map(i => cardHTML(i, { legal: legal.has(i.uid), illegal: pending && activeHand && pending.kind === 'commit' && !legal.has(i.uid) && DB[i.id].window === 'commit' })).join('') || '<span class="mono" style="color:var(--ink-soft)">Empty</span>';
+  const reusable = (onOff || !d ? BASE : READS);
+  const film = d && !onOff && d.filmStudy ? `<div class="hand"><div class="hh"><h3>${esc(opp.name)} play hand</h3><span class="mono">Film Study</span></div><div class="row">${opp.hand.plays.map(i => cardHTML(i, { small: true })).join('')}</div></div>` : '';
+  el.innerHTML = `
+    <div class="hand"><div class="hh"><h3>Reusable</h3><span class="mono">${onOff || !d ? 'Base plays' : 'Your reads'} · always in hand</span></div><div class="row">${cardsFor(reusable, true)}</div></div>
+    <div class="hand ${d && !onOff ? 'dim' : ''}"><div class="hh"><h3>Plays</h3><span class="mono">${me.hand.plays.length}/7 · deck ${me.decks.plays.draw.length}</span></div><div class="row">${cardsFor(me.hand.plays, onOff)}</div></div>
+    <div class="hand ${d && !onOff ? 'dim' : ''}"><div class="hh"><h3>Offense specials</h3><span class="mono">${me.hand.ospec.length}/5 · deck ${me.decks.ospec.draw.length}</span></div><div class="row">${cardsFor(me.hand.ospec, onOff)}</div></div>
+    <div class="hand ${d && onOff ? 'dim' : ''}"><div class="hh"><h3>Defense specials</h3><span class="mono">${me.hand.dspec.length}/7 · deck ${me.decks.dspec.draw.length}</span></div><div class="row">${cardsFor(me.hand.dspec, !onOff)}</div></div>
+    ${film}
+    <div class="opp mono">${esc(opp.name)} holds: ${opp.hand.plays.length} plays · ${opp.hand.ospec.length} offense specials · ${opp.hand.dspec.length} defense specials</div>`;
+}
+// A play starts at each snap; a drive header just before the snap belongs to it.
+function markPlay() {
+  const last = G.log[G.log.length - 1];
+  const at = last && last.cls === 'head' ? last.seq : G.seq + 1;
+  if (at === G.playAt) return;
+  G.prevPlayAt = G.playAt; G.playAt = at;
+}
+let logView = 'recent';
+function recentLog() {
+  const rows = G.log.filter(e => e.seq >= G.playAt);
+  return rows.length ? rows : G.log.filter(e => e.seq >= G.prevPlayAt);
+}
+const logRows = rows => rows.map(e => `<div class="e ${esc(e.cls)}">${esc(e.text)}</div>`).join('');
+function renderLog() {
+  if (PHONE) { renderPhoneTicker(); return; }
+  const el = document.getElementById('log'); if (!el || !G) return;
+  const rows = logView === 'recent' ? recentLog() : G.log;
+  el.className = 'log ' + logView;
+  el.innerHTML = logRows(rows);
+  el.scrollTop = el.scrollHeight;
+  document.querySelectorAll('.logtab').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === logView)));
+}
+function render() {
+  if (PHONE) { renderPhone(); return; }
+  renderBoard(); renderField(); renderDesk(); renderHands(); renderLog();
+}
+
+/* ---------- phone layout ---------- */
+// #phone forces the phone layout in a 390x844 frame on desktop; otherwise it follows the viewport width.
+const FORCE_PHONE = location.hash === '#phone';
+const phoneQuery = matchMedia('(max-width: 600px)');
+let PHONE = false;
+const ph = { sel: null, sheet: null, lastPending: null, confirm: false, pressTimer: null, pressed: null };
+// Confirm plays: off by default (one tap plays a playable card). On, a tap selects and a second tap plays --
+// useful while learning the deck. Long-press always shows a card's rules without playing it.
+try { ph.confirm = localStorage.getItem('cardgame.confirmPlays') === '1'; } catch (e) { /* storage unavailable */ }
+function setConfirm(on) { ph.confirm = on; try { localStorage.setItem('cardgame.confirmPlays', on ? '1' : '0'); } catch (e) { /* ignore */ } render(); }
+function setPhoneMode() {
+  PHONE = FORCE_PHONE || phoneQuery.matches;
+  document.body.classList.toggle('phone', PHONE);
+  document.body.classList.toggle('framed', FORCE_PHONE && !phoneQuery.matches);
+  render();
+}
+phoneQuery.addEventListener('change', setPhoneMode);
+
+function gcardHTML(inst, opts = {}) {
+  const c = DB[inst.id]; if (!c) return '';
+  const cls = ['gcard', 'cat-' + c.category, 'side-' + (c.side === 'defense' ? 'def' : 'off')];
+  if (opts.legal) cls.push('legal'); if (opts.dim) cls.push('dim'); if (ph.sel === inst.uid) cls.push('sel');
+  const cost = !c.cost || c.category === 'read' ? '' : c.cost.kind === 'all' ? `<span class="c all">ALL</span>` : `<span class="c"><i>${c.cost.value}</i></span>`;
+  // Play cards show yardage; everything else shows the start of its rules (the full text is one tap away).
+  const body = c.play ? `<div class="y"><b>${c.play.yards ?? 'TD?'}</b><div class="yt"><span>${c.play.type}</span>${c.play.readYards != null ? `<span class="rd">read ${c.play.readYards}</span>` : ''}</div></div>`
+    : `<div class="r">${esc(c.category === 'read' ? c.rulesText.replace(/^Commit face-down\.\s*/, '') : c.rulesText)}</div>`;
+  const foot = inst.base ? 'Base' : c.category === 'read' ? 'Read' : c.window === 'commit' ? 'Play' : WIN_SHORT[c.window];
+  return `<button class="${cls.join(' ')}" data-g="${esc(inst.uid)}" aria-label="${esc(c.name)}${opts.legal ? ', playable' : ''}">
+    <div class="a">${cost}</div><div class="n">${esc(c.name)}</div>${body}<div class="w">${esc(foot)}</div></button>`;
+}
+// Active sections are shown in full; the off-side hand (and Film Study) collapse to a row that opens a sheet.
+function phoneSections() {
+  const me = G.players.find(p => p.human); if (!me) return { active: [], other: [] };
+  const d = G.d, onOff = !d || G.players[d.offIdx] === me;
+  const opp = G.players.find(p => !p.human);
+  if (onOff) return {
+    active: [
+      { label: 'Plays', note: `${me.hand.plays.length}/7 + base · deck ${me.decks.plays.draw.length}`, cards: me.hand.plays.concat(BASE) },
+      { label: 'Specials', note: `${me.hand.ospec.length}/5 · deck ${me.decks.ospec.draw.length}`, cards: me.hand.ospec },
+    ],
+    other: [{ label: 'Defense specials', cards: me.hand.dspec }],
+  };
+  const other = [{ label: 'Offense hand', cards: me.hand.plays.concat(me.hand.ospec) }];
+  if (d.filmStudy) other.unshift({ label: 'Their plays (Film Study)', cards: opp.hand.plays });
+  return {
+    active: [
+      { label: 'Reads', note: 'always in hand', cards: READS },
+      { label: 'Specials', note: `${me.hand.dspec.length}/7 · deck ${me.decks.dspec.draw.length}`, cards: me.hand.dspec },
+    ],
+    other,
+  };
+}
+function phoneLegal() {
+  return new Set(pending && pending.cards ? pending.cards.map(c => c.uid) : []);
+}
+function phoneFind(uid) {
+  if (!uid || !G) return null;
+  const s = phoneSections();
+  for (const sec of s.active.concat(s.other)) { const i = sec.cards.find(c => c.uid === uid); if (i) return i; }
+  if (G.S && G.S.play && G.S.play.uid === uid) return G.S.play;
+  return READS.find(r => r.uid === uid) || null;
+}
+function phoneFeed() {
+  // The current snap; if nothing has happened in it yet, the previous snap's result.
+  let rows = G.log.filter(e => e.seq >= G.playAt);
+  if (!rows.length) rows = G.log.filter(e => e.seq >= G.prevPlayAt);
+  return rows.slice(-4);
+}
+function renderPhone() {
+  const el = document.getElementById('phone');
+  if (!G) {
+    el.innerHTML = `<div class="pbar"><div class="t"><div class="tn"><span>You</span><b>0</b></div></div><div class="m"><b>Kickoff</b><span>5 possessions each</span></div><div class="t r"><div class="tn"><b>0</b><span>CPU</span></div></div></div>
+      <div class="pintro"><h1>Football<br>Card Game</h1><p>A playtest build. Offense on your possessions, defense on theirs. Tap a gold card to play it. Long-press any card to read its rules.</p>${confirmToggle()}<div class="btns"><button class="btn light" id="pstart">Kick off</button></div></div>`;
+    document.getElementById('pstart').onclick = newGame; return;
+  }
+  const [a, b] = G.players, d = G.d, S = G.S;
+  if (pending !== ph.lastPending) { ph.lastPending = pending; ph.sel = null; }
+  const legal = phoneLegal();
+
+  // Score bar, with stamina chips under the team they belong to
+  const stam = i => {
+    if (!d) return '';
+    if (d.offIdx === i) return `<span class="chip">LVL <b>${d.off.level}</b></span><span class="chip">BANK <b>${d.off.bank}</b></span>`;
+    return `<span class="chip def">DEF <b>${d.def.bank}</b></span>`;
+  };
+  const ball = i => d && d.offIdx === i ? '<i>●</i>' : '';
+  let mid;
+  if (G.over) mid = `<b>Final</b><span>${G.ot ? 'after OT' : '10 possessions'}</span>`;
+  else if (d && d.ytg <= 0) mid = `<b>Touchdown</b><span>${esc(d.label)}</span>`;
+  else if (d) mid = `<b>${S && S.isTry ? '2-pt try' : `${ord(d.down)} & ${d.dist >= d.ytg ? 'Goal' : d.dist}`}</b><span>${spot(d.ytg)} · ${esc(d.label.replace('Possession ', 'Poss '))}</span>`;
+  else mid = `<b>Kickoff</b><span>5 possessions each</span>`;
+  let html = `<div class="pbar"><div class="t"><div class="tn">${ball(0)}<span>${esc(a.name)}</span><b>${a.score}</b></div><div class="st">${stam(0)}</div></div><div class="m">${mid}</div><div class="t r"><div class="tn"><b>${b.score}</b><span>${esc(b.name)}</span>${ball(1)}</div><div class="st">${stam(1)}</div></div></div>
+    <div class="field" id="pfield" aria-hidden="true"></div>`;
+
+  // Snap row
+  const hole = '<div class="hole"></div>';
+  let readCard = hole, playCard = hole;
+  if (S && !S.isKick) {
+    if (S.read) readCard = S.revealed || S.defP.human || S.readShown && S.offP.human ? gcardHTML(READS.find(r => r.read === S.read)) : '<div class="back"><span>Read</span></div>';
+    if (S.play) playCard = S.revealed || S.offP.human ? gcardHTML(S.play) : '<div class="back"><span>Play</span></div>';
+  }
+  // No reveal gate on the flags (here or in the desktop renderer): every flag-setting card
+  // (Stunt, Zone Blitz, Bracket, QB Spy, Prevent, Hot Route, Play Action) plays in the
+  // post-reveal window, after S.revealed. The pre-snap window has Goal Line Stand, whose AI
+  // choice ignores the hidden read (aiWants). Re-check this if a card moves windows.
+  const flags = [];
+  if (d) {
+    if (d.sticky) flags.push('Sticky Fingers'); if (d.hurry) flags.push('Hurry-Up'); if (d.filmStudy) flags.push('Film Study');
+    if (S) { if (S.isKick) flags.push(`FG ${S.kick.dist} yds`); if (S.goalLine) flags.push('Goal Line Stand'); if (S.playAction) flags.push('Play Action'); if (S.hotRoute) flags.push('Hot Route'); if (S.stunt) flags.push('Stunt'); if (S.bracket) flags.push('Bracket'); if (S.spy) flags.push('QB Spy'); if (S.prevent) flags.push('Prevent'); if (S.zoneBlitz) flags.push('Zone Blitz'); if (S.forceLevel) flags.push('Two-Minute'); }
+  }
+  html += `<div class="psnap"><div class="slot"><span class="mono">Read</span>${readCard}</div><div class="slot"><span class="mono">Play</span>${playCard}</div>
+    <button class="pfeed" id="pfeed" aria-label="Open the full play-by-play">${flags.length ? `<div class="pflags">${flags.map(f => `<span class="flag">${esc(f)}</span>`).join('')}</div>` : ''}${logRows(phoneFeed())}<span class="more">Full log ›</span></button></div>`;
+
+  // Prompt bar
+  const selInst = G.over ? null : phoneFind(ph.sel);
+  if (pending || selInst) {
+    const title = pending ? pending.title : (G.over ? 'Final' : `${G.players[1].name} is thinking…`);
+    let body = '';
+    if (selInst) {
+      const c = DB[selInst.id];
+      body = `<p class="selrules"><b>${esc(c.name)}</b>${esc(c.rulesText)}</p>`;
+    } else if (pending.text) body = `<p>${esc(pending.text)}</p>`;
+    const btns = [];
+    if (selInst && legal.has(selInst.uid)) btns.push(`<button class="btn primary" id="pplay">Play ${esc(DB[selInst.id].name)}</button>`);
+    if (pending) (pending.buttons || []).forEach((bt, i) => btns.push(`<button class="btn ${bt.primary && !(selInst && legal.has(selInst.uid)) ? 'primary' : ''}" data-btn="${i}">${esc(bt.label)}</button>`));
+    if (!selInst && pending && pending.cards && pending.cards.length && !btns.length) body += `<p class="mono" style="opacity:.7">Tap a gold card</p>`;
+    html += `<div class="pprompt"><h2>${esc(title)}</h2>${body}${btns.length ? `<div class="btns">${btns.join('')}</div>` : ''}</div>`;
+  } else if (G.over) {
+    html += `<div class="pprompt"><h2>${a.score === b.score ? 'A tie' : (a.score > b.score ? a.name : b.name) + ' win' + ((a.score > b.score ? a : b).human ? '' : 's')}: ${a.score}-${b.score}</h2><div class="btns"><button class="btn primary" id="pagain">Play again</button></div></div>`;
+  } else {
+    html += `<div class="pprompt"><h2>${esc(G.players[1].name)} is thinking…</h2></div>`;
+  }
+
+  // Hand
+  const secs = phoneSections();
+  if (secs.active.length) {
+    const prompting = pending && pending.cards && pending.cards.length;
+    html += `<div class="phand">${secs.active.map(s => `<div class="psec"><h4><span>${s.label}</span><span>${esc(s.note)}</span></h4><div class="pgrid">${s.cards.map(i => gcardHTML(i, { legal: legal.has(i.uid), dim: prompting && !legal.has(i.uid) })).join('') || '<span class="empty">Empty</span>'}</div></div>`).join('')}
+      ${secs.other.map((s, i) => `<button class="pother" data-other="${i}"><span>${esc(s.label)} · ${s.cards.length}</span><span>View ›</span></button>`).join('')}</div>`;
+  } else if (!G.players.some(p => p.human)) {
+    html += `<div class="phand"><span class="mono">Autoplay: CPU vs CPU</span></div>`;
+  }
+
+  // Sheets
+  if (ph.sheet === 'log') {
+    const opp = G.players.find(p => !p.human);
+    html += `<div class="psheet" id="psheet"><div class="in"><div class="sh"><span class="mono">Play-by-play${opp ? ` · ${esc(opp.name)} holds ${opp.hand.plays.length}P ${opp.hand.ospec.length}OS ${opp.hand.dspec.length}DS` : ''}</span><button class="btn light" id="pclose">Close</button></div>${confirmToggle()}<div class="body log" id="pfulllog">${logRows(G.log)}</div></div></div>`;
+  } else if (typeof ph.sheet === 'number' && secs.other[ph.sheet]) {
+    const s = secs.other[ph.sheet];
+    html += `<div class="psheet" id="psheet"><div class="in"><div class="sh"><span class="mono">${esc(s.label)} · view only</span><button class="btn light" id="pclose">Close</button></div><div class="body"><div class="cards">${s.cards.map(i => cardHTML(i)).join('') || '<span class="mono">Empty</span>'}</div></div></div></div>`;
+  }
+
+  el.innerHTML = html;
+  // The largest cards (3, then 4, then 5 across) at which the whole hand fits without scrolling.
+  // The read and play cards in the snap row match the hand's card size, so the fit is measured with them.
+  const hand = el.querySelector('.phand'), snap = el.querySelector('.psnap');
+  if (hand) {
+    hand.style.removeProperty('--gh');
+    for (const cls of ['c3', 'c4', '']) {
+      hand.classList.remove('c3', 'c4'); if (cls) hand.classList.add(cls);
+      const g = hand.querySelector('.pgrid .gcard');
+      if (snap && g) snap.style.setProperty('--slotw', g.offsetWidth + 'px');
+      if (hand.scrollHeight <= hand.clientHeight + 1) break;
+    }
+    // Leftover height goes to the cards (up to 5:9) rather than sitting empty above or below the hand.
+    const g = hand.querySelector('.pgrid .gcard');
+    if (g) {
+      const rows = [...hand.querySelectorAll('.pgrid')].reduce((n, grid) => n + Math.ceil(grid.querySelectorAll('.gcard').length / getComputedStyle(grid).gridTemplateColumns.split(' ').length), 0);
+      const spare = Math.floor(hand.getBoundingClientRect().bottom - parseFloat(getComputedStyle(hand).paddingBottom) - hand.lastElementChild.getBoundingClientRect().bottom);
+      if (rows && spare > 0) hand.style.setProperty('--gh', Math.min(g.offsetHeight + Math.floor(spare / rows), Math.round(g.offsetWidth * 1.8)) + 'px');
+    }
+  }
+  renderField(document.getElementById('pfield'));
+  const fl = document.getElementById('pfulllog'); if (fl) fl.scrollTop = fl.scrollHeight;
+  el.querySelectorAll('[data-btn]').forEach(bt => bt.onclick = () => pending && pending.resolve(pending.buttons[+bt.dataset.btn].value));
+  const again = document.getElementById('pagain'); if (again) again.onclick = newGame;
+}
+// Log entries arrive mid-turn; a full re-render keeps the feed current.
+function renderPhoneTicker() { if (G) renderPhone(); }
+function confirmToggle() {
+  return `<label class="pconfirm"><input type="checkbox" id="pconfirm" ${ph.confirm ? 'checked' : ''}> Confirm plays (tap to select, tap again to play)</label>`;
+}
+// Long-press: show a card's rules without playing it.
+document.addEventListener('pointerdown', e => {
+  if (!PHONE) return;
+  ph.pressed = null;
+  const g = e.target.closest('.phand [data-g], .psnap [data-g]'); if (!g) return;
+  clearTimeout(ph.pressTimer);
+  ph.pressTimer = setTimeout(() => { ph.pressed = g.dataset.g; ph.sel = g.dataset.g; render(); }, 450);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => document.addEventListener(t, () => clearTimeout(ph.pressTimer)));
+document.addEventListener('contextmenu', e => { if (PHONE && e.target.closest('[data-g]')) e.preventDefault(); });
+function phonePlay(inst) {
+  ph.sel = null;
+  if (inst && pending && phoneLegal().has(inst.uid)) pending.resolve(inst); else render();
+}
+document.addEventListener('click', e => {
+  if (!PHONE) return;
+  const g = e.target.closest('[data-g]');
+  if (g && !e.target.closest('.psheet')) {
+    const uid = g.dataset.g;
+    // A long-press already showed this card's rules; swallow the click that follows it.
+    if (ph.pressed === uid) { ph.pressed = null; return; }
+    const playable = phoneLegal().has(uid);
+    // One tap plays a playable card, unless Confirm plays is on (then the second tap plays).
+    if (playable && (!ph.confirm || ph.sel === uid)) { phonePlay(phoneFind(uid)); return; }
+    ph.sel = ph.sel === uid ? null : uid; render(); return;
+  }
+  const ct = e.target.closest('#pconfirm'); if (ct) { setConfirm(!ph.confirm); return; }
+  if (e.target.closest('#pplay')) { phonePlay(phoneFind(ph.sel)); return; }
+  if (e.target.closest('#pfeed')) { ph.sheet = 'log'; render(); return; }
+  const o = e.target.closest('[data-other]'); if (o) { ph.sheet = +o.dataset.other; render(); return; }
+  if (e.target.closest('#pclose') || e.target.id === 'psheet') { ph.sheet = null; render(); }
+});
+
+document.addEventListener('click', e => {
+  if (PHONE) return;
+  const t = e.target.closest('.logtab'); if (t) { logView = t.dataset.view; renderLog(); return; }
+  const c = e.target.closest('.card.legal'); if (!c || !pending) return;
+  const uid = c.dataset.uid; const inst = (pending.cards || []).find(i => i.uid === uid); if (inst) pending.resolve(inst);
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('legal')) { e.preventDefault(); e.target.click(); }
+});
+
+fetch(CARDS_URL).then(r => { if (!r.ok) throw new Error(r.status + ' ' + r.statusText); return r.json(); }).then(j => {
+  for (const c of j.cards) DB[c.id] = c;
+  setPhoneMode();
+  if (AUTO) newGame();
+}).catch(err => {
+  const msg = `<div class="err"><b>Couldn't load cards.json</b> (${esc(err.message)}). Open this page through a web server, for example run <code>npx serve</code> in the card-game folder, or use the published link.</div>`;
+  document.getElementById('desk').innerHTML = msg;
+  document.getElementById('phone').innerHTML = `<div class="pintro">${msg}</div>`;
+  PHONE = FORCE_PHONE || phoneQuery.matches; document.body.classList.toggle('phone', PHONE);
+});
+</script>

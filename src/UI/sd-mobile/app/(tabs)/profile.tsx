@@ -530,6 +530,14 @@ export default function ProfileScreen() {
         />
       </View>
 
+      {/* Games — the football card game, open to everyone
+          (docs/features/card-game/football-card-game.md, D27). */}
+      <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Games</Text>
+        {/* Cast: typed routes pick up app/card-game.tsx on the next expo start. */}
+        <SettingsRow label="Football Card Game" onPress={() => router.push('/card-game' as never)} />
+      </View>
+
       {/* Developer — admin-only diagnostics. Gated on isAdmin so it
           doesn't leak into the regular user surface; remove the gate
           once the push-token retrieval becomes a normal user setting. */}

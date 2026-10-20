@@ -60,9 +60,9 @@ export default function TabLayout() {
           // Wordmark header (same treatment as the home tab) — the selected
           // league name already appears in the week selector just below, so
           // the header slot is free to reinforce brand. tabBarLabel keeps the
-          // bottom-tab label as "Games".
+          // bottom-tab label as "Picks".
           headerTitle: () => <Wordmark size={20} />,
-          tabBarLabel: 'Games',
+          tabBarLabel: 'Picks',
           tabBarIcon: ({ color }) => (
             <TabIcon name="american-football-outline" color={color} />
           ),

@@ -1,0 +1,2319 @@
+{
+  "schemaVersion": 2,
+  "game": "football-card-game",
+  "updated": "2026-10-19",
+  "conventions": {
+    "id": "3-digit string, permanent, never reused. Blocks: 101-139 offense play cards, 141-149 offense base plays (reusable), 151-199 offense specials, 201-249 defense reads (reusable), 251-299 defense specials, 301-349 either side, 901-999 non-card assets (backs).",
+    "files": "{id}_{slug}_{asset}[_v{n}].png where asset is 'art' (illustration only) or 'card' (full rendered card). Tooling matches on the id prefix only; the slug is for humans and may change if a card is renamed.",
+    "imageSlot": "art-{id}",
+    "copies": "Map of deck -> copies. Decks: offense-plays, offense-specials, offense-reusable, defense-specials, defense-reusable. Reusable decks hold cards that stay in hand all game."
+  },
+  "deckTotals": {
+    "offense-plays": 32,
+    "offense-specials": 28,
+    "offense-reusable": 2,
+    "defense-specials": 35,
+    "defense-reusable": 3
+  },
+  "cards": [
+    {
+      "id": "101",
+      "slug": "dive",
+      "name": "Dive",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 4,
+        "readYards": 2
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 4 yards; 2 if the defense reads Run.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Three yards and a cloud of dust. Make it four.",
+      "tags": [
+        "play",
+        "run"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 5
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Fullback plowing straight ahead, helmet-first into a pile"
+      },
+      "assets": {
+        "art": "101_dive_art.png",
+        "card": "101_dive_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "102",
+      "slug": "off-tackle",
+      "name": "Off Tackle",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 7,
+        "readYards": 3
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 7 yards; 3 if the defense reads Run.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Follow the big fella.",
+      "tags": [
+        "play",
+        "run"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 3
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Running back cutting off a pulling guard's block"
+      },
+      "assets": {
+        "art": "102_off-tackle_art.png",
+        "card": "102_off-tackle_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "103",
+      "slug": "power-sweep",
+      "name": "Power Sweep",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 11,
+        "readYards": 3
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 11 yards; 3 if the defense reads Run.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Here they come. Everybody knows it.",
+      "tags": [
+        "play",
+        "run"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Runner turning the corner behind a wall of linemen"
+      },
+      "assets": {
+        "art": "103_power-sweep_art.png",
+        "card": "103_power-sweep_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "104",
+      "slug": "toss-sweep",
+      "name": "Toss Sweep",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 18,
+        "readYards": 2
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 18 yards; 2 if the defense reads Run.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Pitch. Gone.",
+      "tags": [
+        "play",
+        "run"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Speedster catching a pitch, already outrunning the defense to the sideline"
+      },
+      "assets": {
+        "art": "104_toss-sweep_art.png",
+        "card": "104_toss-sweep_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "105",
+      "slug": "qb-sneak",
+      "name": "QB Sneak",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 2,
+        "readYards": 1
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 2 yards; 1 if the defense reads Run.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Just lean.",
+      "tags": [
+        "play",
+        "run",
+        "short-yardage"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback burrowing under a pile of linemen, ball stretched forward"
+      },
+      "assets": {
+        "art": "105_qb-sneak_art.png",
+        "card": "105_qb-sneak_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "106",
+      "slug": "draw",
+      "name": "Draw",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 9,
+        "readYards": 1
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 9 yards; 1 if the defense reads Run. If the defense read Blitz, gains 6 more yards.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Come on in. Make yourselves at home.",
+      "tags": [
+        "play",
+        "run",
+        "blitz-beater"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback dropping back as if to pass, then slipping the ball to the running back past charging rushers"
+      },
+      "assets": {
+        "art": "106_draw_art.png",
+        "card": "106_draw_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "107",
+      "slug": "reverse",
+      "name": "Reverse",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 15,
+        "readYards": 0
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 15 yards. A Run read doesn't stop it. A Pass or Blitz read holds it to 0.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Wrong way. For you.",
+      "tags": [
+        "play",
+        "run",
+        "read-blur"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver taking a handoff running the opposite way, the whole defense flowing the wrong direction"
+      },
+      "assets": {
+        "art": "107_reverse_art.png",
+        "card": "107_reverse_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "111",
+      "slug": "quick-out",
+      "name": "Quick Out",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 3,
+        "readYards": 2
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 3 yards; 2 if the defense reads Pass.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Get it out. Get it out.",
+      "tags": [
+        "play",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 4
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver snapping a short out route to the sideline"
+      },
+      "assets": {
+        "art": "111_quick-out_art.png",
+        "card": "111_quick-out_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "112",
+      "slug": "slant",
+      "name": "Slant",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 8,
+        "readYards": 3
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 8 yards; 3 if the defense reads Pass.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Inside leverage? Thanks.",
+      "tags": [
+        "play",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 3
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver knifing across the middle, ball already in the air"
+      },
+      "assets": {
+        "art": "112_slant_art.png",
+        "card": "112_slant_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "113",
+      "slug": "dig",
+      "name": "Dig",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 13,
+        "readYards": 3
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 13 yards; 3 if the defense reads Pass.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Find the soft spot. Sit.",
+      "tags": [
+        "play",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 3
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver settling into a hole in the zone, defenders converging too late"
+      },
+      "assets": {
+        "art": "113_dig_art.png",
+        "card": "113_dig_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "114",
+      "slug": "seam-route",
+      "name": "Seam Route",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 20,
+        "readYards": 5
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 20 yards; 5 if the defense reads Pass.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Right between 'em.",
+      "tags": [
+        "play",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Tight end splitting two safeties down the middle"
+      },
+      "assets": {
+        "art": "114_seam-route_art.png",
+        "card": "114_seam-route_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "115",
+      "slug": "go-route",
+      "name": "Go Route",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 5
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 35,
+        "readYards": 0
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 35 yards; 0 if the defense reads Pass.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Just throw it up. He's open. He's always open.",
+      "tags": [
+        "play",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver a full stride past the last defender, arms out for a deep ball"
+      },
+      "assets": {
+        "art": "115_go-route_art.png",
+        "card": "115_go-route_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "116",
+      "slug": "screen-pass",
+      "name": "Screen Pass",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 6,
+        "readYards": 1
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 6 yards; 1 if the defense reads Pass. A Blitz read doesn't stop it; against Blitz it gains 6 more yards.",
+      "reminderText": "Correct read: the play is held to its read yards, and your level doesn't rise.",
+      "flavorText": "Let 'em through. Then go.",
+      "tags": [
+        "play",
+        "pass",
+        "blitz-beater"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-plays": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Running back catching a soft toss behind a convoy of linemen while rushers fly past"
+      },
+      "assets": {
+        "art": "116_screen-pass_art.png",
+        "card": "116_screen-pass_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "141",
+      "slug": "inside-zone",
+      "name": "Inside Zone",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "commit",
+      "play": {
+        "type": "run",
+        "yards": 2,
+        "readYards": 0
+      },
+      "replacesPlay": false,
+      "rulesText": "Run. Gain 2 yards; 0 if the defense reads Run.",
+      "reminderText": "Reusable: always in your hand; returns after use.",
+      "flavorText": "Nothing fancy. Nothing lost.",
+      "tags": [
+        "play",
+        "run",
+        "base"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-reusable": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Running back pressing the line behind a double-team block"
+      },
+      "assets": {
+        "art": "141_inside-zone_art.png",
+        "card": "141_inside-zone_card.png"
+      },
+      "status": "proposed"
+    },
+    {
+      "id": "142",
+      "slug": "check-down",
+      "name": "Check Down",
+      "side": "offense",
+      "category": "play",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 2,
+        "readYards": 0
+      },
+      "replacesPlay": false,
+      "rulesText": "Pass. Gain 2 yards; 0 if the defense reads Pass.",
+      "reminderText": "Reusable: always in your hand; returns after use.",
+      "flavorText": "Take what they give you.",
+      "tags": [
+        "play",
+        "pass",
+        "base"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-reusable": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback dumping a short pass to a running back in the flat"
+      },
+      "assets": {
+        "art": "142_check-down_art.png",
+        "card": "142_check-down_card.png"
+      },
+      "status": "proposed"
+    },
+    {
+      "id": "151",
+      "slug": "sticky-fingers",
+      "name": "Sticky Fingers",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "For the rest of this possession, the defense can't play interception cards on any snap with more than 5 yards to go.",
+      "reminderText": "Blocks cards tagged #interception (Hijacked, Pick Six).",
+      "flavorText": "Glue? What glue?",
+      "tags": [
+        "immunity",
+        "interception"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver, gloves glued to the ball"
+      },
+      "assets": {
+        "art": "151_sticky-fingers_art.png",
+        "card": "151_sticky-fingers_card.png"
+      },
+      "status": "seed"
+    },
+    {
+      "id": "152",
+      "slug": "4th-and-omg",
+      "name": "4th and OMG",
+      "side": "offense",
+      "category": "power-play",
+      "cost": {
+        "kind": "all",
+        "min": 3
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": true,
+      "rulesText": "Play on 4th & 1 on your own side of the 50. TOUCHDOWN.",
+      "reminderText": "Spends your whole bank. Countered by Goal Line Stand.",
+      "flavorText": "Nobody saw it coming. Including us.",
+      "tags": [
+        "power-play",
+        "4th-down",
+        "touchdown"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "260"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "legendary",
+      "art": {
+        "brief": "Runner bursting free, crowd losing it"
+      },
+      "assets": {
+        "art": "152_4th-and-omg_art.png",
+        "card": "152_4th-and-omg_card.png"
+      },
+      "status": "seed"
+    },
+    {
+      "id": "153",
+      "slug": "hard-count",
+      "name": "Hard Count",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "The defense reveals its read first. You may swap your play card for another from your hand, paying any difference.",
+      "reminderText": "",
+      "flavorText": "Hut... hut... HUT-HUT... psych.",
+      "tags": [
+        "reveal"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback barking at the line while a defensive lineman leans offside"
+      },
+      "assets": {
+        "art": "153_hard-count_art.png",
+        "card": "153_hard-count_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "154",
+      "slug": "audible",
+      "name": "Audible",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Swap your play card for one of the same type from your hand, paying any difference.",
+      "reminderText": "",
+      "flavorText": "Omaha! Omaha! ...okay, not that one.",
+      "tags": [
+        "swap"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback pointing and shouting changes at the line"
+      },
+      "assets": {
+        "art": "154_audible_art.png",
+        "card": "154_audible_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "155",
+      "slug": "play-action",
+      "name": "Play Action",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "If the defense read Run, your Pass gains double its printed yardage.",
+      "reminderText": "",
+      "flavorText": "Fake it 'til you make it.",
+      "tags": [
+        "read-blur"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback faking a handoff, linebackers biting hard"
+      },
+      "assets": {
+        "art": "155_play-action_art.png",
+        "card": "155_play-action_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "156",
+      "slug": "hurry-up",
+      "name": "Hurry-Up",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "drive",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "For the rest of this possession, after a successful play the defense must repeat its previous read on the next snap.",
+      "reminderText": "Ended by Timeout.",
+      "flavorText": "No huddle. No mercy.",
+      "tags": [
+        "tempo"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "270"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Offense sprinting to the line, defenders gasping for air"
+      },
+      "assets": {
+        "art": "156_hurry-up_art.png",
+        "card": "156_hurry-up_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "157",
+      "slug": "two-minute-drill",
+      "name": "Two-Minute Drill",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Your level rises even if this play was read.",
+      "reminderText": "",
+      "flavorText": "Clock's ticking. So are we.",
+      "tags": [
+        "momentum"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "270"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback rallying the huddle under a giant stopwatch"
+      },
+      "assets": {
+        "art": "157_two-minute-drill_art.png",
+        "card": "157_two-minute-drill_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "158",
+      "slug": "broken-tackle",
+      "name": "Broken Tackle",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "If your Run was read, it gains its printed yardage minus 3 instead of its read yards.",
+      "reminderText": "",
+      "flavorText": "He bounced off. Literally.",
+      "tags": [
+        "yards"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Runner shrugging off a tackler who is flying backward"
+      },
+      "assets": {
+        "art": "158_broken-tackle_art.png",
+        "card": "158_broken-tackle_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "159",
+      "slug": "hail-mary",
+      "name": "Hail Mary",
+      "side": "offense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 5
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": null
+      },
+      "replacesPlay": true,
+      "rulesText": "Play as your play card (Pass). TOUCHDOWN if the defense read Run; otherwise incomplete.",
+      "reminderText": "",
+      "flavorText": "Say a little prayer.",
+      "tags": [
+        "power-play",
+        "touchdown",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "265"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Ball arcing high into a crowd of jumping players, everybody looking up"
+      },
+      "assets": {
+        "art": "159_hail-mary_art.png",
+        "card": "159_hail-mary_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "160",
+      "slug": "fake-punt",
+      "name": "Fake Punt",
+      "side": "offense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": true,
+      "rulesText": "Play on 4th & 5 or less. Automatic first down.",
+      "reminderText": "",
+      "flavorText": "Punter? Never heard of him.",
+      "tags": [
+        "power-play",
+        "4th-down"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "269"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Punter tucking the ball and running, special teams in shock"
+      },
+      "assets": {
+        "art": "160_fake-punt_art.png",
+        "card": "160_fake-punt_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "161",
+      "slug": "ball-security",
+      "name": "Ball Security",
+      "side": "offense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Cancel PunchBall or Strip Sack.",
+      "reminderText": "",
+      "flavorText": "High and tight.",
+      "tags": [
+        "counter",
+        "fumble"
+      ],
+      "counters": [
+        "253",
+        "259"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Runner cradling the ball with both arms, a fist bouncing off"
+      },
+      "assets": {
+        "art": "161_ball-security_art.png",
+        "card": "161_ball-security_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "162",
+      "slug": "pass-interference",
+      "name": "Pass Interference",
+      "side": "offense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Cancel Hijacked or Pick Six. You gain 15 yards and a first down.",
+      "reminderText": "",
+      "flavorText": "Flag! Flag! FLAG!",
+      "tags": [
+        "counter",
+        "interception",
+        "penalty"
+      ],
+      "counters": [
+        "254",
+        "258"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defender draped all over a receiver as a yellow flag flies"
+      },
+      "assets": {
+        "art": "162_pass-interference_art.png",
+        "card": "162_pass-interference_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "163",
+      "slug": "flea-flicker",
+      "name": "Flea Flicker",
+      "side": "offense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "window": "commit",
+      "play": {
+        "type": "pass",
+        "yards": 25
+      },
+      "replacesPlay": true,
+      "rulesText": "Play as your play card (Pass). Gain 25 yards unless the defense read Pass. A Blitz read doesn't stop it.",
+      "reminderText": "",
+      "flavorText": "Back, back, back... and away.",
+      "tags": [
+        "power-play",
+        "pass",
+        "read-blur"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "265"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Running back pitching the ball back to the quarterback as defenders crash the line"
+      },
+      "assets": {
+        "art": "163_flea-flicker_art.png",
+        "card": "163_flea-flicker_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "164",
+      "slug": "hot-route",
+      "name": "Hot Route",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "If the defense read Blitz, your Pass gains half its printed yardage (round down) instead of its read yards, if that's more, and Sack can't be played.",
+      "reminderText": "",
+      "flavorText": "Saw it coming.",
+      "tags": [
+        "blitz-beater"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Quarterback flicking a quick throw over a blitzing linebacker's hands"
+      },
+      "assets": {
+        "art": "164_hot-route_art.png",
+        "card": "164_hot-route_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "165",
+      "slug": "silent-count",
+      "name": "Silent Count",
+      "side": "offense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Cancel Gotchya or Crowd Noise.",
+      "reminderText": "",
+      "flavorText": "Shhh.",
+      "tags": [
+        "counter",
+        "momentum"
+      ],
+      "counters": [
+        "251",
+        "257"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Center glancing back, quarterback silently tapping his leg"
+      },
+      "assets": {
+        "art": "165_silent-count_art.png",
+        "card": "165_silent-count_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "166",
+      "slug": "roughing-the-passer",
+      "name": "Roughing the Passer",
+      "side": "offense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Cancel Sack or Strip Sack. You gain 15 yards and a first down.",
+      "reminderText": "",
+      "flavorText": "Late hit! Late hit!",
+      "tags": [
+        "counter",
+        "penalty",
+        "sack"
+      ],
+      "counters": [
+        "252",
+        "259"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defender driving a quarterback into the turf well after the throw, flag in the air"
+      },
+      "assets": {
+        "art": "166_roughing-the-passer_art.png",
+        "card": "166_roughing-the-passer_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "167",
+      "slug": "big-leg",
+      "name": "Big Leg",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play on a field goal attempt. The kick's range is extended by 10 yards.",
+      "reminderText": "",
+      "flavorText": "From WAY downtown.",
+      "tags": [
+        "kick"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Kicker launching a ball that's still climbing as it clears the frame"
+      },
+      "assets": {
+        "art": "167_big-leg_art.png",
+        "card": "167_big-leg_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "168",
+      "slug": "fired-up",
+      "name": "Fired Up",
+      "side": "offense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "drive",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Your bank gains 2 (up to the cap).",
+      "reminderText": "",
+      "flavorText": "Let's GO.",
+      "tags": [
+        "momentum",
+        "bank"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Offense jumping and chest-bumping in the huddle"
+      },
+      "assets": {
+        "art": "168_fired-up_art.png",
+        "card": "168_fired-up_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "169",
+      "slug": "swinging-gate",
+      "name": "Swinging Gate",
+      "side": "offense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": true,
+      "rulesText": "Play on a 2-point try. It's good.",
+      "reminderText": "Countered by Read the Fake.",
+      "flavorText": "Everybody shift. Now.",
+      "tags": [
+        "power-play",
+        "2-point"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "269"
+      ],
+      "copies": {
+        "offense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Offensive line split wide toward the sideline, holder sprinting the other way"
+      },
+      "assets": {
+        "art": "169_swinging-gate_art.png",
+        "card": "169_swinging-gate_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "201",
+      "slug": "run-read",
+      "name": "Run Read",
+      "side": "defense",
+      "category": "read",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "commit",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Commit face-down. Holds Run plays to their read yards.",
+      "reminderText": "Reusable: you keep all three reads all game.",
+      "flavorText": "Not today.",
+      "tags": [
+        "read",
+        "run"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-reusable": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Linebackers crashing the line of scrimmage"
+      },
+      "assets": {
+        "art": "201_run-read_art.png",
+        "card": "201_run-read_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "202",
+      "slug": "pass-read",
+      "name": "Pass Read",
+      "side": "defense",
+      "category": "read",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "commit",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Commit face-down. Holds Pass plays to their read yards.",
+      "reminderText": "Reusable: you keep all three reads all game.",
+      "flavorText": "Nobody's open.",
+      "tags": [
+        "read",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-reusable": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defensive backs blanketing receivers"
+      },
+      "assets": {
+        "art": "202_pass-read_art.png",
+        "card": "202_pass-read_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "203",
+      "slug": "blitz-read",
+      "name": "Blitz Read",
+      "side": "defense",
+      "category": "read",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "commit",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Commit face-down. Counts as a Pass read. When correct, you may play Sack. When wrong against a Run, the Run gains +3 yards.",
+      "reminderText": "Reusable: you keep all three reads all game.",
+      "flavorText": "Send everybody.",
+      "tags": [
+        "read",
+        "pass"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-reusable": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Everyone rushing the quarterback at once"
+      },
+      "assets": {
+        "art": "203_blitz-read_art.png",
+        "card": "203_blitz-read_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "251",
+      "slug": "gotchya",
+      "name": "Gotchya",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "False start! The offense's committed cards return to its hand, -5 yards, offense level -1. Replay the down; you may change your read.",
+      "reminderText": "Can't push the offense back past its own 1. Countered by Silent Count.",
+      "flavorText": "Made you look.",
+      "tags": [
+        "penalty",
+        "momentum"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "165"
+      ],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defensive lineman twitching, an offensive lineman jumping early"
+      },
+      "assets": {
+        "art": "251_gotchya_art.png",
+        "card": "251_gotchya_card.png"
+      },
+      "status": "seed"
+    },
+    {
+      "id": "252",
+      "slug": "sack",
+      "name": "Sack",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play after a correct Blitz read. -7 yards, offense level resets to 1, and you gain 1.",
+      "reminderText": "",
+      "flavorText": "Get down.",
+      "tags": [
+        "sack",
+        "momentum"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "166"
+      ],
+      "copies": {
+        "defense-specials": 3
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Pass rusher burying the quarterback"
+      },
+      "assets": {
+        "art": "252_sack_art.png",
+        "card": "252_sack_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "253",
+      "slug": "punchball",
+      "name": "PunchBall",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play after a Run that wasn't read. Fumble: the defense recovers. The possession ends.",
+      "reminderText": "Countered by Ball Security.",
+      "flavorText": "Punch! Pop! Ours!",
+      "tags": [
+        "power-play",
+        "fumble",
+        "turnover"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "161"
+      ],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Defender's fist punching the ball out of a runner's grip"
+      },
+      "assets": {
+        "art": "253_punchball_art.png",
+        "card": "253_punchball_card.png"
+      },
+      "status": "seed"
+    },
+    {
+      "id": "254",
+      "slug": "hijacked",
+      "name": "Hijacked",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play after a Pass that wasn't read. Intercepted. The possession ends.",
+      "reminderText": "Blocked by Sticky Fingers. Countered by Pass Interference.",
+      "flavorText": "Thanks for the delivery.",
+      "tags": [
+        "power-play",
+        "interception",
+        "turnover"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "162"
+      ],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Defender leaping over a receiver to snag the ball"
+      },
+      "assets": {
+        "art": "254_hijacked_art.png",
+        "card": "254_hijacked_card.png"
+      },
+      "status": "seed"
+    },
+    {
+      "id": "255",
+      "slug": "stunt",
+      "name": "Stunt",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "A wrong Blitz read against a Run gives up no bonus yards.",
+      "reminderText": "",
+      "flavorText": "Twist and shout.",
+      "tags": [
+        "read-cover"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Two defensive linemen looping around each other"
+      },
+      "assets": {
+        "art": "255_stunt_art.png",
+        "card": "255_stunt_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "256",
+      "slug": "bracket-coverage",
+      "name": "Bracket Coverage",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "If your read was wrong against a Pass, it gains only half its yardage (round down).",
+      "reminderText": "",
+      "flavorText": "Two on one. Good luck.",
+      "tags": [
+        "yards"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Receiver sandwiched between two defenders"
+      },
+      "assets": {
+        "art": "256_bracket-coverage_art.png",
+        "card": "256_bracket-coverage_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "257",
+      "slug": "crowd-noise",
+      "name": "Crowd Noise",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Offense level -1.",
+      "reminderText": "Countered by Silent Count.",
+      "flavorText": "WHAT? CAN'T HEAR YOU.",
+      "tags": [
+        "momentum"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "165"
+      ],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Stadium crowd roaring, quarterback cupping an ear"
+      },
+      "assets": {
+        "art": "257_crowd-noise_art.png",
+        "card": "257_crowd-noise_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "258",
+      "slug": "pick-six",
+      "name": "Pick Six",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play right after Hijacked resolves. The defense scores 7.",
+      "reminderText": "Countered by Pass Interference.",
+      "flavorText": "House call.",
+      "tags": [
+        "power-play",
+        "interception",
+        "score"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "162"
+      ],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "legendary",
+      "art": {
+        "brief": "Defender high-stepping into the end zone with the ball"
+      },
+      "assets": {
+        "art": "258_pick-six_art.png",
+        "card": "258_pick-six_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "259",
+      "slug": "strip-sack",
+      "name": "Strip Sack",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play right after Sack. Fumble: the defense recovers. The possession ends.",
+      "reminderText": "Countered by Ball Security or Roughing the Passer.",
+      "flavorText": "Ball's out!",
+      "tags": [
+        "power-play",
+        "fumble",
+        "turnover"
+      ],
+      "counters": [],
+      "counteredBy": [
+        "161",
+        "166"
+      ],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Pass rusher swatting the ball from the quarterback's arm mid-sack"
+      },
+      "assets": {
+        "art": "259_strip-sack_art.png",
+        "card": "259_strip-sack_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "260",
+      "slug": "goal-line-stand",
+      "name": "Goal Line Stand",
+      "side": "defense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Inside your own 5: a Run read also counts as reading Passes this snap. OR cancel 4th and OMG.",
+      "reminderText": "",
+      "flavorText": "Not one more inch.",
+      "tags": [
+        "counter",
+        "goal-line"
+      ],
+      "counters": [
+        "152"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defensive line dug in at the goal line, mud flying"
+      },
+      "assets": {
+        "art": "260_goal-line-stand_art.png",
+        "card": "260_goal-line-stand_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "261",
+      "slug": "icing-the-kicker",
+      "name": "Icing the Kicker",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "The field goal range bonus does not apply to this kick.",
+      "reminderText": "",
+      "flavorText": "Think about it. Really think about it.",
+      "tags": [
+        "kick"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Coach calling timeout as the kicker freezes mid-step"
+      },
+      "assets": {
+        "art": "261_icing-the-kicker_art.png",
+        "card": "261_icing-the-kicker_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "262",
+      "slug": "film-study",
+      "name": "Film Study",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "drive",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Look at the offense's play hand.",
+      "reminderText": "",
+      "flavorText": "We've seen this before.",
+      "tags": [
+        "reveal"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defensive coordinator in a dark room, projector light on a wall of diagrams"
+      },
+      "assets": {
+        "art": "262_film-study_art.png",
+        "card": "262_film-study_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "263",
+      "slug": "zone-blitz",
+      "name": "Zone Blitz",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Your Blitz read also counts as reading Runs this snap. You can't play Sack this snap.",
+      "reminderText": "",
+      "flavorText": "Rush five, drop three, confuse everyone.",
+      "tags": [
+        "read-cover"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Defensive end dropping into coverage while a cornerback blitzes"
+      },
+      "assets": {
+        "art": "263_zone-blitz_art.png",
+        "card": "263_zone-blitz_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "264",
+      "slug": "qb-spy",
+      "name": "QB Spy",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "If your read was wrong against a Run, it gains only half its yardage (round down).",
+      "reminderText": "",
+      "flavorText": "Wherever you go, I go.",
+      "tags": [
+        "yards"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Linebacker mirroring a scrambling quarterback step for step"
+      },
+      "assets": {
+        "art": "264_qb-spy_art.png",
+        "card": "264_qb-spy_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "265",
+      "slug": "prevent-defense",
+      "name": "Prevent Defense",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "post-reveal",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "A Pass that wasn't read gains at most 12 yards this snap. OR cancel Hail Mary or Flea Flicker.",
+      "reminderText": "",
+      "flavorText": "Bend. Don't break.",
+      "tags": [
+        "yards",
+        "counter"
+      ],
+      "counters": [
+        "159",
+        "163"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Safeties backpedaling forty yards deep"
+      },
+      "assets": {
+        "art": "265_prevent-defense_art.png",
+        "card": "265_prevent-defense_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "266",
+      "slug": "holding-call",
+      "name": "Holding Call",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play after the offense gains 10 or more yards. The gain is negated: -10 yards, replay the down.",
+      "reminderText": "Can be negated by Flag on the Play.",
+      "flavorText": "Number 74. Holding.",
+      "tags": [
+        "penalty"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Offensive lineman with a fistful of jersey, a flag landing at his feet"
+      },
+      "assets": {
+        "art": "266_holding-call_art.png",
+        "card": "266_holding-call_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "267",
+      "slug": "blocked-kick",
+      "name": "Blocked Kick",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play on a field goal attempt. It's blocked: no points.",
+      "reminderText": "",
+      "flavorText": "Get a hand on it.",
+      "tags": [
+        "power-play",
+        "kick"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "rare",
+      "art": {
+        "brief": "Defender skying over the line, fingertips meeting the ball"
+      },
+      "assets": {
+        "art": "267_blocked-kick_art.png",
+        "card": "267_blocked-kick_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "268",
+      "slug": "kick-six",
+      "name": "Kick Six",
+      "side": "defense",
+      "category": "power-play",
+      "cost": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Play on a field goal attempt of 41 yards or longer. Blocked and returned: the defense scores 7.",
+      "reminderText": "",
+      "flavorText": "Wait -- where's he going?",
+      "tags": [
+        "power-play",
+        "kick",
+        "score"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "legendary",
+      "art": {
+        "brief": "Returner sprinting the length of the field with a blocked kick, kicker diving in vain"
+      },
+      "assets": {
+        "art": "268_kick-six_art.png",
+        "card": "268_kick-six_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "269",
+      "slug": "read-the-fake",
+      "name": "Read the Fake",
+      "side": "defense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Cancel Fake Punt or Swinging Gate.",
+      "reminderText": "",
+      "flavorText": "Nice try.",
+      "tags": [
+        "counter"
+      ],
+      "counters": [
+        "160",
+        "169"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Linebacker pointing at a punter, yelling 'FAKE!'"
+      },
+      "assets": {
+        "art": "269_read-the-fake_art.png",
+        "card": "269_read-the-fake_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "270",
+      "slug": "timeout",
+      "name": "Timeout",
+      "side": "defense",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "window": "pre-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "End Hurry-Up, or cancel Two-Minute Drill.",
+      "reminderText": "",
+      "flavorText": "Let's all take a breath.",
+      "tags": [
+        "counter",
+        "tempo"
+      ],
+      "counters": [
+        "156",
+        "157"
+      ],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Coach forming a T with both hands on the sideline"
+      },
+      "assets": {
+        "art": "270_timeout_art.png",
+        "card": "270_timeout_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "271",
+      "slug": "rally",
+      "name": "Rally",
+      "side": "defense",
+      "category": "modifier",
+      "cost": {
+        "kind": "fixed",
+        "value": 0
+      },
+      "window": "drive",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Your bank gains 2 (up to the cap).",
+      "reminderText": "",
+      "flavorText": "Dig in.",
+      "tags": [
+        "momentum",
+        "bank"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "defense-specials": 2
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Defense huddled, helmets together, shouting"
+      },
+      "assets": {
+        "art": "271_rally_art.png",
+        "card": "271_rally_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "301",
+      "slug": "flag-on-the-play",
+      "name": "Flag on the Play",
+      "side": "either",
+      "category": "counter",
+      "cost": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "window": "post-snap",
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "Negate this snap's result. Replay the down.",
+      "reminderText": "",
+      "flavorText": "Upon further review...",
+      "tags": [
+        "counter",
+        "penalty"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {
+        "offense-specials": 1,
+        "defense-specials": 1
+      },
+      "rarity": "common",
+      "art": {
+        "brief": "Referee mid-throw of a yellow flag"
+      },
+      "assets": {
+        "art": "301_flag-on-the-play_art.png",
+        "card": "301_flag-on-the-play_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "901",
+      "slug": "offense-play-back",
+      "name": "Offense Play Back",
+      "side": "offense",
+      "category": "back",
+      "cost": null,
+      "window": null,
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "",
+      "reminderText": "",
+      "flavorText": "",
+      "tags": [
+        "back"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {},
+      "rarity": "common",
+      "art": {
+        "brief": "Offense play deck back: bold pattern, game logo. Base plays share this back."
+      },
+      "assets": {
+        "art": "901_offense-play-back_art.png",
+        "card": "901_offense-play-back_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "902",
+      "slug": "defense-card-back",
+      "name": "Defense Card Back",
+      "side": "defense",
+      "category": "back",
+      "cost": null,
+      "window": null,
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "",
+      "reminderText": "",
+      "flavorText": "",
+      "tags": [
+        "back"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {},
+      "rarity": "common",
+      "art": {
+        "brief": "Defense specials back: bold pattern, game logo, distinct color from offense"
+      },
+      "assets": {
+        "art": "902_defense-card-back_art.png",
+        "card": "902_defense-card-back_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "903",
+      "slug": "read-card-back",
+      "name": "Read Card Back",
+      "side": "defense",
+      "category": "back",
+      "cost": null,
+      "window": null,
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "",
+      "reminderText": "",
+      "flavorText": "",
+      "tags": [
+        "back"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {},
+      "rarity": "common",
+      "art": {
+        "brief": "Read card back: identical for all three reads so they can't be told apart face-down"
+      },
+      "assets": {
+        "art": "903_read-card-back_art.png",
+        "card": "903_read-card-back_card.png"
+      },
+      "status": "draft"
+    },
+    {
+      "id": "904",
+      "slug": "offense-specials-back",
+      "name": "Offense Specials Back",
+      "side": "offense",
+      "category": "back",
+      "cost": null,
+      "window": null,
+      "play": null,
+      "replacesPlay": false,
+      "rulesText": "",
+      "reminderText": "",
+      "flavorText": "",
+      "tags": [
+        "back"
+      ],
+      "counters": [],
+      "counteredBy": [],
+      "copies": {},
+      "rarity": "common",
+      "art": {
+        "brief": "Offense specials deck back: offense palette, distinct pattern from the play deck"
+      },
+      "assets": {
+        "art": "904_offense-specials-back_art.png",
+        "card": "904_offense-specials-back_card.png"
+      },
+      "status": "draft"
+    }
+  ]
+}

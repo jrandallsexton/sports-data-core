@@ -479,7 +479,7 @@ function aiWants(S, side, inst) {
     case '255': case '263': return info && info.type === 'run' ? 1 : 0;
     case '256': return R === null && info && S.read === 'run' && info.yards >= 8 ? .9 : .1;
     case '257': return d.off.level >= 3 ? .6 : .15;
-    case '260': return S.read === 'run' ? .9 : .2;
+    case '260': return .5; // pre-snap: visible before the reveal, so it can't depend on the hidden read
     case '261': return S.kick && S.kick.dist > 38 ? .9 : .3;
     case '262': return .3;
     case '264': return info && S.read !== 'run' && info.yards >= 7 ? .9 : .1;

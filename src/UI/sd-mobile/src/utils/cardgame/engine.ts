@@ -353,7 +353,8 @@ export function createGame(opts: GameOptions = {}): CardGame {
       case '255': case '263': return info && info.type === 'run' ? 1 : 0;
       case '256': return R === null && info && S.read === 'run' && info.yards >= 8 ? 0.9 : 0.1;
       case '257': return d.off.level >= 3 ? 0.6 : 0.15;
-      case '260': return S.read === 'run' ? 0.9 : 0.2;
+      // Pre-snap: the human sees this play before the reveal, so it must not depend on the hidden read.
+      case '260': return 0.5;
       case '261': return S.kick && S.kick.dist > 38 ? 0.9 : 0.3;
       case '262': return 0.3;
       case '264': return info && S.read !== 'run' && info.yards >= 7 ? 0.9 : 0.1;

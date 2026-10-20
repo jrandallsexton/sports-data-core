@@ -692,7 +692,10 @@ function applyResult(S) {
     const good = !R.turnover && (R.td || R.yards >= d.ytg || R.autoFirst);
     return { type: good ? 'good' : 'nogood' };
   }
-  if (R.negated) { afterSnapDraws(S); return null; }
+  // Every snap draws, including one that ends the drive (doc: offense draws after each play,
+  // defense after each snap); otherwise a hand above its drive-start refill target loses a card.
+  afterSnapDraws(S);
+  if (R.negated) return null;
   if (R.defScore) { S.defP.score += R.defScore; return { type: 'turnover', text: 'Pick six.' }; }
   if (R.turnover) return { type: 'turnover', text: R.turnover === 'int' ? 'Interception.' : 'Fumble.' };
   if (R.td) return { type: 'td' };
@@ -706,7 +709,6 @@ function applyResult(S) {
   if (R.stuffed || gain < 0) d.def.bank = Math.min(5, d.def.bank + 1);
   d.off.bank = Math.min(6, d.off.bank + d.off.level);
   d.lastSuccess = !R.stuffed; d.prevRead = S.read;
-  afterSnapDraws(S);
   if (R.replayDown) return null;
   if (d.dist <= 0 || R.autoFirst) { d.down = 1; d.dist = Math.min(10, d.ytg); draw(S.offP, 'ospec', 1); log('First down.', 'off'); return null; }
   d.down++;
@@ -1041,6 +1043,10 @@ function renderPhone() {
     if (S.read) readCard = S.revealed || S.defP.human || S.readShown && S.offP.human ? gcardHTML(READS.find(r => r.read === S.read)) : '<div class="back"><span>Read</span></div>';
     if (S.play) playCard = S.revealed || S.offP.human ? gcardHTML(S.play) : '<div class="back"><span>Play</span></div>';
   }
+  // No reveal gate on the flags (here or in the desktop renderer): every flag-setting card
+  // (Stunt, Zone Blitz, Bracket, QB Spy, Prevent, Hot Route, Play Action) plays in the
+  // post-reveal window, after S.revealed. The pre-snap window has Goal Line Stand, whose AI
+  // choice ignores the hidden read (aiWants). Re-check this if a card moves windows.
   const flags = [];
   if (d) {
     if (d.sticky) flags.push('Sticky Fingers'); if (d.hurry) flags.push('Hurry-Up'); if (d.filmStudy) flags.push('Film Study');

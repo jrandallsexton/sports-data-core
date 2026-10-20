@@ -597,7 +597,10 @@ export function createGame(opts: GameOptions = {}): CardGame {
       const good = !R.turnover && (R.td || R.yards >= d.ytg || R.autoFirst);
       return { type: good ? 'good' : 'nogood' };
     }
-    if (R.negated) { afterSnapDraws(S); return null; }
+    // Every snap draws, including one that ends the drive (doc: offense draws after each play,
+    // defense after each snap); otherwise a hand above its drive-start refill target loses a card.
+    afterSnapDraws(S);
+    if (R.negated) return null;
     if (R.defScore) { S.defP.score += R.defScore; return { type: 'turnover', text: 'Pick six.' }; }
     if (R.turnover) return { type: 'turnover', text: R.turnover === 'int' ? 'Interception.' : 'Fumble.' };
     if (R.td) return { type: 'td' };
@@ -614,7 +617,6 @@ export function createGame(opts: GameOptions = {}): CardGame {
     d.off.bank = Math.min(6, d.off.bank + d.off.level);
     d.lastSuccess = !R.stuffed;
     d.prevRead = S.read;
-    afterSnapDraws(S);
     if (R.replayDown) return null;
     if (d.dist <= 0 || R.autoFirst) { d.down = 1; d.dist = Math.min(10, d.ytg); draw(S.offP, 'ospec', 1); log('First down.', 'off'); return null; }
     d.down++;

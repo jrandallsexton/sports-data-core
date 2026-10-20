@@ -13,15 +13,18 @@ import { CG, FONT_DISPLAY } from '@/src/components/features/cardgame/palette';
 
 export default function CardGameRoute() {
   const router = useRouter();
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     [FONT_DISPLAY]: require('../assets/fonts/AlfaSlabOne-Regular.ttf'),
   });
+  // The display font is cosmetic: if it fails to load, play in the system font
+  // rather than leave a blank screen without the back control.
+  const ready = fontsLoaded || !!fontError;
   const exit = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      {fontsLoaded ? <CardGameScreen onExit={exit} /> : <View style={{ flex: 1, backgroundColor: CG.table }} />}
+      {ready ? <CardGameScreen onExit={exit} /> : <View style={{ flex: 1, backgroundColor: CG.table }} />}
     </>
   );
 }

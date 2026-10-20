@@ -22,6 +22,10 @@ interface Props {
 
 export function SnapRow({ G, cardW, cardH, markOf, onCardPress, onCardLongPress, onOpenLog }: Props) {
   const { read, play } = snapCards(G);
+  // The flags and feed need no reveal gate (unlike the cards above): every card that sets a
+  // snap flag or depends on the hidden read/play plays in the post-reveal window or later,
+  // after S.revealed. The pre-snap cards (Hard Count, Gotchya, Crowd Noise, Goal Line Stand,
+  // Timeout) don't depend on the hidden commitment. Re-check this if a card moves windows.
   const flags = activeFlags(G);
   const slot = (label: string, c: CardInst | 'back' | null) => (
     <View style={{ width: cardW, gap: 3 }}>

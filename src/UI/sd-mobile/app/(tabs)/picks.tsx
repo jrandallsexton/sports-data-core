@@ -887,8 +887,8 @@ export default function PicksScreen() {
                       id: matchup.contestId,
                       leagueId: leagueId ?? '',
                       week: String(selectedWeek ?? 1),
-                      backTitle: 'Games',
-                      // Force the back button to return to the Games tab rather
+                      backTitle: 'Picks',
+                      // Force the back button to return to the Picks tab rather
                       // than popping into a previously-visited game in the
                       // shared details stack.
                       backHref: '/(tabs)/picks',
@@ -914,7 +914,7 @@ export default function PicksScreen() {
                       league: sportLeague.league,
                       slug,
                       season: String(matchupsResponse?.seasonYear ?? ''),
-                      backTitle: 'Games',
+                      backTitle: 'Picks',
                       backHref: '/(tabs)/picks',
                     },
                   } as never,

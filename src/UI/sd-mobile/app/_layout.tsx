@@ -425,6 +425,8 @@ function RootLayoutNav() {
             title is set by the screen once the league loads. */}
         <Stack.Screen name="league/[leagueId]" />
         <Stack.Screen name="admin/push-token" options={{ title: 'Push Token' }} />
+        {/* Football card game: full screen, its own score bar. */}
+        <Stack.Screen name="card-game" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <AuthGuard />

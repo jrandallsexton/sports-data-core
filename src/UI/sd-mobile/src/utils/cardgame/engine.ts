@@ -109,6 +109,7 @@ export function createGame(opts: GameOptions = {}): CardGame {
   let abandoned = false;
   let uidSeq = 0;
   let pending: (Prompt & { resolve: (v: unknown) => void }) | null = null;
+  let rejectPending: ((e: Error) => void) | null = null;
 
   const G: GameState = {
     players: [newPlayer(human ? 'You' : 'CPU A', human), newPlayer(human ? 'CPU' : 'CPU B', false)],
@@ -371,8 +372,9 @@ export function createGame(opts: GameOptions = {}): CardGame {
   /* ---------- human prompts ---------- */
   function ask<T = unknown>(req: Prompt): Promise<T> {
     if (abandoned) return Promise.reject(new Abandoned());
-    return new Promise<T>((res) => {
-      pending = { ...req, resolve: (v) => { pending = null; res(v as T); notify(); } };
+    return new Promise<T>((res, rej) => {
+      rejectPending = rej;
+      pending = { ...req, resolve: (v) => { pending = null; rejectPending = null; res(v as T); notify(); } };
       notify();
     });
   }
@@ -437,7 +439,8 @@ export function createGame(opts: GameOptions = {}): CardGame {
       toDiscard(q, resp);
       log(`${q.name} ${q.human ? 'answer' : 'answers'} with ${rc.name}: ${c.name} is canceled.`, other(side));
       // A flag negates the whole snap rather than the card, so the card still applies first.
-      if (resp.id === '301') { await E[inst.id].apply(S, side); RESP['301'](S); return; }
+      // A flagged card is canceled like any other: its effect (e.g. Sack's +1 bank) never applies.
+      if (resp.id === '301') { RESP['301'](S); return; }
       RESP[resp.id]?.(S);
       return;
     }
@@ -751,6 +754,12 @@ export function createGame(opts: GameOptions = {}): CardGame {
     get prompt() { return pending; },
     resolve(value: unknown) { pending?.resolve(value); },
     run,
-    abandon() { abandoned = true; pending = null; },
+    abandon() {
+      abandoned = true;
+      pending = null;
+      // Settle an open prompt so run() rejects with Abandoned instead of hanging.
+      rejectPending?.(new Abandoned());
+      rejectPending = null;
+    },
   };
 }

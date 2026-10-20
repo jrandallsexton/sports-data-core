@@ -81,4 +81,12 @@ describe('card game engine', () => {
     g.abandon();
     await expect(running).rejects.toBeInstanceOf(Abandoned);
   });
+
+  it('rejects run() when abandoned while a human prompt is open', async () => {
+    const g = createGame({ rng: seededRng(7), delayMs: 1 });
+    const running = g.run();
+    while (!g.prompt) await new Promise((r) => setTimeout(r, 1));
+    g.abandon();
+    await expect(running).rejects.toBeInstanceOf(Abandoned);
+  });
 });

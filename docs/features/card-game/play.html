@@ -553,7 +553,8 @@ async function playCard(S, side, inst) {
     bankOf(S, other(side)).bank -= rcost;
     takeFromHand(q, resp); toDiscard(q, resp);
     log(`${q.name} ${q.name === 'You' ? 'answer' : 'answers'} with ${rc.name}: ${c.name} is canceled.`, other(side));
-    if (resp.id === '301') { await E[inst.id].apply(S, side, inst); RESP['301'](S); return; }
+    // A flagged card is canceled like any other: its effect (e.g. Sack's +1 bank) never applies.
+    if (resp.id === '301') { RESP['301'](S); return; }
     if (RESP[resp.id]) RESP[resp.id](S);
     return;
   }

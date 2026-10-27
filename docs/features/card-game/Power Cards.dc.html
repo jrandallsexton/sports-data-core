@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:ital,wght@0,400;0,500;0,700;0,800;1,500&family=JetBrains+Mono:wght@500&family=Alfa+Slab+One&family=Big+Shoulders+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#efe9dc;font-family:Rubik,sans-serif;color:#17140f}
+a{color:#17140f}a:hover{color:oklch(0.55 0.21 25)}
+</style>
+</helmet>
+<section style="padding:56px 56px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7">Turn 2 · Alternate frame directions</div>
+    <div style="font-family:'Lilita One',sans-serif;font-size:34px;line-height:1">Three more takes on the same two cards</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+
+    <div id="2a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:6px">2a</span><span style="font-size:13px;opacity:.75">Retro trading card: slab type, big art, name ribbon</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:24px">
+        <div style="width:320px;height:448px;box-sizing:border-box;background:#f4ecd8;border:2px solid #17140f;border-radius:14px;padding:10px;box-shadow:4px 4px 0 #17140f;display:flex;flex-direction:column;gap:8px">
+          <div style="position:relative;height:210px;flex:none;border:3px solid #17140f;background:repeating-linear-gradient(135deg,oklch(0.86 0.09 150) 0 10px,oklch(0.82 0.11 150) 10px 20px)">
+            <image-slot id="art-2a-sticky" shape="rect" placeholder="Art: receiver, gloves glued to ball"></image-slot>
+            <div style="position:absolute;top:8px;left:8px;width:44px;height:44px;border-radius:50%;background:oklch(0.74 0.17 150);border:3px solid #17140f;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Alfa Slab One',serif;font-size:22px;pointer-events:none">1</div>
+            <div style="position:absolute;left:-3px;right:-3px;bottom:-3px;background:#17140f;color:#f4ecd8;border-top:6px solid oklch(0.74 0.17 150);padding:6px 10px 5px;font-family:'Alfa Slab One',serif;font-size:22px;letter-spacing:.02em;text-transform:uppercase;pointer-events:none">Sticky Fingers</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="background:oklch(0.74 0.17 150);border:2px solid #17140f;border-radius:999px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.1em">OFFENSIVE</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em">PLAYED: POST-REVEAL</span>
+          </div>
+          <div style="flex:1;min-height:0;border-top:2px dashed #17140f;padding-top:8px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:14px;font-weight:500;line-height:1.3;text-wrap:pretty">For the rest of this possession, the defense <b style="font-weight:800">can't play interception cards</b> on any snap with <b style="font-weight:800">more than 5 yards</b> to go.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:11px;line-height:1.3;opacity:.75">Doesn't stop a snake-eyes INT from the yardage table.</div></sc-if>
+            <div style="margin-top:auto;font-size:12px;font-style:italic;font-weight:500;opacity:.7">"Glue? What glue?"</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em"><span>#immunity · #interception</span><span>No. 01 · COMMON</span></div>
+        </div>
+        <div style="width:320px;height:448px;box-sizing:border-box;background:#f3e2ad;border:2px solid #17140f;border-radius:14px;padding:10px;box-shadow:4px 4px 0 #17140f;display:flex;flex-direction:column;gap:8px">
+          <div style="position:relative;height:210px;flex:none;border:3px solid #17140f;background:repeating-linear-gradient(135deg,oklch(0.82 0.1 25) 0 10px,oklch(0.77 0.12 25) 10px 20px)">
+            <image-slot id="art-2a-omg" shape="rect" placeholder="Art: runner bursting free, crowd losing it"></image-slot>
+            <div style="position:absolute;top:8px;left:8px;width:44px;height:44px;border-radius:50%;background:oklch(0.84 0.15 85);border:3px solid #17140f;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.9;pointer-events:none"><span style="font-family:'Alfa Slab One',serif;font-size:14px">ALL</span><span style="font-size:8px;font-weight:800">MIN 3</span></div>
+            <div style="position:absolute;top:10px;right:8px;background:oklch(0.84 0.15 85);border:2px solid #17140f;padding:2px 7px;font-family:'Alfa Slab One',serif;font-size:11px;transform:rotate(5deg);pointer-events:none">1 PER DECK</div>
+            <div style="position:absolute;left:-3px;right:-3px;bottom:-3px;background:#17140f;color:oklch(0.84 0.15 85);border-top:6px solid oklch(0.64 0.21 25);padding:6px 10px 5px;font-family:'Alfa Slab One',serif;font-size:22px;letter-spacing:.02em;text-transform:uppercase;pointer-events:none">4th and OMG</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="background:oklch(0.64 0.21 25);color:#fbf6ea;border:2px solid #17140f;border-radius:999px;padding:2px 9px;font-size:10px;font-weight:800;letter-spacing:.1em">POWER PLAY</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em">PLAYED: PRE-SNAP</span>
+          </div>
+          <div style="flex:1;min-height:0;border-top:2px dashed #17140f;padding-top:8px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:14px;font-weight:500;line-height:1.3">Play on <b style="font-weight:800">4th &amp; 1</b> on your own side of the 50.</div>
+            <div style="font-family:'Alfa Slab One',serif;font-size:24px;line-height:1;color:oklch(0.52 0.2 25)">TOUCHDOWN.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:11px;line-height:1.3;opacity:.75">Spends all your Momentum. Countered by Goal Line Stand.</div></sc-if>
+            <div style="margin-top:auto;font-size:12px;font-style:italic;font-weight:500;opacity:.7">"Nobody saw it coming. Including us."</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em"><span>#power-play · #4th-down</span><span>No. 02 · ★ LEGENDARY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:6px">2b</span><span style="font-size:13px;opacity:.75">Broadcast: dark card, TV score-bar title</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:24px">
+        <div style="width:320px;height:448px;box-sizing:border-box;background:#14161b;border:3px solid #14161b;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;color:#f4f2ec;box-shadow:0 12px 28px rgba(20,22,27,.28)">
+          <div style="position:relative;height:200px;flex:none;background:repeating-linear-gradient(135deg,#23262d 0 10px,#1c1f25 10px 20px)">
+            <image-slot id="art-2b-sticky" shape="rect" placeholder="Art: receiver, gloves glued to ball"></image-slot>
+            <div style="position:absolute;top:10px;left:10px;background:oklch(0.74 0.17 150);color:#14161b;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.12em;pointer-events:none">OFFENSIVE</div>
+          </div>
+          <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 68px;height:52px;flex:none">
+            <div style="background:#0b0c0f;display:flex;align-items:center;justify-content:center;font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:34px;color:oklch(0.74 0.17 150)">1</div>
+            <div style="background:#f4f2ec;color:#14161b;display:flex;align-items:center;padding:0 10px;font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:27px;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden">Sticky Fingers</div>
+            <div style="background:oklch(0.74 0.17 150);color:#14161b;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;letter-spacing:.06em;line-height:1.15;text-align:center"><span>POST</span><span>REVEAL</span></div>
+          </div>
+          <div style="flex:1;min-height:0;padding:13px 16px 8px;display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:14.5px;font-weight:500;line-height:1.32;text-wrap:pretty">For the rest of this possession, the defense <b style="font-weight:800;color:oklch(0.8 0.15 150)">can't play interception cards</b> on any snap with <b style="font-weight:800;color:oklch(0.8 0.15 150)">more than 5 yards</b> to go.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:11.5px;line-height:1.3;opacity:.65">Doesn't stop a snake-eyes INT from the yardage table.</div></sc-if>
+            <div style="margin-top:auto;font-size:12px;font-style:italic;opacity:.6">"Glue? What glue?"</div>
+          </div>
+          <div style="flex:none;border-top:1px solid #2a2d34;padding:8px 16px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em"><span style="opacity:.6">#immunity · #interception</span><span style="color:oklch(0.8 0.15 150)">COMMON</span></div>
+        </div>
+        <div style="width:320px;height:448px;box-sizing:border-box;background:#14161b;border:3px solid oklch(0.84 0.15 85);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;color:#f4f2ec;box-shadow:0 12px 28px rgba(20,22,27,.28)">
+          <div style="position:relative;height:200px;flex:none;background:repeating-linear-gradient(135deg,#2a1f20 0 10px,#221a1b 10px 20px)">
+            <image-slot id="art-2b-omg" shape="rect" placeholder="Art: runner bursting free, crowd losing it"></image-slot>
+            <div style="position:absolute;top:10px;left:10px;background:oklch(0.64 0.21 25);color:#fbf6ea;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.12em;pointer-events:none">POWER PLAY</div>
+            <div style="position:absolute;top:10px;right:10px;background:oklch(0.84 0.15 85);color:#14161b;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:.12em;pointer-events:none">★ 1 PER DECK</div>
+          </div>
+          <div style="display:grid;grid-template-columns:52px minmax(0,1fr) 68px;height:52px;flex:none">
+            <div style="background:#0b0c0f;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Big Shoulders Display',sans-serif;font-weight:900;color:oklch(0.84 0.15 85);line-height:.9"><span style="font-size:20px">ALL</span><span style="font-family:Rubik,sans-serif;font-size:8px;font-weight:800">MIN 3</span></div>
+            <div style="background:oklch(0.64 0.21 25);color:#fbf6ea;display:flex;align-items:center;padding:0 10px;font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:27px;text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden">4th and OMG</div>
+            <div style="background:oklch(0.84 0.15 85);color:#14161b;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;letter-spacing:.06em;line-height:1.15;text-align:center"><span>PRE</span><span>SNAP</span></div>
+          </div>
+          <div style="flex:1;min-height:0;padding:13px 16px 8px;display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:14.5px;font-weight:500;line-height:1.32">Play on <b style="font-weight:800;color:oklch(0.84 0.15 85)">4th &amp; 1</b> on your own side of the 50.</div>
+            <div style="font-family:'Big Shoulders Display',sans-serif;font-weight:900;font-size:32px;line-height:.95;color:oklch(0.84 0.15 85)">TOUCHDOWN.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:11.5px;line-height:1.3;opacity:.65">Spends all your Momentum. Countered by Goal Line Stand.</div></sc-if>
+            <div style="margin-top:auto;font-size:12px;font-style:italic;opacity:.6">"Nobody saw it coming. Including us."</div>
+          </div>
+          <div style="flex:none;border-top:1px solid #2a2d34;padding:8px 16px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.04em"><span style="opacity:.6">#power-play · #4th-down</span><span style="color:oklch(0.84 0.15 85)">★ LEGENDARY</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:6px">2c</span><span style="font-size:13px;opacity:.75">Party card: tilted oval, corner costs, white rim</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:30px;padding:4px">
+        <div style="width:320px;height:448px;box-sizing:border-box;background:oklch(0.74 0.17 150);border:6px solid #fbf6ea;border-radius:24px;box-shadow:0 0 0 3px #17140f,7px 7px 0 3px #17140f;padding:10px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;height:38px;flex:none">
+            <span style="font-family:'Lilita One',sans-serif;font-size:38px;line-height:1;color:#fbf6ea;-webkit-text-stroke:2px #17140f;paint-order:stroke fill;text-shadow:2px 2px 0 #17140f">1</span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:.12em;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:999px">OFFENSIVE</span>
+          </div>
+          <div style="position:relative;height:186px;flex:none">
+            <div style="position:absolute;left:50%;top:50%;width:262px;height:176px;transform:translate(-50%,-50%) rotate(-12deg);border-radius:50%;background:repeating-linear-gradient(135deg,#fbf6ea 0 10px,#efe6d2 10px 20px);border:4px solid #17140f;box-sizing:border-box;overflow:hidden">
+              <image-slot id="art-2c-sticky" shape="rect" placeholder="Art: gloves glued to ball"></image-slot>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:-4px;text-align:center;font-family:'Lilita One',sans-serif;font-size:32px;line-height:1;text-transform:uppercase;color:#fbf6ea;-webkit-text-stroke:2px #17140f;paint-order:stroke fill;text-shadow:3px 3px 0 #17140f;transform:rotate(-5deg);pointer-events:none">Sticky Fingers</div>
+          </div>
+          <div style="flex:1;min-height:0;background:#fbf6ea;border:3px solid #17140f;border-radius:14px;padding:8px 11px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:13px;font-weight:500;line-height:1.25;text-wrap:pretty">For the rest of this possession, the defense <b style="font-weight:800">can't play interception cards</b> on any snap with <b style="font-weight:800">more than 5 yards</b> to go.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:10.5px;line-height:1.25;opacity:.75">Doesn't stop a snake-eyes INT from the yardage table.</div></sc-if>
+            <div style="margin-top:auto;font-size:11px;font-style:italic;font-weight:500;opacity:.7">"Glue? What glue?"</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;height:26px;flex:none">
+            <span style="font-size:10px;font-weight:800;letter-spacing:.08em;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:999px">POST-REVEAL</span>
+            <span style="font-family:'Lilita One',sans-serif;font-size:24px;line-height:1;color:#fbf6ea;-webkit-text-stroke:1.5px #17140f;paint-order:stroke fill;transform:rotate(180deg)">1</span>
+          </div>
+        </div>
+        <div style="width:320px;height:448px;box-sizing:border-box;background:oklch(0.64 0.21 25);border:6px solid oklch(0.84 0.15 85);border-radius:24px;box-shadow:0 0 0 3px #17140f,7px 7px 0 3px #17140f;padding:10px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;height:38px;flex:none">
+            <span style="display:flex;align-items:baseline;gap:4px"><span style="font-family:'Lilita One',sans-serif;font-size:30px;line-height:1;color:oklch(0.84 0.15 85);-webkit-text-stroke:2px #17140f;paint-order:stroke fill;text-shadow:2px 2px 0 #17140f">ALL</span><span style="font-size:9px;font-weight:800;color:#fbf6ea">MIN 3</span></span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:.12em;background:#17140f;color:oklch(0.84 0.15 85);padding:3px 8px;border-radius:999px">★ POWER PLAY</span>
+          </div>
+          <div style="position:relative;height:186px;flex:none">
+            <div style="position:absolute;left:50%;top:50%;width:262px;height:176px;transform:translate(-50%,-50%) rotate(-12deg);border-radius:50%;background:repeating-linear-gradient(135deg,#fbf6ea 0 10px,#efe6d2 10px 20px);border:4px solid #17140f;box-sizing:border-box;overflow:hidden">
+              <image-slot id="art-2c-omg" shape="rect" placeholder="Art: runner bursting free"></image-slot>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:-4px;text-align:center;font-family:'Lilita One',sans-serif;font-size:34px;line-height:1;text-transform:uppercase;color:oklch(0.84 0.15 85);-webkit-text-stroke:2px #17140f;paint-order:stroke fill;text-shadow:3px 3px 0 #17140f;transform:rotate(-5deg);pointer-events:none">4th and OMG</div>
+          </div>
+          <div style="flex:1;min-height:0;background:#fbf6ea;border:3px solid #17140f;border-radius:14px;padding:8px 11px;display:flex;flex-direction:column;gap:4px">
+            <div style="font-size:13px;font-weight:500;line-height:1.25">Play on <b style="font-weight:800">4th &amp; 1</b> on your own side of the 50.</div>
+            <div style="font-family:'Lilita One',sans-serif;font-size:24px;line-height:1;color:oklch(0.52 0.2 25)">TOUCHDOWN.</div>
+            <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}"><div style="font-size:10.5px;line-height:1.25;opacity:.75">Spends all your Momentum. Countered by Goal Line Stand.</div></sc-if>
+            <div style="margin-top:auto;font-size:11px;font-style:italic;font-weight:500;opacity:.7">"Nobody saw it coming. Including us."</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;height:26px;flex:none">
+            <span style="font-size:10px;font-weight:800;letter-spacing:.08em;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:999px">PRE-SNAP</span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:.08em;color:#17140f;background:oklch(0.84 0.15 85);padding:3px 8px;border-radius:999px;border:2px solid #17140f">1 PER DECK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+<section style="padding:56px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7">Turn 1 · Card frame v0 · mobile, 320×448</div>
+    <div style="font-family:'Lilita One',sans-serif;font-size:34px;line-height:1">Seed cards: Offensive + Power Play</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:6px">1a</span><span style="font-size:13px;opacity:.75">Offensive frame</span></div>
+      <div style="width:320px;height:448px;box-sizing:border-box;border:5px solid #17140f;border-radius:24px;background:oklch(0.74 0.17 150);box-shadow:6px 6px 0 #17140f;padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:#fbf6ea;border:4px solid #17140f;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Lilita One',sans-serif;font-size:26px;line-height:1">1</div>
+          <div style="display:flex;flex-direction:column;min-width:0;flex:1">
+            <div style="font-family:'Lilita One',sans-serif;font-size:29px;line-height:.95;text-transform:uppercase;color:#fbf6ea;-webkit-text-stroke:1.5px #17140f;paint-order:stroke fill;text-shadow:2px 2px 0 #17140f">Sticky Fingers</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:3px">Offensive · Momentum</div>
+          </div>
+        </div>
+        <sc-if value="{{ showArt }}" hint-placeholder-val="{{ true }}">
+          <div style="height:126px;flex:none;border:4px solid #17140f;border-radius:14px;overflow:hidden;background:repeating-linear-gradient(135deg,#fbf6ea 0 10px,#efe6d2 10px 20px);position:relative">
+            <image-slot id="art-sticky-fingers" shape="rect" placeholder="Art: receiver, gloves glued to ball"></image-slot>
+          </div>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.62 0.15 150);color:#17140f;opacity:.55">DRIVE</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.62 0.15 150);color:#17140f;opacity:.55">PRE-SNAP</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:#17140f;color:#fbf6ea">REVEAL</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.62 0.15 150);color:#17140f;opacity:.55">ROLL</div>
+        </div>
+        <div style="flex:1;min-height:0;background:#fbf6ea;border:4px solid #17140f;border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:14px;font-weight:500;line-height:1.28;text-wrap:pretty">For the rest of this possession, the defense <b style="font-weight:800">can't play interception cards</b> on any snap with <b style="font-weight:800">more than 5 yards</b> to go.</div>
+          <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11.5px;line-height:1.3;opacity:.8">Doesn't stop a snake-eyes INT from the yardage table.</div>
+          </sc-if>
+          <div style="margin-top:auto;font-size:12px;font-style:italic;font-weight:500;opacity:.7">"Glue? What glue?"</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em;padding:0 4px">
+          <span>#immunity · #interception</span><span>COMMON</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#17140f;color:#fbf6ea;padding:3px 8px;border-radius:6px">1b</span><span style="font-size:13px;opacity:.75">Power Play frame · legendary</span></div>
+      <div style="width:320px;height:448px;box-sizing:border-box;border:5px solid #17140f;border-radius:24px;background:oklch(0.64 0.21 25);box-shadow:6px 6px 0 #17140f;padding:12px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;outline:4px solid oklch(0.84 0.15 85);outline-offset:-13px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:46px;height:46px;flex:none;border-radius:50%;background:oklch(0.84 0.15 85);border:4px solid #17140f;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.9">
+            <span style="font-family:'Lilita One',sans-serif;font-size:15px">ALL</span>
+            <span style="font-size:8px;font-weight:800">MIN 3</span>
+          </div>
+          <div style="display:flex;flex-direction:column;min-width:0;flex:1">
+            <div style="font-family:'Lilita One',sans-serif;font-size:29px;line-height:.95;text-transform:uppercase;color:oklch(0.84 0.15 85);-webkit-text-stroke:1.5px #17140f;paint-order:stroke fill;text-shadow:2px 2px 0 #17140f">4th and OMG</div>
+            <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:3px;color:#fbf6ea">Power Play · Offense</div>
+          </div>
+        </div>
+        <sc-if value="{{ showArt }}" hint-placeholder-val="{{ true }}">
+          <div style="height:126px;flex:none;border:4px solid #17140f;border-radius:14px;overflow:hidden;background:repeating-linear-gradient(135deg,#fbf6ea 0 10px,#efe6d2 10px 20px);position:relative">
+            <image-slot id="art-4th-and-omg" shape="rect" placeholder="Art: runner bursting free, crowd losing it"></image-slot>
+            <div style="position:absolute;top:8px;right:8px;background:oklch(0.84 0.15 85);border:3px solid #17140f;border-radius:8px;padding:2px 7px;font-family:'Lilita One',sans-serif;font-size:13px;transform:rotate(6deg);pointer-events:none">1 PER DECK</div>
+          </div>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.54 0.19 25);color:#17140f;opacity:.55">DRIVE</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:#17140f;color:#fbf6ea">PRE-SNAP</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.54 0.19 25);color:#17140f;opacity:.55">REVEAL</div>
+          <div style="border:2.5px solid #17140f;border-radius:7px;padding:3px 0;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;background:oklch(0.54 0.19 25);color:#17140f;opacity:.55">ROLL</div>
+        </div>
+        <div style="flex:1;min-height:0;background:#fbf6ea;border:4px solid #17140f;border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:14px;font-weight:500;line-height:1.28;text-wrap:pretty">Play on <b style="font-weight:800">4th &amp; 1</b> on your own side of the 50.</div>
+          <div style="font-family:'Lilita One',sans-serif;font-size:24px;line-height:1;color:oklch(0.55 0.21 25)">TOUCHDOWN.</div>
+          <sc-if value="{{ showFinePrint }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11.5px;line-height:1.3;opacity:.8">Spends all your Momentum. Countered by Goal Line Stand.</div>
+          </sc-if>
+          <div style="margin-top:auto;font-size:12px;font-style:italic;font-weight:500;opacity:.7">"Nobody saw it coming. Including us."</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.04em;padding:0 4px;color:#fbf6ea">
+          <span>#power-play · #4th-down</span><span>★ LEGENDARY</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showArt&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Card&quot;},&quot;showFinePrint&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Card&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showArt: this.props.showArt ?? true,
+      showFinePrint: this.props.showFinePrint ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

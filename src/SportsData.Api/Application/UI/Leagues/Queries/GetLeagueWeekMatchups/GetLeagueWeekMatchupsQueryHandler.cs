@@ -339,6 +339,8 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                             ? canonical.CurrentSeriesSummary
                             : matchup.HeadLine;
 
+                    matchup.HeadLine = matchup.HeadLine?.Contains("start", StringComparison.InvariantCultureIgnoreCase) == true ? string.Empty : matchup.HeadLine;
+
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.RejectedUtc == null)

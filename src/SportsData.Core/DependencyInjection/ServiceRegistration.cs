@@ -500,6 +500,7 @@ namespace SportsData.Core.DependencyInjection
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
+                        "Npgsql",
                         "SportsData.Provider.Espn",
                         "SportsData.Provider.Documents",
                         "SportsData.Producer.Documents");

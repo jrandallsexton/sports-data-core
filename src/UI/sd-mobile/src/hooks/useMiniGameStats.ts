@@ -17,8 +17,9 @@ export function useMiniGameStats(gameKey: string) {
   const hydrated = useMiniGameResultsStore((s) => s.hydrated);
 
   useEffect(() => {
+    const { hydrate, flush, refresh } = useMiniGameResultsStore.getState();
+    void hydrate();
     if (!uid) return;
-    const { flush, refresh } = useMiniGameResultsStore.getState();
     void flush().then(() => refresh(gameKey));
   }, [uid, gameKey]);
 

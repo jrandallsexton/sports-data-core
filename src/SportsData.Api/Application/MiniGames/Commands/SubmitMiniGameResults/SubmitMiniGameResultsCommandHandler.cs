@@ -26,6 +26,9 @@ public interface ISubmitMiniGameResultsCommandHandler
 /// </summary>
 public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommandHandler
 {
+    /// <summary>Per account, rolling 24 hours. See <see cref="ApplyDailyCapAsync"/>.</summary>
+    public const int MaxResultsPerDay = 200;
+
     private readonly AppDataContext _db;
     private readonly IDateTimeProvider _clock;
     private readonly IValidator<SubmitMiniGameResultsCommand> _validator;
@@ -59,32 +62,36 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
 
         var response = new SubmitMiniGameResultsResponse();
         var candidates = new List<MiniGameResultSubmission>();
-        var seen = new HashSet<Guid>();
 
-        foreach (var item in command.Results)
+        // Each id is reported in exactly one list. Copies of an id within the
+        // batch collapse to its first VALID copy; an id with no valid copy is
+        // rejected once.
+        foreach (var copies in command.Results.GroupBy(r => r.Id))
         {
-            if (item.Id != Guid.Empty && !seen.Add(item.Id))
+            MiniGameResultSubmission? valid = null;
+            foreach (var item in copies)
             {
-                // Same id twice in one batch: the first copy wins.
-                response.Duplicate.Add(item.Id);
-                continue;
-            }
+                var itemValidation = await _itemValidator.ValidateAsync(item, cancellationToken);
+                if (itemValidation.IsValid)
+                {
+                    valid = item;
+                    break;
+                }
 
-            var itemValidation = await _itemValidator.ValidateAsync(item, cancellationToken);
-            if (!itemValidation.IsValid)
-            {
                 _logger.LogWarning(
                     "Mini-game result rejected. UserId={UserId} ResultId={ResultId} Errors={Errors}",
                     userId, item.Id, string.Join("; ", itemValidation.Errors.Select(e => e.ErrorMessage)));
-                response.Rejected.Add(item.Id);
-                continue;
             }
 
-            candidates.Add(item);
+            if (valid is null)
+                response.Rejected.Add(copies.Key);
+            else
+                candidates.Add(valid);
         }
 
-        var toInsert = await ClassifyExistingAsync(userId, candidates, response, cancellationToken);
         var now = _clock.UtcNow();
+        var toInsert = await ClassifyExistingAsync(userId, candidates, response, cancellationToken);
+        toInsert = await ApplyDailyCapAsync(userId, toInsert, response, now, cancellationToken);
 
         foreach (var item in toInsert)
         {
@@ -171,6 +178,39 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
         return remaining;
     }
 
+    /// <summary>
+    /// Caps what one account can store per rolling 24 hours (by server receive
+    /// time). A game takes minutes, so no real player gets near it; the cap only
+    /// bounds table growth from a scripted account. Over-cap results are
+    /// rejected, which the client treats as settled.
+    /// </summary>
+    private async Task<List<MiniGameResultSubmission>> ApplyDailyCapAsync(
+        Guid userId,
+        List<MiniGameResultSubmission> candidates,
+        SubmitMiniGameResultsResponse response,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (candidates.Count == 0)
+            return candidates;
+
+        var since = now.AddHours(-24);
+        var storedToday = await _db.MiniGameResults
+            .AsNoTracking()
+            .CountAsync(r => r.UserId == userId && r.CreatedUtc >= since, cancellationToken);
+
+        var allowance = Math.Max(0, MaxResultsPerDay - storedToday);
+        if (candidates.Count <= allowance)
+            return candidates;
+
+        _logger.LogWarning(
+            "Mini-game daily cap reached. UserId={UserId} StoredToday={StoredToday} Dropped={Dropped}",
+            userId, storedToday, candidates.Count - allowance);
+
+        response.Rejected.AddRange(candidates.Skip(allowance).Select(c => c.Id));
+        return candidates.Take(allowance).ToList();
+    }
+
     private static MiniGameResult ToEntity(Guid userId, MiniGameResultSubmission item, DateTime now) => new()
     {
         Id = item.Id,
@@ -183,7 +223,8 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
         GameVersion = item.GameVersion,
         Seed = item.Seed,
         Detail = item.Detail?.GetRawText(),
-        PlayedUtc = item.PlayedUtc.ToUniversalTime(),
+        // Clamped: a device clock running ahead can't place a game in the future.
+        PlayedUtc = item.PlayedUtc.ToUniversalTime() > now ? now : item.PlayedUtc.ToUniversalTime(),
         CreatedUtc = now,
         CreatedBy = userId
     };

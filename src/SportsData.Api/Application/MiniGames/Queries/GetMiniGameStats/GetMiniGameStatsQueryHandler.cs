@@ -19,7 +19,11 @@ public interface IGetMiniGameStatsQueryHandler
 /// The signed-in user's record for one mini-game. Streaks need the results in
 /// play order, so the handler reads the user's rows for that game (four small
 /// columns each) and folds them in memory instead of aggregating in SQL.
-/// See docs/features/mini-game-results.md.
+/// Reading the full history is deliberate (reviewed on #851): the best streak
+/// needs all of it, the (UserId, GameKey, PlayedUtc) index serves the read, and
+/// the submit handler's daily cap bounds growth. A heavy player is a few
+/// thousand rows. Revisit with a stored running aggregate if a profile shows
+/// otherwise. See docs/features/mini-game-results.md.
 /// </summary>
 public class GetMiniGameStatsQueryHandler : IGetMiniGameStatsQueryHandler
 {

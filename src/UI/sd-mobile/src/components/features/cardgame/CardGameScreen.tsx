@@ -30,7 +30,7 @@ export function CardGameScreen({ onExit }: { onExit: () => void }) {
   const insets = useSafeAreaInsets();
   const { game, error, start } = useCardGame();
   const [confirm, setConfirm] = useConfirmPlays();
-  const { stats, summary } = useMiniGameStats(GAME_KEY);
+  const { stats, summary, hydrated } = useMiniGameStats(GAME_KEY);
   const [sel, setSel] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'log' | number | null>(null);
   const win = useWindowDimensions();
@@ -143,7 +143,8 @@ export function CardGameScreen({ onExit }: { onExit: () => void }) {
           <Text style={styles.introText}>
             A playtest build. Offense on your possessions, defense on theirs. Tap a gold card to play it. Long-press any card to read its rules.
           </Text>
-          <RecordPanel stats={stats} summary={summary} />
+          {/* Until the cache loads, a player with a record would see "No games yet". */}
+          {hydrated ? <RecordPanel stats={stats} summary={summary} /> : null}
           <ConfirmToggle value={confirm} onChange={setConfirm} dark />
           <Pressable onPress={start} accessibilityRole="button" style={styles.kickoff}>
             <Text style={styles.kickoffText}>Kick off</Text>

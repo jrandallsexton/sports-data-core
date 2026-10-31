@@ -63,11 +63,16 @@ They are private, and unlike league history no other player depends on them.
   because an offline device may have several queued. For each item:
   - It is inserted if its `Id` is new.
   - It is skipped if the `Id` already exists for this user.
-  - It is rejected if invalid: unknown `GameKey`, negative scores, `PlayedUtc` more than 5 minutes
-    in the future, or an outcome that contradicts the scores for a score-compared game.
+  - It is rejected if invalid: unknown `GameKey`, negative scores, or an outcome that contradicts
+    the scores for a score-compared game.
+  - It is rejected once the account has stored 200 results in the past 24 hours (by server
+    receive time). No real player gets near that; it bounds table growth from a scripted account.
+  - A `PlayedUtc` in the future is **clamped** to server time, not rejected. A phone whose clock
+    runs ahead would otherwise have every game rejected, and so lost.
 
-  The response is `{ accepted: [...], duplicate: [...], rejected: [...] }`; every submitted id
-  lands in exactly one list. An empty or over-100 batch is a 400. The client removes **all
+  Copies of one id in the same batch collapse to its first valid copy. The response is
+  `{ accepted: [...], duplicate: [...], rejected: [...] }`, and each id appears in exactly one
+  list. An empty or over-100 batch, `results: null`, or a null element is a 400. The client removes **all
   three** from its queue, so a malformed item can't keep failing forever. A rejected result is
   logged with a warning (API) and reported to Sentry as a count (mobile).
 - `GET user/me/minigames/{gameKey}/stats` returns raw totals instead of averages, so the client

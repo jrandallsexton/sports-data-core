@@ -1,7 +1,6 @@
 using FluentValidation;
 
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.MiniGames.Commands.SubmitMiniGameResults;
 
@@ -17,9 +16,13 @@ public class SubmitMiniGameResultsCommandValidator : AbstractValidator<SubmitMin
     public SubmitMiniGameResultsCommandValidator()
     {
         RuleFor(x => x.Results)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .Must(r => r.Count is > 0 and <= MaxBatchSize)
             .WithMessage($"Submit between 1 and {MaxBatchSize} results.");
+
+        // A null element is a malformed body, not one bad result: fail the batch.
+        RuleForEach(x => x.Results).NotNull().When(x => x.Results is not null);
     }
 }
 
@@ -29,10 +32,10 @@ public class MiniGameResultSubmissionValidator : AbstractValidator<MiniGameResul
     public const int MaxDurationSeconds = 24 * 60 * 60;
     public const int MaxDetailLength = 4096;
 
-    /// <summary>Allowance for device clocks running ahead of the server.</summary>
-    public static readonly TimeSpan ClockSkew = TimeSpan.FromMinutes(5);
-
-    public MiniGameResultSubmissionValidator(IDateTimeProvider clock)
+    // No future-PlayedUtc rule: a phone whose clock runs ahead would have every
+    // game rejected, and the client drops rejected results, so the games would
+    // be lost. The handler clamps PlayedUtc to the server's clock instead.
+    public MiniGameResultSubmissionValidator()
     {
         RuleFor(x => x.Id).NotEmpty();
 
@@ -62,10 +65,7 @@ public class MiniGameResultSubmissionValidator : AbstractValidator<MiniGameResul
             .When(x => x.Detail.HasValue)
             .WithMessage($"Detail exceeds {MaxDetailLength} characters.");
 
-        RuleFor(x => x.PlayedUtc)
-            .NotEmpty()
-            .Must(p => p.ToUniversalTime() <= clock.UtcNow() + ClockSkew)
-            .WithMessage("PlayedUtc is in the future.");
+        RuleFor(x => x.PlayedUtc).NotEmpty();
     }
 
     private static MiniGameOutcome ExpectedOutcome(int score, int opponentScore) =>

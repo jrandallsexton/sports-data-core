@@ -18,6 +18,12 @@ export const EMPTY_STATS: MiniGameStats = {
  * the device. Queued results are newer than anything the server has seen, so
  * they extend the current streak and lead the recent list. A queued id the
  * server already reports (uploaded, queue not yet cleared) is skipped.
+ *
+ * "Queued is newest" is a deliberate assumption (reviewed on #851). The one
+ * case it misorders is two devices playing offline at once, and it only lasts
+ * until this device's next upload, which replaces the cache with the server's
+ * authoritative stats. Getting it exactly right would need the full history
+ * on the device, since a streak can't be recomputed from totals.
  */
 export function mergeStats(server: MiniGameStats | null, pending: MiniGameResult[]): MiniGameStats {
   const base = server ?? EMPTY_STATS;

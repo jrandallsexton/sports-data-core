@@ -80,16 +80,17 @@ They are private, and unlike league history no other player depends on them.
 
 ```json
 {
-  "wins": 0, "losses": 0, "ties": 0,
-  "winMarginTotal": 0, "lossMarginTotal": 0,
-  "currentStreak": { "outcome": "Win", "length": 0 },
-  "bestWinStreak": 0,
-  "recent": [ { "id": "...", "outcome": "Win", "score": 0, "opponentScore": 0, "playedUtc": "..." } ]
+  "wins": 5, "losses": 3, "ties": 0,
+  "winMarginTotal": 36, "lossMarginTotal": 17,
+  "currentStreak": { "outcome": "Win", "length": 2 },
+  "bestWinStreak": 3,
+  "recent": [ { "id": "...", "outcome": "Win", "score": 21, "opponentScore": 14, "playedUtc": "..." } ]
 }
 ```
 
-`recent` holds the last 10 results, ordered by `PlayedUtc`. Streaks are computed in the query
-handler from results ordered by `PlayedUtc`. Ties break a streak.
+`recent` holds the last 10 results, newest first. Streaks are computed in the query handler
+from results ordered by `PlayedUtc`, and a tie breaks a streak. With no games, `currentStreak`
+is `null`, `recent` is empty and everything else is 0. A streak's `length` is always at least 1.
 
 ## Mobile
 

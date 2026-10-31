@@ -29,6 +29,9 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
     /// <summary>Per account, rolling 24 hours. See <see cref="ApplyDailyCapAsync"/>.</summary>
     public const int MaxResultsPerDay = 200;
 
+    /// <summary>Insert attempts when concurrent uploads collide on ids.</summary>
+    private const int MaxSaveAttempts = 3;
+
     private readonly AppDataContext _db;
     private readonly IDateTimeProvider _clock;
     private readonly IValidator<SubmitMiniGameResultsCommand> _validator;
@@ -93,37 +96,38 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
         var toInsert = await ClassifyExistingAsync(userId, candidates, response, cancellationToken);
         toInsert = await ApplyDailyCapAsync(userId, toInsert, response, now, cancellationToken);
 
-        foreach (var item in toInsert)
+        for (var attempt = 1; ; attempt++)
         {
-            await _db.MiniGameResults.AddAsync(ToEntity(userId, item, now), cancellationToken);
-        }
-
-        try
-        {
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (toInsert.Count > 0 && ex.IsUniqueConstraintViolation())
-        {
-            // Race: a concurrent upload of the same queue (two flushes, or a
-            // retry after a timed-out request that actually committed) stored
-            // some of these ids between our read and SaveChanges. Detach ours,
-            // re-classify against what's there now, and insert the remainder.
-            _logger.LogWarning(ex,
-                "Concurrent mini-game result upload. UserId={UserId}. Retrying.", userId);
-
-            foreach (var entry in _db.ChangeTracker.Entries<MiniGameResult>().ToList())
-            {
-                entry.State = EntityState.Detached;
-            }
-
-            toInsert = await ClassifyExistingAsync(userId, toInsert, response, cancellationToken);
-
             foreach (var item in toInsert)
             {
                 await _db.MiniGameResults.AddAsync(ToEntity(userId, item, now), cancellationToken);
             }
 
-            await _db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+                break;
+            }
+            catch (DbUpdateException ex) when (
+                toInsert.Count > 0 && ex.IsUniqueConstraintViolation() && attempt < MaxSaveAttempts)
+            {
+                // Race: a concurrent upload of the same queue (two flushes, or a
+                // retry after a timed-out request that actually committed) stored
+                // some of these ids between our read and SaveChanges. Detach ours,
+                // re-classify against what's there now, and insert the remainder.
+                // Each pass removes at least the colliding ids, so it converges;
+                // the attempt limit only guards against something pathological.
+                _logger.LogWarning(ex,
+                    "Concurrent mini-game result upload. UserId={UserId} Attempt={Attempt}. Retrying.",
+                    userId, attempt);
+
+                foreach (var entry in _db.ChangeTracker.Entries<MiniGameResult>().ToList())
+                {
+                    entry.State = EntityState.Detached;
+                }
+
+                toInsert = await ClassifyExistingAsync(userId, toInsert, response, cancellationToken);
+            }
         }
 
         response.Accepted.AddRange(toInsert.Select(i => i.Id));
@@ -183,6 +187,14 @@ public class SubmitMiniGameResultsCommandHandler : ISubmitMiniGameResultsCommand
     /// time). A game takes minutes, so no real player gets near it; the cap only
     /// bounds table growth from a scripted account. Over-cap results are
     /// rejected, which the client treats as settled.
+    ///
+    /// The count and the insert are deliberately not serialized (reviewed on
+    /// #851): parallel requests from one account can each see the same count and
+    /// overshoot by up to a batch apiece. This is a growth bound, not a security
+    /// boundary. Accounts are free, so an abuser gets more headroom from a second
+    /// account than from a race. Making it exact would mean a per-user lock
+    /// (row lock or advisory lock) on every upload. If abuse ever appears, the
+    /// fix belongs at ingress: a per-user rate limiter on this endpoint.
     /// </summary>
     private async Task<List<MiniGameResultSubmission>> ApplyDailyCapAsync(
         Guid userId,

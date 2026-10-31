@@ -4,7 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/src/components/ui/AppText';
 import { useCardGame, useConfirmPlays } from '@/src/hooks/useCardGame';
-import { DB, READS } from '@/src/utils/cardgame/engine';
+import { useMiniGameStats } from '@/src/hooks/useMiniGameStats';
+import { DB, GAME_KEY, READS } from '@/src/utils/cardgame/engine';
 import type { CardInst } from '@/src/utils/cardgame/types';
 import { handSections } from '@/src/utils/cardgame/view';
 import type { CardMark } from './GameCard';
@@ -12,6 +13,7 @@ import { ConfirmToggle, HandSheet, LogSheet } from './GameSheet';
 import { HandArea } from './HandArea';
 import { fitHand } from './handLayout';
 import { PromptBar, type PromptAction } from './PromptBar';
+import { RecordPanel } from './RecordPanel';
 import { ScoreBar } from './ScoreBar';
 import { SnapRow } from './SnapRow';
 import { CG, FONT_DISPLAY } from './palette';
@@ -28,6 +30,7 @@ export function CardGameScreen({ onExit }: { onExit: () => void }) {
   const insets = useSafeAreaInsets();
   const { game, error, start } = useCardGame();
   const [confirm, setConfirm] = useConfirmPlays();
+  const { stats, summary } = useMiniGameStats(GAME_KEY);
   const [sel, setSel] = useState<string | null>(null);
   const [sheet, setSheet] = useState<'log' | number | null>(null);
   const win = useWindowDimensions();
@@ -110,6 +113,8 @@ export function CardGameScreen({ onExit }: { onExit: () => void }) {
     const [a, b] = G.players;
     const w = a.score > b.score ? a : b;
     title = a.score === b.score ? `A tie: ${a.score}-${b.score}` : `${w.name} win${w.human ? '' : 's'}: ${a.score}-${b.score}`;
+    // The finished game is already queued, so the merged record includes it.
+    if (summary.games) text = `Record ${summary.record}${summary.streak ? ` · Streak ${summary.streak}` : ''}`;
     actions.push({ label: 'Play again', onPress: start, primary: true });
   } else if (prompt || selected) {
     title = prompt?.title ?? `${cpu} is thinking…`;
@@ -138,6 +143,7 @@ export function CardGameScreen({ onExit }: { onExit: () => void }) {
           <Text style={styles.introText}>
             A playtest build. Offense on your possessions, defense on theirs. Tap a gold card to play it. Long-press any card to read its rules.
           </Text>
+          <RecordPanel stats={stats} summary={summary} />
           <ConfirmToggle value={confirm} onChange={setConfirm} dark />
           <Pressable onPress={start} accessibilityRole="button" style={styles.kickoff}>
             <Text style={styles.kickoffText}>Kick off</Text>

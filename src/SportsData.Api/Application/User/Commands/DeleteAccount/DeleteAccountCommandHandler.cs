@@ -101,6 +101,13 @@ public class DeleteAccountCommandHandler : IDeleteAccountCommandHandler
             .ToListAsync(cancellationToken);
         _db.UserOptions.RemoveRange(options);
 
+        // Mini-game results are private to the user (no co-player's league
+        // depends on them), so they go too -- same in-transaction purge.
+        var miniGameResults = await _db.MiniGameResults
+            .Where(r => r.UserId == userId)
+            .ToListAsync(cancellationToken);
+        _db.MiniGameResults.RemoveRange(miniGameResults);
+
         // Publish before SaveChanges so the outbox row persists atomically with
         // the anonymization (EF bus outbox flushes on save).
         await _eventBus.Publish(

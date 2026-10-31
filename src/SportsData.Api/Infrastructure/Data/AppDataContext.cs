@@ -18,6 +18,8 @@ public class AppDataContext : DbContext
     public DbSet<UserNotificationPreferences> UserNotificationPreferences { get; set; }
     public DbSet<UserOption> UserOptions { get; set; }
 
+    public DbSet<MiniGameResult> MiniGameResults { get; set; }
+
     public DbSet<ContestPrediction> ContestPredictions { get; set; }
 
     public DbSet<PickemGroup> PickemGroups { get; set; }

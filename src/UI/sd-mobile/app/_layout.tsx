@@ -37,6 +37,7 @@ import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useOtaUpdates } from '@/src/hooks/useOtaUpdates';
 import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
+import { useMiniGameResultSync } from '@/src/hooks/useMiniGameStats';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
 import { gameRoute } from '@/src/utils/sportLinks';
 import { toPendingDeepLink, type PendingDeepLink } from '@/src/utils/deepLinks';
@@ -388,6 +389,12 @@ function PushDeviceRegistrar() {
   return null;
 }
 
+/** Uploads mini-game results queued while offline (docs/features/mini-game-results.md). */
+function MiniGameResultSync() {
+  useMiniGameResultSync();
+  return null;
+}
+
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header
   // transitions and focus rings match the chosen theme.
@@ -431,6 +438,7 @@ function RootLayoutNav() {
       </Stack>
       <AuthGuard />
       <SignalRGate />
+      <MiniGameResultSync />
       {Platform.OS !== 'web' ? (
         <>
           <NativePushDiagnostics />

@@ -1,14 +1,48 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
-import { Abandoned, createGame, type CardGame } from '@/src/utils/cardgame/engine';
+import * as Crypto from 'expo-crypto';
+import { useMiniGameResultsStore } from '@/src/stores/miniGameResultsStore';
+import {
+  Abandoned,
+  createGame,
+  GAME_KEY,
+  GAME_VERSION,
+  seededRng,
+  type CardGame,
+} from '@/src/utils/cardgame/engine';
+import { outcomeOf } from '@/src/utils/minigames/types';
 
 const CONFIRM_KEY = 'cardgame.confirmPlays';
 
 /**
+ * Queue a finished game for the player's record. Only games that reach a
+ * final score get here -- abandoned ones reject with Abandoned instead and
+ * are never recorded.
+ */
+function recordFinished(g: CardGame, seed: number, startedAt: number) {
+  const me = g.state.players.find((p) => p.human);
+  const opp = g.state.players.find((p) => !p.human);
+  if (!me || !opp) return;
+  const now = Date.now();
+  void useMiniGameResultsStore.getState().record({
+    id: Crypto.randomUUID(),
+    gameKey: GAME_KEY,
+    outcome: outcomeOf(me.score, opp.score),
+    score: me.score,
+    opponentScore: opp.score,
+    durationSeconds: Math.round((now - startedAt) / 1000),
+    gameVersion: GAME_VERSION,
+    seed: String(seed),
+    playedUtc: new Date(now).toISOString(),
+  });
+}
+
+/**
  * Owns one card game at a time. The engine mutates its state in place and
  * calls onChange; this hook turns that into re-renders. Leaving the screen
- * abandons the game so the CPU's turn loop stops.
+ * abandons the game so the CPU's turn loop stops. A finished game is
+ * recorded; the seed makes it replayable.
  */
 export function useCardGame() {
   const [game, setGame] = useState<CardGame | null>(null);
@@ -19,11 +53,16 @@ export function useCardGame() {
   const start = useCallback(() => {
     gameRef.current?.abandon();
     setError(null);
-    const g = createGame({ onChange: bump });
+    const seed = Math.floor(Math.random() * 2 ** 32);
+    const startedAt = Date.now();
+    const g = createGame({ rng: seededRng(seed), onChange: bump });
     gameRef.current = g;
     setGame(g);
     g.run()
-      .then(bump)
+      .then(() => {
+        recordFinished(g, seed, startedAt);
+        bump();
+      })
       .catch((e: unknown) => {
         if (e instanceof Abandoned || gameRef.current !== g) return;
         Sentry.captureException(e);

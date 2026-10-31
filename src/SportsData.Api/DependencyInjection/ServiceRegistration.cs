@@ -78,6 +78,8 @@ using SportsData.Api.Application.User.Commands.DeleteAccount;
 using SportsData.Api.Application.User.Commands.UpdateDisplayName;
 using SportsData.Api.Application.User.Commands.UpdateNotificationPreferences;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
+using SportsData.Api.Application.MiniGames.Commands.SubmitMiniGameResults;
+using SportsData.Api.Application.MiniGames.Queries.GetMiniGameStats;
 using SportsData.Api.Application.User.Commands.UpdateUserOptions;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
@@ -451,6 +453,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<Application.SmackLab.Queries.GetSmackLabLeagues.IGetSmackLabLeaguesQueryHandler, Application.SmackLab.Queries.GetSmackLabLeagues.GetSmackLabLeaguesQueryHandler>();
             services.AddScoped<Application.SmackLab.Queries.GetSmackLabPicks.IGetSmackLabPicksQueryHandler, Application.SmackLab.Queries.GetSmackLabPicks.GetSmackLabPicksQueryHandler>();
             services.AddScoped<IGetUserOptionsQueryHandler, GetUserOptionsQueryHandler>();
+
+            // Mini-games (docs/features/mini-game-results.md)
+            services.AddScoped<ISubmitMiniGameResultsCommandHandler, SubmitMiniGameResultsCommandHandler>();
+            services.AddScoped<IGetMiniGameStatsQueryHandler, GetMiniGameStatsQueryHandler>();
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();

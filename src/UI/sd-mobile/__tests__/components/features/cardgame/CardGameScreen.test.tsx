@@ -3,6 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { CardGameScreen } from '@/src/components/features/cardgame/CardGameScreen';
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+// Signed out in tests, so nothing is recorded; the mock keeps axios/Firebase out of the module graph.
+jest.mock('@/src/services/api/miniGamesApi', () => ({
+  miniGamesApi: { submitResults: jest.fn(), getStats: jest.fn() },
+}));
 
 // Lays the game area out at a phone size so the hand renders.
 function layOut() {

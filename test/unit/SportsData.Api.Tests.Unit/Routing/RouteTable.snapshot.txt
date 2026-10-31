@@ -94,6 +94,7 @@ GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/final
 GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/logos (none)
 GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/metrics (none)
 GET    /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}/statistics (none)
+GET    /user/me/minigames/{gameKey}/stats                              [Authorize]
 PATCH  /User/me/displayname                                            [Authorize]
 PATCH  /User/me/notification-preferences                               [Authorize]
 PATCH  /User/me/options                                                [Authorize]
@@ -172,6 +173,7 @@ POST   /ui/leagues/{id}/previews/{weekId}/generate                     [Authoriz
 POST   /ui/leagues/{targetId:guid}/picks/import                        [Authorize]
 POST   /ui/leagues/{targetId:guid}/picks/import/preview                [Authorize]
 POST   /ui/picks                                                       [Authorize]
+POST   /user/me/minigames/results                                      [Authorize]
 PUT    /api/messageboard/posts/{postId:guid}/reaction                  [Authorize]
 PUT    /api/models/{modelId}                                           [AdminApiToken]
 PUT    /api/prompts/{promptId}                                         [AdminApiToken]

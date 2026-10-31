@@ -47,6 +47,15 @@ export const fixedCost = (id: string) => {
   return c && c.kind === 'fixed' ? c.value : 0;
 };
 
+/** This game's key in mini-game results (docs/features/mini-game-results.md). */
+export const GAME_KEY = 'football-cards';
+
+/**
+ * Stamped on every result so balance numbers split by version. Bump it whenever
+ * cards.json or the rules change.
+ */
+export const GAME_VERSION = '1';
+
 /** Deterministic PRNG (mulberry32) so tests can replay a game. */
 export function seededRng(seed: number): () => number {
   let a = seed >>> 0;

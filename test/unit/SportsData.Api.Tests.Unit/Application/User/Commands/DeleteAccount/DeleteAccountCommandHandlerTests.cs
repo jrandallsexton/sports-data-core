@@ -16,6 +16,7 @@ using Xunit;
 
 using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
 using UserOptionEntity = SportsData.Api.Infrastructure.Data.Entities.UserOption;
+using MiniGameResultEntity = SportsData.Api.Infrastructure.Data.Entities.MiniGameResult;
 
 namespace SportsData.Api.Tests.Unit.Application.User.Commands.DeleteAccount;
 
@@ -154,5 +155,35 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
         DataContext.ChangeTracker.Clear();
         (await DataContext.UserOptions.AnyAsync(o => o.UserId == userId))
             .Should().BeFalse("deletion must leave no option rows behind");
+    }
+
+    [Fact]
+    public async Task Execute_PurgesMiniGameResults()
+    {
+        // Same reason as options: the User row survives, so the FK cascade
+        // never fires, and the results are private to the user.
+        var userId = await SeedUserAsync();
+        await DataContext.MiniGameResults.AddAsync(new MiniGameResultEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            GameKey = SportsData.Api.Application.MiniGames.MiniGameKeys.FootballCards,
+            Outcome = SportsData.Api.Infrastructure.Data.Entities.MiniGameOutcome.Win,
+            Score = 21,
+            OpponentScore = 14,
+            GameVersion = "1",
+            PlayedUtc = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = userId
+        });
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<DeleteAccountCommandHandler>();
+        var result = await handler.ExecuteAsync(new DeleteAccountCommand { UserId = userId });
+
+        result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
+        (await DataContext.MiniGameResults.AnyAsync(r => r.UserId == userId))
+            .Should().BeFalse("deletion must leave no mini-game results behind");
     }
 }

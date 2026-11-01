@@ -601,10 +601,15 @@ namespace SportsData.Producer.DependencyInjection
                     "*/15 * * * *"); // Every 15 minutes
             }
 
+            // Sunday 10:00 UTC, not Cron.Weekly (Sun 00:00 UTC = Saturday
+            // evening ET, mid-slate): the run must land after the NCAA
+            // Saturday slate finalizes so season statistics include it, and
+            // the athlete-statistics fan-out (~45k docs) must not compete
+            // with live games for the ESPN rate budget.
             recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(
                 nameof(FranchiseSeasonEnrichmentJob),
                 job => job.ExecuteAsync(),
-                Cron.Weekly);
+                "0 10 * * 0");
 
             recurringJobManager.AddOrUpdate<VenueGeoCodeJob>(
                 nameof(VenueGeoCodeJob),

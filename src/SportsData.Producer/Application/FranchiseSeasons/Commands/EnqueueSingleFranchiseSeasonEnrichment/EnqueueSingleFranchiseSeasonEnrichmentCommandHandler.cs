@@ -128,8 +128,9 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                         correlationId)));
 
                 // Leg 2: season statistics refresh. Scoped to spawn ONLY the
-                // statistics child of the TeamSeason document — same
-                // vocabulary and same Direct delivery as the weekly job.
+                // weekly job's RefreshedChildTypes (team statistics, roster,
+                // leaders, athlete statistics) — same vocabulary and same
+                // Direct delivery as the weekly job.
                 var statisticsRequested = false;
                 if (franchiseSeason.EspnRef is not null
                     && Uri.TryCreate(franchiseSeason.EspnRef.SourceUrl, UriKind.Absolute, out var teamSeasonUri))
@@ -145,7 +146,7 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandler : IEnqueueSing
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: correlationId,
                         CausationId: Guid.NewGuid(),
-                        IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]);
+                        IncludeLinkedDocumentTypes: [.. Jobs.FranchiseSeasonEnrichmentJob.RefreshedChildTypes]);
 
                     // PublishBatch even for one message: the Direct-mode
                     // Publish pays a 1-second delay per call; the batch path

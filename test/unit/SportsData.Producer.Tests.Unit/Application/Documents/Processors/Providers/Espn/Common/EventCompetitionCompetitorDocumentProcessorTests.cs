@@ -149,6 +149,157 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved.Winner.Should().BeFalse();
         }
 
+        [Theory]
+        [InlineData(99)]   // frozen at first ingestion (pre-poll schedule load)
+        [InlineData(null)] // created from a document without curatedRank
+        public async Task WhenEntityAlreadyExists_AndCuratedRankChanged_ShouldSyncCuratedRank(int? storedRank)
+        {
+            // CuratedRankCurrent was written only at creation, so the 2026
+            // NCAA schedule (loaded before the preseason poll) stayed at 99
+            // for every competitor. The update path must track the
+            // document. Fixture: curatedRank.current = 13.
+
+            // arrange
+            var (sut, json, competitorIdentity, competitionId) =
+                await SeedExistingCompetitorAsync(storedRank);
+
+            var command = BuildCommand(json, competitionId, competitorIdentity.UrlHash);
+
+            // act
+            await sut.ProcessAsync(command);
+
+            // assert
+            var saved = await FootballDataContext.CompetitionCompetitors
+                .OfType<FootballCompetitionCompetitor>()
+                .AsNoTracking()
+                .Where(x => x.Id == competitorIdentity.CanonicalId)
+                .Select(x => x.CuratedRankCurrent)
+                .FirstAsync();
+            saved.Should().Be(13);
+        }
+
+        [Fact]
+        public async Task WhenEntityAlreadyExists_AndDocumentHasNoCuratedRank_ShouldKeepStoredRank()
+        {
+            // A document missing curatedRank must not erase a captured rank.
+
+            // arrange
+            var (sut, json, competitorIdentity, competitionId) =
+                await SeedExistingCompetitorAsync(storedRank: 7);
+
+            var node = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+            node.Remove("curatedRank");
+
+            var command = BuildCommand(node.ToJsonString(), competitionId, competitorIdentity.UrlHash);
+
+            // act
+            await sut.ProcessAsync(command);
+
+            // assert
+            var saved = await FootballDataContext.CompetitionCompetitors
+                .OfType<FootballCompetitionCompetitor>()
+                .AsNoTracking()
+                .Where(x => x.Id == competitorIdentity.CanonicalId)
+                .Select(x => x.CuratedRankCurrent)
+                .FirstAsync();
+            saved.Should().Be(7);
+        }
+
+        private async Task<(FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext> Sut,
+            string Json, ExternalRefIdentity CompetitorIdentity, Guid CompetitionId)>
+            SeedExistingCompetitorAsync(int? storedRank)
+        {
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+            var sut = Mocker.CreateInstance<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
+            var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();
+
+            var competitorIdentity = generator.Generate(dto!.Ref);
+            var teamIdentity = generator.Generate(dto.Team.Ref);
+
+            var competitionId = Guid.NewGuid();
+            await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var franchiseSeasonId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                Abbreviation = "TST",
+                DisplayName = "Test FS",
+                DisplayNameShort = "TFS",
+                Slug = teamIdentity.CanonicalId.ToString(),
+                Location = "Test Location",
+                Name = "Test Franchise Season",
+                ColorCodeHex = "#FFFFFF",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamIdentity.CleanUrl,
+                        SourceUrlHash = teamIdentity.UrlHash,
+                        Value = teamIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // Designations match the fixture so only the rank differs.
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = competitorIdentity.CanonicalId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = franchiseSeasonId,
+                HomeAway = "home",
+                Order = 0,
+                Winner = false,
+                CuratedRankCurrent = storedRank,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new CompetitionCompetitorExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = competitorIdentity.CleanUrl,
+                        SourceUrlHash = competitorIdentity.UrlHash,
+                        Value = competitorIdentity.UrlHash
+                    }
+                ]
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            return (sut, json, competitorIdentity, competitionId);
+        }
+
+        private ProcessDocumentCommand BuildCommand(string json, Guid competitionId, string urlHash) =>
+            Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.ParentId, competitionId.ToString())
+                .With(x => x.UrlHash, urlHash)
+                .OmitAutoProperties()
+                .Create();
+
         [Fact]
         public void SwapParkingValue_FitsHomeAwayColumn()
         {

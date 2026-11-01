@@ -23,6 +23,24 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
     /// </summary>
     public class FranchiseSeasonEnrichmentJob
     {
+        // The TeamSeason children the weekly refresh re-sources. The filter
+        // rides every hop (Producer child requests and the Provider's roster
+        // index fan-out), so it also scopes the grandchildren: an existing
+        // AthleteSeason spawns only its statistics (no headshot, no notes),
+        // and TeamSeasonLeaders spawns its leaders' statistics. Roster,
+        // leaders and athlete statistics were added 2026-10-13: like team
+        // statistics before them, they refreshed only as a side effect of
+        // poll appearances, so NFL (no polls) never refreshed them in season
+        // and NCAA only for poll teams. See
+        // docs/audit/sql/2026-10-13-athlete-season-stats-sourcing.sql.
+        internal static readonly IReadOnlyList<DocumentType> RefreshedChildTypes =
+        [
+            DocumentType.TeamSeasonStatistics,
+            DocumentType.AthleteSeason,
+            DocumentType.TeamSeasonLeaders,
+            DocumentType.AthleteSeasonStatistics
+        ];
+
         private readonly ILogger<FranchiseSeasonEnrichmentJob> _logger;
         private readonly TeamSportDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -121,10 +139,10 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
             // poll got refreshed as a side effect of the rankings chain, and
             // everyone else kept whatever initial sourcing captured
             // (pre-season: empty). One scoped DocumentRequested per team
-            // re-processes the TeamSeason doc and spawns ONLY the statistics
-            // child (IncludeLinkedDocumentTypes — the athlete-cascade-scoping
-            // vocabulary: list = only these), so no athlete/record/rank
-            // fan-out rides along. Delivery is EXPLICITLY Direct: on the
+            // re-processes the TeamSeason doc and spawns ONLY the children
+            // in RefreshedChildTypes (IncludeLinkedDocumentTypes — the
+            // athlete-cascade-scoping vocabulary: list = only these), so no
+            // record/rank/schedule/coach fan-out rides along. Delivery is EXPLICITLY Direct: on the
             // Producer the ambient EF outbox is always active, and captured
             // messages only reach the broker on a SaveChangesAsync of the
             // scoped DbContext - which this read-only job never calls, so an
@@ -169,7 +187,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: statsCorrelationId,
                         CausationId: Guid.NewGuid(),
-                        IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]));
+                        IncludeLinkedDocumentTypes: [.. RefreshedChildTypes]));
                 }
 
                 using (_deliveryScope.Use(DeliveryMode.Direct))

@@ -164,6 +164,10 @@ public class ContestsController : ControllerBase
                 mode,
                 seasonYear,
                 correlationId,
+                // MVC binds an ABSENT query collection to an empty list, not
+                // null, so empty here means "parameter omitted" -> standard set.
+                // A present-but-empty value (?includeLinkedDocumentTypes=) never
+                // reaches this line: [ApiController] returns 400 on the bind error.
                 includeLinkedDocumentTypes is { Count: > 0 } ? includeLinkedDocumentTypes : null,
                 cancellationToken);
 

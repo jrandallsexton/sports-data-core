@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 using SportsData.Core.Common;
 
@@ -11,9 +12,12 @@ namespace SportsData.Core.Infrastructure.Clients.Contest;
 /// the client already routed to the matching per-sport Producer pod — Producer
 /// guards it against its own <c>CurrentSport</c>. <see cref="CorrelationId"/>
 /// threads the API trace id through so the same id appears in Producer's Seq
-/// logs. See docs/features/season-contest-resource-driver.md.
+/// logs. <see cref="IncludeLinkedDocumentTypes"/> null = Producer's standard
+/// refresh set; populated = a narrower re-source (Producer rejects anything
+/// outside the standard set). See docs/features/season-contest-resource-driver.md.
 /// </summary>
 public record RefreshContestsBySeasonYearRequest(
     Sport Sport,
     int SeasonYear,
-    Guid CorrelationId);
+    Guid CorrelationId,
+    List<DocumentType>? IncludeLinkedDocumentTypes = null);

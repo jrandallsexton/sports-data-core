@@ -74,6 +74,7 @@ public interface IProvideContests : IProvideHealthChecks
         Sport sport,
         int seasonYear,
         Guid correlationId,
+        List<DocumentType>? includeLinkedDocumentTypes = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -475,9 +476,11 @@ public class ContestClient : ClientBase, IProvideContests
         Sport sport,
         int seasonYear,
         Guid correlationId,
+        List<DocumentType>? includeLinkedDocumentTypes = null,
         CancellationToken cancellationToken = default)
     {
-        var request = new RefreshContestsBySeasonYearRequest(sport, seasonYear, correlationId);
+        var request = new RefreshContestsBySeasonYearRequest(
+            sport, seasonYear, correlationId, includeLinkedDocumentTypes);
 
         return await PostWithResultAsync(
             "contests/refresh",

@@ -116,4 +116,100 @@ public class RefreshContestsBySeasonYearHandlerTests :
             x => x.Enqueue(It.IsAny<Expression<Func<IUpdateContests, Task>>>()),
             Times.Exactly(1));
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task IncludeLinkedDocumentTypes_FlowsToEveryPerContestCommand(bool narrowed)
+    {
+        // arrange — capture the enqueued UpdateContestCommand by running the
+        // enqueued expression against a mock processor.
+        var captured = new List<UpdateContestCommand>();
+        var updater = new Mock<IUpdateContests>();
+        updater.Setup(x => x.Process(It.IsAny<UpdateContestCommand>()))
+            .Callback<UpdateContestCommand>(captured.Add)
+            .Returns(Task.CompletedTask);
+
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue(It.IsAny<Expression<Func<IUpdateContests, Task>>>()))
+            .Callback<Expression<Func<IUpdateContests, Task>>>(e => e.Compile()(updater.Object));
+
+        var sut = Mocker.CreateInstance<RefreshContestsBySeasonYearHandler>();
+
+        const int season = 2024;
+        var teamA = NewFranchiseSeason(season);
+        var teamB = NewFranchiseSeason(season);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(teamA, teamB);
+        var comp = NewCompetition(Guid.NewGuid());
+        await FootballDataContext.Competitions.AddAsync(comp);
+        await FootballDataContext.CompetitionCompetitors.AddRangeAsync(
+            NewCompetitor(comp.Id, teamA.Id, "home"),
+            NewCompetitor(comp.Id, teamB.Id, "away"));
+        await FootballDataContext.SaveChangesAsync();
+
+        List<DocumentType>? types = narrowed
+            ? [DocumentType.EventCompetition, DocumentType.EventCompetitionCompetitor]
+            : null;
+
+        var command = new RefreshContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = season,
+            CorrelationId = Guid.NewGuid(),
+            IncludeLinkedDocumentTypes = types
+        };
+
+        // act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // assert
+        result.IsSuccess.Should().BeTrue();
+        captured.Should().ContainSingle()
+            .Which.IncludeLinkedDocumentTypes.Should().BeEquivalentTo(types);
+    }
+
+    [Theory]
+    [InlineData(DocumentType.AthleteSeason)]       // widening: athlete cascade
+    [InlineData(DocumentType.EventCompetitionCompetitorRoster)]
+    public async Task IncludeLinkedDocumentTypes_OutsideStandardSet_IsRejected(DocumentType widening)
+    {
+        // arrange
+        var sut = Mocker.CreateInstance<RefreshContestsBySeasonYearHandler>();
+        var command = new RefreshContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024,
+            CorrelationId = Guid.NewGuid(),
+            IncludeLinkedDocumentTypes = [DocumentType.EventCompetitionCompetitor, widening]
+        };
+
+        // act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // assert
+        result.Status.Should().Be(ResultStatus.Validation);
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue(It.IsAny<Expression<Func<IUpdateContests, Task>>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task IncludeLinkedDocumentTypes_Empty_IsRejected()
+    {
+        // arrange
+        var sut = Mocker.CreateInstance<RefreshContestsBySeasonYearHandler>();
+        var command = new RefreshContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024,
+            CorrelationId = Guid.NewGuid(),
+            IncludeLinkedDocumentTypes = []
+        };
+
+        // act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // assert
+        result.Status.Should().Be(ResultStatus.Validation);
+    }
 }

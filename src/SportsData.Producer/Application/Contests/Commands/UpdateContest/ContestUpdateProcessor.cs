@@ -16,33 +16,6 @@ namespace SportsData.Producer.Application.Contests.Commands.UpdateContest
     public class ContestUpdateProcessor<TDataContext> : IUpdateContests
         where TDataContext : TeamSportDataContext
     {
-        /// <summary>
-        /// Document types to source on a "Refresh Contest" request. Anything
-        /// outside this set is filtered out at every spawn site downstream
-        /// (via DocumentProcessorBase.ShouldSpawn). Excludes roster, per-team
-        /// statistics, and athlete-level docs — those are sourced once during
-        /// initial ingestion and don't change on a contest refresh.
-        ///
-        /// See docs/refresh-contest-cascade-narrowing.md for rationale.
-        /// </summary>
-        private static readonly List<DocumentType> ContestRefreshDocumentTypes = new()
-        {
-            DocumentType.Event,
-            DocumentType.EventCompetition,
-            DocumentType.EventCompetitionStatus,
-            DocumentType.EventCompetitionSituation,
-            DocumentType.EventCompetitionBroadcast,
-            DocumentType.EventCompetitionOdds,
-            DocumentType.EventCompetitionCompetitor,
-            DocumentType.EventCompetitionCompetitorScore,
-            DocumentType.EventCompetitionCompetitorLineScore,
-            DocumentType.EventCompetitionCompetitorRecord,
-            DocumentType.EventCompetitionPlay,
-            DocumentType.EventCompetitionDrive,
-            DocumentType.EventCompetitionLeaders,
-            DocumentType.EventCompetitionProbability
-        };
-
         private readonly ILogger<ContestUpdateProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _bus;
@@ -125,7 +98,8 @@ namespace SportsData.Producer.Application.Contests.Commands.UpdateContest
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.ContestUpdateProcessor,
-                IncludeLinkedDocumentTypes: ContestRefreshDocumentTypes
+                IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes
+                    ?? [.. UpdateContestCommand.DefaultIncludeLinkedDocumentTypes]
             );
 
             _logger.LogInformation("Publishing with {@evt}", evt);

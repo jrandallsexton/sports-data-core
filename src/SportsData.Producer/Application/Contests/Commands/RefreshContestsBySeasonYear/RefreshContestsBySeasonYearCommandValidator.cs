@@ -1,6 +1,7 @@
 using FluentValidation;
 
 using SportsData.Core.Common;
+using SportsData.Producer.Application.Contests.Commands.UpdateContest;
 
 namespace SportsData.Producer.Application.Contests.Commands.RefreshContestsBySeasonYear;
 
@@ -21,5 +22,21 @@ public class RefreshContestsBySeasonYearCommandValidator : AbstractValidator<Ref
         RuleFor(x => x.CorrelationId)
             .NotEmpty()
             .WithMessage("CorrelationId is required");
+
+        // Narrowing only: a season-wide refresh must never widen past the
+        // standard refresh set (rosters/athletes are what buried the
+        // pipeline on 2026-08-29). Empty would mean "Event documents only",
+        // which re-sources nothing useful.
+        When(x => x.IncludeLinkedDocumentTypes is not null, () =>
+        {
+            RuleFor(x => x.IncludeLinkedDocumentTypes!)
+                .NotEmpty()
+                .WithMessage("IncludeLinkedDocumentTypes, when provided, must not be empty");
+
+            RuleForEach(x => x.IncludeLinkedDocumentTypes)
+                .Must(type => UpdateContestCommand.DefaultIncludeLinkedDocumentTypes.Contains(type))
+                .WithMessage((_, type) =>
+                    $"IncludeLinkedDocumentTypes may only narrow the standard refresh set; {type} is not in it");
+        });
     }
 }

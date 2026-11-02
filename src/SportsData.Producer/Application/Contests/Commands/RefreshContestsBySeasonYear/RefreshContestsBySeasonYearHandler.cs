@@ -91,8 +91,11 @@ namespace SportsData.Producer.Application.Contests.Commands.RefreshContestsBySea
                     .ToListAsync(cancellationToken);
 
                 _logger.LogInformation(
-                    "Refreshing {ContestCount} distinct contests for the season.",
-                    contestIds.Count);
+                    "Refreshing {ContestCount} distinct contests for the season. IncludeLinkedDocumentTypes={IncludeLinkedDocumentTypes}",
+                    contestIds.Count,
+                    command.IncludeLinkedDocumentTypes is null
+                        ? "default"
+                        : string.Join(",", command.IncludeLinkedDocumentTypes));
 
                 foreach (var contestId in contestIds)
                 {
@@ -100,7 +103,8 @@ namespace SportsData.Producer.Application.Contests.Commands.RefreshContestsBySea
                         contestId,
                         SourceDataProvider.Espn,
                         command.Sport,
-                        command.CorrelationId);
+                        command.CorrelationId,
+                        command.IncludeLinkedDocumentTypes);
 
                     _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));
                 }

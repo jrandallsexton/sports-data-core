@@ -103,6 +103,32 @@ See [[project_mongo_cache_gap_historical_ncaa]].
 Reuses the proven refresh path end-to-end; the only new code is the
 season → distinct-ContestId fan-out.
 
+## Narrowed refresh (`IncludeLinkedDocumentTypes`, 2026-11-01)
+
+The season refresh accepts an optional `IncludeLinkedDocumentTypes` that
+narrows every per-contest `UpdateContestCommand` below the standard set
+(`UpdateContestCommand.DefaultIncludeLinkedDocumentTypes`, formerly the
+processor's private `ContestRefreshDocumentTypes`). Null keeps today's
+behavior. The validator only allows a non-empty **subset** of the standard
+set, so a season-wide request can never widen into rosters or athletes;
+Producer's controller validates before enqueueing and returns 400 on a bad
+list.
+
+API front door (string enum names; repeat the parameter per type):
+
+```
+POST /api/football/ncaa/contests/refresh?seasonYear=2026
+     &includeLinkedDocumentTypes=EventCompetition
+     &includeLinkedDocumentTypes=EventCompetitionCompetitor
+```
+
+First use: backfilling `CompetitionCompetitor.CuratedRankCurrent` for
+already-played 2026 NCAA games after the update-path fix (#853). Event →
+EventCompetition → competitors only: no plays, drives, odds, probabilities,
+scores or line scores. Current-season documents bypass the Provider cache,
+so each request is a live ESPN fetch (~4 per contest: event, competition,
+two competitors). Bruno: `bruno/api/contests-refresh-seasonYear-competitors.yml`.
+
 ## Open option (not decided)
 
 **Contest scope.** Default = *all* contests for the season. A smarter variant

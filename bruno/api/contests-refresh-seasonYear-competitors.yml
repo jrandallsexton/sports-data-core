@@ -1,0 +1,21 @@
+info:
+  name: contests-refresh-seasonYear-competitors
+  type: http
+  seq: 31
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/api/football/ncaa/contests/refresh?seasonYear=2026&includeLinkedDocumentTypes=EventCompetition&includeLinkedDocumentTypes=EventCompetitionCompetitor"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

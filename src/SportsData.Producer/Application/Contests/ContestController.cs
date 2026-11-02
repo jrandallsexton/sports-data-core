@@ -191,7 +191,8 @@ namespace SportsData.Producer.Application.Contests
         [HttpPost]
         [Route("refresh")]
         public IActionResult RefreshContestsBySeasonYear(
-            [FromBody] RefreshContestsBySeasonYearCommand command)
+            [FromBody] RefreshContestsBySeasonYearCommand command,
+            [FromServices] FluentValidation.IValidator<RefreshContestsBySeasonYearCommand> validator)
         {
             // This Producer pod is bound to a single sport (IAppMode.CurrentSport)
             // and its DbContext is that sport's. Unlike the finalize handler, the
@@ -211,12 +212,24 @@ namespace SportsData.Producer.Application.Contests
                 : command.CorrelationId;
 
             _logger.LogInformation(
-                "RefreshContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                "RefreshContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, IncludeLinkedDocumentTypes={IncludeLinkedDocumentTypes}, CorrelationId={CorrelationId}",
                 command.Sport,
                 command.SeasonYear,
+                command.IncludeLinkedDocumentTypes is null
+                    ? "default"
+                    : string.Join(",", command.IncludeLinkedDocumentTypes),
                 correlationId);
 
             var cmd = command with { CorrelationId = correlationId };
+
+            // Validate before enqueueing: the handler re-validates, but a
+            // rejected IncludeLinkedDocumentTypes there would only surface as
+            // a failed background job behind a 202.
+            var validation = validator.Validate(cmd);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { Errors = validation.Errors });
+            }
 
             _backgroundJobProvider.Enqueue<IRefreshContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
 

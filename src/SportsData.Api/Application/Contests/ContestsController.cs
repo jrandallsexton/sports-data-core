@@ -9,6 +9,7 @@ using SportsData.Api.Application.Contests.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Scoring.Jobs.PickScoring;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Auth;
+using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
@@ -132,6 +133,11 @@ public class ContestsController : ControllerBase
     /// docs/features/season-contest-resource-driver.md.
     ///
     /// Example: POST /api/baseball/mlb/contests/refresh?seasonYear=2026
+    ///
+    /// Optional <paramref name="includeLinkedDocumentTypes"/> narrows the
+    /// re-source to a subset of the standard refresh set, e.g. competitors
+    /// only (curated rank backfill):
+    /// ...&amp;includeLinkedDocumentTypes=EventCompetition&amp;includeLinkedDocumentTypes=EventCompetitionCompetitor
     /// </summary>
     [AdminApiToken]
     [HttpPost("refresh")]
@@ -139,6 +145,7 @@ public class ContestsController : ControllerBase
         [FromRoute] string sport,
         [FromRoute] string league,
         [FromQuery] int seasonYear,
+        [FromQuery] List<DocumentType>? includeLinkedDocumentTypes,
         [FromServices] IContestClientFactory contestClientFactory,
         CancellationToken cancellationToken = default)
     {
@@ -153,7 +160,16 @@ public class ContestsController : ControllerBase
 
         var result = await contestClientFactory
             .Resolve(mode)
-            .RefreshContestsBySeasonYear(mode, seasonYear, correlationId, cancellationToken);
+            .RefreshContestsBySeasonYear(
+                mode,
+                seasonYear,
+                correlationId,
+                // MVC binds an ABSENT query collection to an empty list, not
+                // null, so empty here means "parameter omitted" -> standard set.
+                // A present-but-empty value (?includeLinkedDocumentTypes=) never
+                // reaches this line: [ApiController] returns 400 on the bind error.
+                includeLinkedDocumentTypes is { Count: > 0 } ? includeLinkedDocumentTypes : null,
+                cancellationToken);
 
         return result.ToActionResult(_ =>
             Accepted(new { correlationId, sport = mode.ToString(), seasonYear }));

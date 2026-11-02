@@ -18,4 +18,15 @@ public record RefreshContestsBySeasonYearCommand
     public int SeasonYear { get; init; }
 
     public Guid CorrelationId { get; init; } = Guid.Empty;
+
+    /// <summary>
+    /// Null = the standard refresh set
+    /// (<see cref="UpdateContestCommand.DefaultIncludeLinkedDocumentTypes"/>).
+    /// Populated = a narrower re-source, passed to every per-contest
+    /// <see cref="UpdateContestCommand"/>; must be a non-empty subset of the
+    /// standard set. Example: [EventCompetition, EventCompetitionCompetitor]
+    /// re-sources competitors (curated rank, designations) without re-pulling
+    /// plays, drives, odds or probabilities.
+    /// </summary>
+    public List<DocumentType>? IncludeLinkedDocumentTypes { get; init; }
 }

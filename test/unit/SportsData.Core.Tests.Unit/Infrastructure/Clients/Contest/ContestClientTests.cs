@@ -248,6 +248,23 @@ public class ContestClientTests
         posted!.Sport.Should().Be(Sport.BaseballMlb);
         posted.SeasonYear.Should().Be(2026);
         posted.CorrelationId.Should().Be(correlationId);
+        posted.IncludeLinkedDocumentTypes.Should().BeNull("omitted = Producer's standard refresh set");
+    }
+
+    [Fact]
+    public async Task RefreshContestsBySeasonYear_WithIncludeLinkedDocumentTypes_PostsThemInTheBody()
+    {
+        // Arrange
+        _handler.SetResponse(HttpStatusCode.Accepted, string.Empty);
+        List<DocumentType> types = [DocumentType.EventCompetition, DocumentType.EventCompetitionCompetitor];
+
+        // Act
+        var result = await _sut.RefreshContestsBySeasonYear(Sport.FootballNcaa, 2026, Guid.NewGuid(), types);
+
+        // Assert — the list round-trips so Producer's [FromBody] bind sees it.
+        result.Should().BeOfType<Success<bool>>();
+        var posted = _handler.LastRequestBody.FromJson<RefreshContestsBySeasonYearRequest>();
+        posted!.IncludeLinkedDocumentTypes.Should().Equal(types);
     }
 
     [Fact]

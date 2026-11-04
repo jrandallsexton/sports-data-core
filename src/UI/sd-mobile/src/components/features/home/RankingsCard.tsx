@@ -12,16 +12,14 @@ import { useCurrentSeasonYear } from '@/src/hooks/useCurrentSeasonYear';
 const TOP_N = 5;
 
 /**
- * Tier 2 home card — Top 5 from the current AP poll, linking to the full
- * rankings screen for all polls and all 25 entries. Web sibling of sd-ui's
- * RankingsCard (which shows 10 — mobile gets 5, operator call: home real
- * estate is tighter here).
+ * Tier 2 home card — Top 5 from the CFP rankings once they publish (early
+ * November), the AP poll before that, linking to the full rankings screen
+ * for all polls and all 25 entries. Web sibling of sd-ui's RankingsCard
+ * (which shows 10 — mobile gets 5, operator call: home real estate is
+ * tighter here).
  *
- * AP only here; the fallback (AP absent) must never surface CFP either —
- * it's hidden app-wide until those rankings publish (operator call, the
- * bracket surface needs its own pass first). Renders nothing while loading,
- * on error, and when no poll exists for the current season, so Home never
- * shows a broken card.
+ * Renders nothing while loading, on error, and when no poll exists for the
+ * current season, so Home never shows a broken card.
  */
 export function RankingsCard() {
   const scheme = useColorScheme();
@@ -36,8 +34,8 @@ export function RankingsCard() {
   });
 
   const polls: RankingsPoll[] = data ?? [];
-  const eligible = polls.filter((p) => p.pollId !== 'cfp');
-  const poll = eligible.find((p) => p.pollId === 'ap') ?? eligible[0];
+  const poll =
+    polls.find((p) => p.pollId === 'cfp') ?? polls.find((p) => p.pollId === 'ap') ?? polls[0];
 
   if (!poll?.entries?.length || seasonYear === null) return null;
 

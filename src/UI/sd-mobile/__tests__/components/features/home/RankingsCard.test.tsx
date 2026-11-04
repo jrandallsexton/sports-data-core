@@ -100,15 +100,23 @@ describe('RankingsCard', () => {
     expect(screen.queryByText('Full rankings ›')).toBeNull();
   });
 
-  it('never falls back to the CFP poll when AP is absent', async () => {
+  it('prefers the CFP rankings over AP once they publish', async () => {
     (rankingsApi.getSeasonRankings as jest.Mock).mockResolvedValue({
-      data: [{ ...apPoll, pollId: 'cfp', pollName: 'CFP Rankings' }],
+      data: [
+        apPoll,
+        {
+          ...apPoll,
+          pollId: 'cfp',
+          pollName: 'CFP Rankings',
+          entries: apPoll.entries.map((e) => ({ ...e, franchiseName: `CFP ${e.franchiseName}` })),
+        },
+      ],
     });
 
     renderWithProviders(<RankingsCard />);
 
-    await waitFor(() => expect(rankingsApi.getSeasonRankings).toHaveBeenCalled());
-    expect(screen.queryByText('CFP RANKINGS')).toBeNull();
-    expect(screen.queryByText('Team 1')).toBeNull();
+    await waitFor(() => expect(screen.getByText('CFP RANKINGS')).toBeTruthy());
+    expect(screen.getByText('CFP Team 1')).toBeTruthy();
+    expect(screen.queryByText('AP TOP 25')).toBeNull();
   });
 });

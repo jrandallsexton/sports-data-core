@@ -19,8 +19,7 @@ import { useCurrentSeasonYear } from '@/src/hooks/useCurrentSeasonYear';
  *
  * Only football/ncaa has poll data today and the backend week endpoint is
  * not scope-aware yet, so other tuples get an honest empty state — same
- * gate as the web page. CFP is filtered app-wide until those rankings
- * publish (operator call; the bracket surface needs its own pass first).
+ * gate as the web page.
  */
 export default function RankingsScreen() {
   const { sport, league, season: seasonParam, week: weekParam } = useLocalSearchParams<{
@@ -61,9 +60,7 @@ export default function RankingsScreen() {
     enabled: isSupported && seasonYear !== null && seasonYear !== undefined,
   });
 
-  // CFP hidden until those rankings publish — remove this filter to
-  // re-enable; mirrors sd-ui's RankingsWidget.
-  const polls: RankingsPoll[] = (data ?? []).filter((p) => p.pollId !== 'cfp');
+  const polls: RankingsPoll[] = data ?? [];
   const activePoll = polls.find((p) => p.pollId === activePollId) ?? polls[0];
 
   const openTeam = (slug: string) => {

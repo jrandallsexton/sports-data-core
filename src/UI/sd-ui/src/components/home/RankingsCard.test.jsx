@@ -106,3 +106,25 @@ test("renders nothing when no current season is sourced", async () => {
   expect(apiWrapper.Rankings.getSeasonRankings).not.toHaveBeenCalled();
   expect(container).toBeEmptyDOMElement();
 });
+
+test("prefers the CFP rankings over AP once they publish", async () => {
+  apiWrapper.Rankings.getSeasonRankings.mockResolvedValue({
+    data: [
+      apPoll,
+      {
+        ...apPoll,
+        pollId: "cfp",
+        pollName: "CFP Rankings",
+        entries: apPoll.entries.map((e) => ({ ...e, franchiseName: `CFP ${e.franchiseName}` })),
+      },
+    ],
+  });
+
+  renderCard();
+
+  await waitFor(() => {
+    expect(screen.getByText("CFP RANKINGS")).toBeInTheDocument();
+  });
+  expect(screen.getByText("CFP Team 1")).toBeInTheDocument();
+  expect(screen.queryByText("AP TOP 25")).not.toBeInTheDocument();
+});

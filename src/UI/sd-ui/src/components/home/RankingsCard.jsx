@@ -7,8 +7,9 @@ import { teamLink, rankingsLink } from "../../utils/sportLinks";
 import "./RankingsCard.css";
 
 /**
- * Tier 2 — compact Top 10 from the current AP poll (falls back to the
- * first poll returned when 'ap' is absent), linking to the full
+ * Tier 2 — compact Top 10 from the CFP rankings when the season has them
+ * (they publish in early November), the AP poll before that, falling back
+ * to the first poll returned when neither is present. Links to the full
  * /app/rankings page for all polls and all 25 entries.
  *
  * Renders null while loading, on error, and when no poll exists for the
@@ -28,10 +29,12 @@ function RankingsCard() {
         if (cancelled) return;
         const data = apiResult?.data || apiResult;
         const polls = Array.isArray(data) ? data : [];
-        // AP only on the home card; the fallback (AP absent) must never
-        // surface CFP either — it's hidden app-wide until it publishes.
-        const eligible = polls.filter((p) => p.pollId !== "cfp");
-        setPoll(eligible.find((p) => p.pollId === "ap") || eligible[0] || null);
+        setPoll(
+          polls.find((p) => p.pollId === "cfp") ||
+            polls.find((p) => p.pollId === "ap") ||
+            polls[0] ||
+            null
+        );
       })
       .catch(() => {
         // Self-nulling card: rankings being unavailable must not break Home.

@@ -8,9 +8,8 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranc
 /// Sourcing a season more than one year out asks ESPN for documents that
 /// don't exist yet, and pre-2000 predates the historical sourcing floor —
 /// 2000 itself IS a sourced season (NCAA history runs through 2000), so the
-/// floor is inclusive. (The sibling RefreshContestsBySeasonYear validator
-/// uses an exclusive GreaterThan(2000); that off-by-one is pre-existing and
-/// out of scope here.)
+/// floor is inclusive, as in the RefreshContestsBySeasonYear and
+/// FinalizeContestsBySeasonYear validators.
 /// </summary>
 public class RequestFranchiseSeasonSourcingCommandValidator
     : AbstractValidator<RequestFranchiseSeasonSourcingCommand>

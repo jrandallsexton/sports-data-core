@@ -26,9 +26,14 @@ public class FinalizeContestsBySeasonYearHandlerTests :
 {
     public FinalizeContestsBySeasonYearHandlerTests()
     {
-        // Register the validator
+        // Fixed clock so the validator's "no more than one year in the future"
+        // rule is deterministic.
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(x => x.UtcNow())
+            .Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
         Mocker.Use<IValidator<FinalizeContestsBySeasonYearCommand>>(
-            new FinalizeContestsBySeasonYearCommandValidator());
+            new FinalizeContestsBySeasonYearCommandValidator(clock.Object));
     }
 
     [Fact]
@@ -247,6 +252,48 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         backgroundJobProvider.Verify(
             x => x.Enqueue(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
             Times.Exactly(7));
+    }
+
+    [Fact]
+    public async Task WhenSeasonYearIs2000_ShouldEnqueue()
+    {
+        // 2000 is a sourced season; the floor is inclusive.
+        var backgroundJobProvider = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<FinalizeContestsBySeasonYearHandler>();
+
+        await FootballDataContext.Contests.AddAsync(CreateContest(Sport.FootballNcaa, 2000, finalized: false));
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new FinalizeContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2000,
+            CorrelationId = Guid.NewGuid()
+        };
+
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        result.Should().BeOfType<Success<Guid>>();
+        backgroundJobProvider.Verify(
+            x => x.Enqueue(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenSeasonYearIsMoreThanOneYearAhead_ShouldReturnValidationFailure()
+    {
+        var sut = Mocker.CreateInstance<FinalizeContestsBySeasonYearHandler>();
+
+        var command = new FinalizeContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2028, // clock is 2026
+            CorrelationId = Guid.NewGuid()
+        };
+
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        result.Status.Should().Be(ResultStatus.Validation);
     }
 
     [Fact]

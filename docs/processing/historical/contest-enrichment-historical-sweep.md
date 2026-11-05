@@ -1,8 +1,37 @@
 # Contest Enrichment Historical Sweep
 
-**Status:** Implementing
+**Status:** Implemented; D4, D5 and rollout step 6 superseded 2026-11-05 (see below)
 **Date:** 2026-06-16
 **Driver:** ContestEnrichmentJob's season-week filter has been silently excluding ~44K historical contests (NCAAFB 19,208 + NFL 1,048 + MLB 24,430) that have `STATUS_FINAL` ready for enrichment but never had `FinalizedUtc` stamped.
+
+## Update 2026-11-05: historical backfill moved off this job
+
+The unbounded query (D4) shipped with a temporary `SeasonYear == 2026` pin
+(#426, "TODO: Remove after testing") and was never unpinned, so the
+historical sweep below never ran. Removing the pin was measured against prod
+first: ~41k candidates on the first run, ~25k of them permanent weekly
+no-ops (postponed contests, missing `Competition` rows, uncancelled COVID
+games; the D6 noise turned out to be the majority). #856 replaced the pin
+with a bounded window instead:
+
+- `ContestEnrichmentJob` considers contests that started in the last
+  14 days (`LookbackDays`, same horizon as
+  `ContestUpdateJob.StrandedWindowDays`), not finalized, not cancelled. Its
+  only job is catching recent finalizations the event-driven path missed.
+- The schedule is `Cron.Weekly` (registered in `ServiceRegistration.cs`), not
+  the daily cadence in D5. The 14-day window gives two runs of overlap.
+- **Historical backfill is per season, explicit:**
+  `POST api/contests/finalize` (`FinalizeContestsBySeasonYearHandler`,
+  bruno `producer/contests-finalize-seasonYear.yml`) with
+  `reprocessEnriched: false`, one season at a time. "Trigger now" on the
+  recurring job (rollout step 6) no longer backfills anything older than
+  14 days.
+
+Test plan for the current behaviour: `ContestEnrichmentJobTests` covers the
+window (excludes contests older than `LookbackDays`, includes the exact
+window start, ignores `SeasonYear`); `FinalizeContestsBySeasonYearHandlerTests`
+covers the per-season enqueue, including the inclusive 2000 floor. The
+original plan below is kept for history.
 
 ## Problem
 
@@ -34,7 +63,7 @@ The Football processor doesn't currently inject `IDateTimeProvider`; add it. Bas
 
 `STATUS_FORFEIT` is deferred. Real forfeits are vanishingly rare in NFL/NCAAFB and effectively extinct in MLB. If a forfeit game appears and someone complains, revisit. `STATUS_POSTPONED`, `STATUS_SUSPENDED`, `STATUS_DELAYED` are all transient — game eventually resumes/plays. Status processor already publishes `ContestStatusChanged` on these; nothing else to do.
 
-### D4. ContestEnrichmentJob runs an unbounded query
+### D4. ContestEnrichmentJob runs an unbounded query (superseded 2026-11-05: 14-day window)
 
 ```csharp
 var contests = await _dataContext.Contests
@@ -52,7 +81,7 @@ var contests = await _dataContext.Contests
 
 Delete the `BackfillCurrentSeason` flag, the `SeasonWeeks` query, and the per-season-week loop. The 3h grace window (`< now + 3h`) goes away — including future games never made sense for enrichment.
 
-### D5. Daily cadence (`Cron.Daily(8)`) stays
+### D5. Daily cadence (`Cron.Daily(8)`) stays (superseded: registered weekly; backfill via `POST api/contests/finalize`)
 
 The 44K initial sweep is a one-shot, triggered manually via the Hangfire dashboard's "Trigger now" on the recurring job. After that, daily runs see only the small day's-worth of newly-finalized games (~hundreds during MLB regular season, ~dozens NCAAFB on game days, ~zero NFL most days). Event-driven path (`ContestCompleted` → `ContestCompletedHandler` schedules `EnrichContestCommand` with 30s delay) handles live churn; the daily cron is cheap insurance for events lost in transit.
 
@@ -93,7 +122,7 @@ Audit job will see `GetMatchupResult → NotFound` for cancelled contests and re
 3. Open PR. Land via normal CR cycle.
 4. Deploy.
 5. Verify Hangfire dashboard shows three recurring jobs registered correctly.
-6. Hit "Trigger now" on `ContestEnrichmentJob` during a quiet window. Watch Seq for the new `JobRunId`-scoped logs.
+6. (Superseded 2026-11-05: finalize per season via `POST api/contests/finalize` instead.) Hit "Trigger now" on `ContestEnrichmentJob` during a quiet window. Watch Seq for the new `JobRunId`-scoped logs.
 7. After sweep settles (~8-10 hours expected at current worker pool size), query Postgres for the residual unfinalized count per sport. Compare to the 44K baseline to gauge what surfaced.
 
 ## Test plan

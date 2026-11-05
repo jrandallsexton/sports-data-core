@@ -169,6 +169,30 @@ public class RefreshContestsBySeasonYearHandlerTests :
     }
 
     [Theory]
+    [InlineData(2000, true)]  // inclusive floor: 2000 is a sourced season
+    [InlineData(1999, false)]
+    public async Task SeasonYearFloor_IsInclusiveOf2000(int seasonYear, bool expectedValid)
+    {
+        // arrange
+        var sut = Mocker.CreateInstance<RefreshContestsBySeasonYearHandler>();
+        var command = new RefreshContestsBySeasonYearCommand
+        {
+            Sport = Sport.FootballNcaa,
+            SeasonYear = seasonYear,
+            CorrelationId = Guid.NewGuid()
+        };
+
+        // act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // assert
+        if (expectedValid)
+            result.Status.Should().NotBe(ResultStatus.Validation);
+        else
+            result.Status.Should().Be(ResultStatus.Validation);
+    }
+
+    [Theory]
     [InlineData(DocumentType.AthleteSeason)]       // widening: athlete cascade
     [InlineData(DocumentType.EventCompetitionCompetitorRoster)]
     public async Task IncludeLinkedDocumentTypes_OutsideStandardSet_IsRejected(DocumentType widening)

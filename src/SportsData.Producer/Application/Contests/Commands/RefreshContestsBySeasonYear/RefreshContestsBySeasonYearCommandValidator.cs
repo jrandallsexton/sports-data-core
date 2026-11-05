@@ -14,8 +14,9 @@ public class RefreshContestsBySeasonYearCommandValidator : AbstractValidator<Ref
             .WithMessage("Sport must be a valid enum value");
 
         RuleFor(x => x.SeasonYear)
-            .GreaterThan(2000)
-            .WithMessage("Season year must be greater than 2000")
+            // Inclusive: 2000 is a sourced season.
+            .GreaterThanOrEqualTo(2000)
+            .WithMessage("Season year must be 2000 or later")
             .Must(year => year <= dateTimeProvider.UtcNow().Year + 1)
             .WithMessage("Season year cannot be more than one year in the future");
 

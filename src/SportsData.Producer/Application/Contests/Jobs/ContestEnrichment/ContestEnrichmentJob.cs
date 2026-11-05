@@ -22,19 +22,29 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
     /// streamer and schedules <see cref="IEnrichContests"/> after a 30s delay
     /// (see docs/contest-finalization-event-restructure.md).
     ///
-    /// This job is the sweep that picks up everything that didn't go through
-    /// the event-driven path: historical contests sourced from a backfill, games
-    /// where the event was lost in transit, pod restarts during the publish
-    /// window, etc. The filter is intentionally minimal — every contest that
-    /// has started, is not yet finalized, and is not terminally cancelled is
-    /// a candidate. The sport-specific enrichment processor short-circuits
+    /// This job is the sweep that picks up recent games that didn't go through
+    /// the event-driven path: the event was lost in transit, a pod restarted
+    /// during the publish window, etc. Candidates: started within the last
+    /// <see cref="LookbackDays"/> days, not yet finalized, not terminally
+    /// cancelled. The sport-specific enrichment processor short-circuits
     /// cleanly on non-STATUS_FINAL, so non-ready candidates are cheap no-ops.
     ///
-    /// See docs/contest-enrichment-historical-sweep.md.
+    /// Historical backfills are NOT this job's responsibility; finalize them
+    /// per season via POST api/contests/finalize
+    /// (FinalizeContestsBySeasonYearHandler). Unbounded, this sweep would
+    /// enqueue every historical contest that can never finalize (postponed,
+    /// missing Competition, uncancelled COVID games) on every run: ~25k
+    /// permanent no-ops a week across NCAA and MLB in prod on 2026-11-05.
+    ///
+    /// See docs/processing/historical/contest-enrichment-historical-sweep.md.
     /// </summary>
     public class ContestEnrichmentJob<TDataContext> : IContestEnrichmentJob, IAmARecurringJob
         where TDataContext : TeamSportDataContext
     {
+        // Two weekly runs of overlap, so one missed or failed run loses nothing.
+        // Same horizon as ContestUpdateJob.StrandedWindowDays.
+        internal const int LookbackDays = 14;
+
         private readonly ILogger<ContestEnrichmentJob<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -63,28 +73,24 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
                 ["JobRunId"] = jobRunId
             });
 
-            _logger.LogInformation(
-                "ContestEnrichmentJob starting. NowUtc={NowUtc}",
-                nowUtc);
+            var windowStartUtc = nowUtc.AddDays(-LookbackDays);
 
-            // Unbounded sweep — every contest past its start time that is
-            // neither finalized nor terminally cancelled. After the initial
-            // historical sweep (manually triggered post-deploy), the daily
-            // steady-state volume is small: only contests whose StartDateUtc
-            // crossed `now` since yesterday's run AND that the event-driven
-            // ContestCompletedHandler didn't already catch.
+            _logger.LogInformation(
+                "ContestEnrichmentJob starting. NowUtc={NowUtc}, WindowStartUtc={WindowStartUtc}",
+                nowUtc, windowStartUtc);
+
             var contests = await _dataContext.Contests
                 .AsNoTracking()
                 .Where(c => c.FinalizedUtc == null
                          && c.CancelledUtc == null
-                         && c.SeasonYear == 2026 // TODO: Remove after testing
+                         && c.StartDateUtc >= windowStartUtc
                          && c.StartDateUtc < nowUtc)
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
 
             _logger.LogInformation(
-                "ContestEnrichmentJob: {ContestCount} non-finalized, non-cancelled contest(s) with past start time.",
-                contests.Count);
+                "ContestEnrichmentJob: {ContestCount} non-finalized, non-cancelled contest(s) started in the last {LookbackDays} days.",
+                contests.Count, LookbackDays);
 
             if (contests.Count == 0)
             {

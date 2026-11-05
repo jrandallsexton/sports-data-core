@@ -26,14 +26,14 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
             .Returns(FixedNow);
     }
 
-    [Fact(Skip = "Remove after testing")]
+    [Fact]
     public async Task Execute_EnqueuesOnePerCandidate_WhenContestIsPastStartAndUnfinalizedAndUncancelled()
     {
         // Arrange — three legitimate candidates spanning different StartDateUtc
         // values to exercise the ordering. None finalized, none cancelled.
         var ids = new[]
         {
-            await SeedContestAsync(startDaysFromNow: -30),
+            await SeedContestAsync(startDaysFromNow: -13),
             await SeedContestAsync(startDaysFromNow: -5),
             await SeedContestAsync(startDaysFromNow: -1)
         };
@@ -51,11 +51,11 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
 
         // Assert — strict-equal so the OrderBy(StartDateUtc) contract is
         // actually verified. Seed order matches ascending StartDateUtc
-        // (-30, -5, -1 days) so ids[] is already in the expected order.
+        // (-13, -5, -1 days) so ids[] is already in the expected order.
         enqueued.Should().Equal(ids);
     }
 
-    [Fact(Skip = "Remove after testing")]
+    [Fact]
     public async Task Execute_SkipsContestsThatAreAlreadyFinalized()
     {
         var ineligibleId = await SeedContestAsync(
@@ -77,7 +77,7 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
         enqueued.Should().NotContain(ineligibleId);
     }
 
-    [Fact(Skip = "Remove after testing")]
+    [Fact]
     public async Task Execute_SkipsContestsThatHaveCancelledUtcStamped()
     {
         // Regression — the cancelled-game exclusion is the whole reason the
@@ -102,7 +102,7 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
         enqueued.Should().NotContain(cancelledId);
     }
 
-    [Fact(Skip = "Remove after testing")]
+    [Fact]
     public async Task Execute_SkipsContestsWithFutureStartTime()
     {
         var futureId = await SeedContestAsync(startDaysFromNow: 2);
@@ -120,6 +120,69 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
 
         enqueued.Should().ContainSingle().Which.Should().Be(pastId);
         enqueued.Should().NotContain(futureId);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsContestsThatStartedBeforeTheLookbackWindow()
+    {
+        // Historical contests are finalized per season via
+        // FinalizeContestsBySeasonYear, not by this sweep. Unbounded, the sweep
+        // re-enqueued every unfinalizable historical contest on every run.
+        var staleId = await SeedContestAsync(startDaysFromNow: -(ContestEnrichmentJob<FootballDataContext>.LookbackDays + 1));
+        var historicalId = await SeedContestAsync(startDaysFromNow: -3650);
+        var recentId = await SeedContestAsync(startDaysFromNow: -2);
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+            .Callback<Expression<Func<IEnrichContests, Task>>>(expr =>
+                enqueued.Add(EnrichContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().ContainSingle().Which.Should().Be(recentId);
+        enqueued.Should().NotContain(new[] { staleId, historicalId });
+    }
+
+    [Fact]
+    public async Task Execute_IncludesContestStartingExactlyAtTheWindowStart()
+    {
+        var boundaryId = await SeedContestAsync(startDaysFromNow: -ContestEnrichmentJob<FootballDataContext>.LookbackDays);
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+            .Callback<Expression<Func<IEnrichContests, Task>>>(expr =>
+                enqueued.Add(EnrichContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().ContainSingle().Which.Should().Be(boundaryId);
+    }
+
+    [Fact]
+    public async Task Execute_IncludesContestsFromPriorSeasonYears_WhenInsideTheWindow()
+    {
+        // Regression for the removed SeasonYear == 2026 pin: the window, not
+        // the season, decides eligibility (a January bowl belongs to the prior
+        // season year).
+        var priorSeasonId = await SeedContestAsync(startDaysFromNow: -3, seasonYear: 2025);
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+            .Callback<Expression<Func<IEnrichContests, Task>>>(expr =>
+                enqueued.Add(EnrichContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().ContainSingle().Which.Should().Be(priorSeasonId);
     }
 
     [Fact]
@@ -142,7 +205,8 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
     private async Task<Guid> SeedContestAsync(
         int startDaysFromNow,
         DateTime? finalizedUtc = null,
-        DateTime? cancelledUtc = null)
+        DateTime? cancelledUtc = null,
+        int seasonYear = 2026)
     {
         var contest = new FootballContest
         {
@@ -150,7 +214,7 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
             Name = $"Contest {Guid.NewGuid():N}",
             ShortName = "TC",
             Sport = Sport.FootballNcaa,
-            SeasonYear = 2025,
+            SeasonYear = seasonYear,
             StartDateUtc = FixedNow.AddDays(startDaysFromNow),
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),

@@ -30,13 +30,13 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
     public async Task Execute_EnqueuesOnePerCandidate_WhenContestIsPastStartAndUnfinalizedAndUncancelled()
     {
         // Arrange — three legitimate candidates spanning different StartDateUtc
-        // values to exercise the ordering. None finalized, none cancelled.
-        var ids = new[]
-        {
-            await SeedContestAsync(startDaysFromNow: -13),
-            await SeedContestAsync(startDaysFromNow: -5),
-            await SeedContestAsync(startDaysFromNow: -1)
-        };
+        // values, seeded OUT of date order so a provider returning insertion
+        // order cannot satisfy the assertion without the job's OrderBy.
+        // None finalized, none cancelled.
+        var middle = await SeedContestAsync(startDaysFromNow: -5);
+        var latest = await SeedContestAsync(startDaysFromNow: -1);
+        var earliest = await SeedContestAsync(startDaysFromNow: -13);
+        var ids = new[] { earliest, middle, latest };
 
         var enqueued = new List<Guid>();
         Mocker.GetMock<IProvideBackgroundJobs>()
@@ -50,8 +50,8 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
         await sut.ExecuteAsync();
 
         // Assert — strict-equal so the OrderBy(StartDateUtc) contract is
-        // actually verified. Seed order matches ascending StartDateUtc
-        // (-13, -5, -1 days) so ids[] is already in the expected order.
+        // actually verified: ids[] is ascending StartDateUtc (-13, -5, -1
+        // days), which differs from the seed order.
         enqueued.Should().Equal(ids);
     }
 

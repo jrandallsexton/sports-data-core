@@ -355,13 +355,15 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
     /// <param name="propertyBag">Optional property bag to attach to the published DocumentRequested. Use for cross-cutting context that doesn't fit a typed field (e.g., a parent foreign-key the consuming processor needs).</param>
+    /// <param name="includeLinkedDocumentTypes">Optional filter for THIS child request only; null inherits the parent's filter. Pass a narrower set, never a wider one (filters only narrow downhill).</param>
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
         DocumentType documentType,
-        Dictionary<string, string>? propertyBag = null)
+        Dictionary<string, string>? propertyBag = null,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
     {
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -405,7 +407,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 return;
             }
 
-            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null, propertyBag: propertyBag);
+            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null, propertyBag: propertyBag, includeLinkedDocumentTypes: includeLinkedDocumentTypes);
         }
     }
 

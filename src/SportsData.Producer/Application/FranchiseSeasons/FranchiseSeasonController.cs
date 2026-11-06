@@ -9,6 +9,7 @@ using SportsData.Core.Processing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueSingleFranchiseSeasonEnrichment;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestConferenceMembershipSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
@@ -188,6 +189,31 @@ public class FranchiseSeasonController : ControllerBase
         var result = await handler.ExecuteAsync(
             new RequestSingleFranchiseSeasonSourcingCommand(franchiseSeasonId, GetCorrelationIdFromRequest()),
             cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Re-sources the season's conference membership from ESPN's member
+    /// lists, correcting FranchiseSeason.GroupSeasonId and GroupSeasonMap.
+    /// ESPN's historical TeamSeason documents link each team to its CURRENT
+    /// conference; the group member lists are season-accurate. Publishes only
+    /// the season's root groups, so it returns synchronously; the walk runs
+    /// in the document pipeline under the returned correlation id.
+    /// </summary>
+    [HttpPost("seasonYear/{seasonYear}/conferences/source")]
+    public async Task<ActionResult<Guid>> RequestConferenceMembershipSourcing(
+        [FromRoute] int seasonYear,
+        [FromServices] IRequestConferenceMembershipSourcingCommandHandler handler,
+        [FromServices] IAppMode appMode,
+        CancellationToken cancellationToken)
+    {
+        var command = new RequestConferenceMembershipSourcingCommand(
+            seasonYear,
+            appMode.CurrentSport,
+            GetCorrelationIdFromRequest());
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }

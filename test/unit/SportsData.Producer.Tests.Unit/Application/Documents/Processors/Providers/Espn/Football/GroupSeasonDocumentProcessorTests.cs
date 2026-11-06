@@ -1,4 +1,6 @@
-﻿using AutoFixture;
+﻿#nullable enable
+
+using AutoFixture;
 
 using FluentAssertions;
 
@@ -9,6 +11,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -210,4 +213,161 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         group.Should().NotBeNull("group with external ID '8' should have been created");
     }
 
+    // ---- Member lists: authoritative conference membership ----
+
+    [Fact]
+    public async Task WhenNewLeafGroup_PublishesItsMemberListAsDocumentOnlyTeamSeasonRequest()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        var published = CaptureDocumentRequests();
+
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+
+        var group = await FootballDataContext.GroupSeasons.SingleAsync();
+        var members = published.Where(r => r.DocumentType == DocumentType.TeamSeason).ToList();
+
+        members.Should().ContainSingle();
+        members[0].ParentId.Should().Be(group.Id.ToString());
+        members[0].Uri.AbsolutePath.Should().EndWith("/groups/8/teams");
+        members[0].IncludeLinkedDocumentTypes.Should().NotBeNull().And.BeEmpty(
+            "the fan-out corrects membership only; it must not cascade every team's children");
+    }
+
+    [Fact]
+    public async Task WhenNewGroupHasChildren_PublishesChildrenAndNotItsMemberList()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        dto.Children = new EspnLinkDto { Ref = new Uri(dto.Ref.ToString().Replace("?lang=en", "/children?lang=en")) };
+        var published = CaptureDocumentRequests();
+
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+
+        published.Should().ContainSingle(r => r.DocumentType == DocumentType.GroupSeason);
+        published.Should().NotContain(r => r.DocumentType == DocumentType.TeamSeason,
+            "a conference with divisions is not a leaf; its divisions' lists are more specific");
+    }
+
+    [Fact]
+    public async Task WhenExistingGroupAndNoFilter_PublishesNothing()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+        var published = CaptureDocumentRequests();
+
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+
+        published.Should().BeEmpty("an ordinary re-hit of an existing group must not re-walk its member list");
+    }
+
+    [Fact]
+    public async Task WhenExistingGroupAndMembershipRequested_PublishesItsMemberList()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+        var published = CaptureDocumentRequests();
+
+        await sut.ProcessAsync(Command(dto, [DocumentType.GroupSeason, DocumentType.TeamSeason]));
+
+        published.Should().ContainSingle(r => r.DocumentType == DocumentType.TeamSeason);
+    }
+
+    [Fact]
+    public async Task WhenExistingFbsGroupHasUnknownAbbreviation_ItIsResolvedAndMapsBelowAreRefreshed()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        var generator = new ExternalRefIdentityGenerator();
+
+        // Re-point the fixture at the FBS node (ESPN group 80), which ESPN
+        // serves without an abbreviation.
+        dto.Ref = new Uri(dto.Ref.ToString().Replace("/groups/8?", "/groups/80?"));
+        dto.Id = 80;
+        dto.Abbreviation = null!;
+        dto.Teams = null!;
+
+        var fbsIdentity = generator.Generate(dto.Ref);
+        var fbs = new GroupSeason
+        {
+            Id = fbsIdentity.CanonicalId,
+            SeasonYear = 2024,
+            Name = "FBS",
+            Slug = "fbs",
+            Abbreviation = "UNK",
+            CreatedBy = Guid.Empty,
+            CreatedUtc = new DateTime(2026, 11, 6, 0, 0, 0, DateTimeKind.Utc)
+        };
+        var sec = new GroupSeason
+        {
+            Id = Guid.NewGuid(),
+            ParentId = fbs.Id,
+            SeasonYear = 2024,
+            Name = "SEC",
+            Slug = "sec",
+            Abbreviation = "sec",
+            CreatedBy = Guid.Empty,
+            CreatedUtc = new DateTime(2026, 11, 6, 0, 0, 0, DateTimeKind.Utc)
+        };
+        await FootballDataContext.GroupSeasons.AddRangeAsync(fbs, sec);
+
+        var franchiseSeason = Fixture.Build<FranchiseSeason>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.FranchiseId, Guid.NewGuid())
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.Abbreviation, "TST")
+            .With(x => x.ColorCodeHex, "000000")
+            .With(x => x.DisplayName, "Test")
+            .With(x => x.DisplayNameShort, "Test")
+            .With(x => x.Location, "Test")
+            .With(x => x.Slug, "test")
+            .With(x => x.GroupSeasonId, sec.Id)
+            .With(x => x.GroupSeasonMap, "UNK|sec")
+            .Create();
+        await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.ProcessAsync(Command(dto, includeLinkedDocumentTypes: null));
+
+        var reloadedFbs = await FootballDataContext.GroupSeasons.AsNoTracking().SingleAsync(g => g.Id == fbs.Id);
+        reloadedFbs.Abbreviation.Should().Be("fbs");
+
+        var reloaded = await FootballDataContext.FranchiseSeasons.AsNoTracking().SingleAsync(fs => fs.Id == franchiseSeason.Id);
+        reloaded.GroupSeasonMap.Should().Be("fbs|sec", "every '|fbs' filter depends on the resolved abbreviation");
+    }
+
+    private async Task<(GroupSeasonDocumentProcessor<FootballDataContext> Sut, EspnGroupSeasonDto Dto)> ArrangeSec2024Async()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<GroupSeasonDocumentProcessor<FootballDataContext>>();
+
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaGroupSeason_Sec2024.json");
+        var dto = documentJson.FromJson<EspnGroupSeasonDto>()!;
+        dto.Parent = null;
+        dto.Season = null!;
+
+        return (sut, dto);
+    }
+
+    private List<DocumentRequested> CaptureDocumentRequests()
+    {
+        var published = new List<DocumentRequested>();
+        Mocker.GetMock<IEventBus>()
+            .Setup(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .Callback<DocumentRequested, CancellationToken>((evt, _) => published.Add(evt))
+            .Returns(Task.CompletedTask);
+        return published;
+    }
+
+    private ProcessDocumentCommand Command(
+        EspnGroupSeasonDto dto,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes) =>
+        Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.DocumentType, DocumentType.GroupSeason)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.Document, dto.ToJson())
+            .With(x => x.IncludeLinkedDocumentTypes, includeLinkedDocumentTypes)
+            .OmitAutoProperties()
+            .Create();
 }

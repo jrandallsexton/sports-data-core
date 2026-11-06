@@ -93,6 +93,16 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
             .Where(url => SeasonTypePattern().Match(url) is { Success: true } m && m.Groups[1].Value == seasonType)
             .ToList();
 
+        // Nothing to seed means nothing will run; a 202 with a correlation id
+        // would promise a backfill that never happens.
+        if (seeds.Count == 0)
+        {
+            _logger.LogWarning(
+                "No root group for the season type in use; nothing to re-source. SeasonYear={SeasonYear}, Sport={Sport}, SeasonType={SeasonType}, RootGroups={RootGroups}",
+                command.SeasonYear, command.Sport, seasonType, rootUrls.Count);
+            return new Failure<Guid>(default!, ResultStatus.NotFound, []);
+        }
+
         // Direct delivery, NOT the bus-outbox: this handler only reads, so
         // SaveChangesAsync would never flush the outbox. Same as
         // RequestFranchiseSeasonSourcingCommandHandler.

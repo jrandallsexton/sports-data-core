@@ -77,6 +77,23 @@ public class RequestConferenceMembershipSourcingCommandHandlerTests
     }
 
     [Fact]
+    public async Task NoRootForTheSeasonTypeInUse_ReturnsNotFoundAndPublishesNothing()
+    {
+        // Team-seasons point at types/3, but only a types/2 root is sourced.
+        var rootType2 = await SeedGroupAsync(seasonType: 2, espnGroupId: 99, parentId: null);
+        var conferenceType3 = await SeedGroupAsync(seasonType: 3, espnGroupId: 17, parentId: rootType2.Id);
+        await SeedFranchiseSeasonAsync(conferenceType3.Id);
+        var published = CapturePublished();
+
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestConferenceMembershipSourcingCommand(SeasonYear, Sport.FootballNcaa, Guid.NewGuid()));
+
+        result.IsSuccess.Should().BeFalse("a 202 would promise a backfill that never runs");
+        result.Status.Should().Be(ResultStatus.NotFound);
+        published.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task SeasonBeforeTheFloor_IsRejected()
     {
         var result = await CreateHandler().ExecuteAsync(

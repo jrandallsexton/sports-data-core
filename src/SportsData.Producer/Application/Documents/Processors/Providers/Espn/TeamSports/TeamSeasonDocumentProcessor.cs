@@ -419,7 +419,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 _dataContext,
                 _externalRefIdentityGenerator,
                 memberOfGroupSeasonId.Value,
-                franchiseSeason.GroupSeasonId);
+                franchiseSeason.GroupSeasonId,
+                _logger);
 
             var currentId = franchiseSeason.GroupSeasonId;
 

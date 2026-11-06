@@ -28,10 +28,21 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
     /// this group as ParentId; TeamSeasonDocumentProcessor takes the parent as
     /// the authoritative conference. Document-only (empty): membership needs
     /// no TeamSeason children, and the empty filter is enforced at the
-    /// publish choke point even for new entities, so a list never cascades
-    /// into logos, rosters, or schedules. A team-season the list creates is
-    /// therefore bare but correctly grouped; ordinary sourcing hydrates it
-    /// later and never overwrites the group.
+    /// child-document publish choke point even for new entities, so a list
+    /// never cascades into records, rosters, or schedules. A team-season the
+    /// list creates is correctly grouped but otherwise minimal: only its logo
+    /// image requests go out (they publish directly, not through the choke
+    /// point). Ordinary sourcing hydrates it later and never overwrites the
+    /// group.
+    ///
+    /// Known gap, accepted: Provider's historical republish cooldown
+    /// (DocumentPublishCooldownMinutes, 90 in prod) applies to null/empty
+    /// filters, so a member list processed within the window after ordinary
+    /// sourcing published the same TeamSeason documents is dropped. That only
+    /// happens during fresh historical sourcing (a rebuilt database, a new
+    /// league's history); afterwards, run
+    /// POST api/franchise-seasons/seasonYear/{year}/conferences/source once
+    /// the window has passed.
     /// </summary>
     public static readonly IReadOnlyCollection<DocumentType> MembershipLinkedDocumentTypes = [];
 
@@ -233,7 +244,11 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 dto.Teams,
                 groupSeasonEntity.Id,
                 DocumentType.TeamSeason,
-                includeLinkedDocumentTypes: MembershipLinkedDocumentTypes);
+                includeLinkedDocumentTypes: MembershipLinkedDocumentTypes,
+                // The group's year comes from its own $ref (see HandleNew); the
+                // command's year can belong to whichever parent reached it, and
+                // TeamSeason keys the FranchiseSeason year off the request.
+                seasonYear: groupSeasonEntity.SeasonYear);
         }
 
         // NOTE: Future enhancements:

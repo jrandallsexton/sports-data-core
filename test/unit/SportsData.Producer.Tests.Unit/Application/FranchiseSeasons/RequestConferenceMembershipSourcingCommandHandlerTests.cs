@@ -70,6 +70,8 @@ public class RequestConferenceMembershipSourcingCommandHandlerTests
         var result = await CreateHandler().ExecuteAsync(
             new RequestConferenceMembershipSourcingCommand(SeasonYear, Sport.FootballNcaa, Guid.NewGuid()));
 
+        // A Failure, so ToActionResult maps it to 404 rather than 200 + Guid.Empty.
+        result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
         published.Should().BeEmpty();
     }

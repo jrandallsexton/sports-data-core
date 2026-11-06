@@ -77,7 +77,8 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
             _logger.LogWarning(
                 "No grouped franchise seasons to re-source. SeasonYear={SeasonYear}, Sport={Sport}",
                 command.SeasonYear, command.Sport);
-            return new Success<Guid>(Guid.Empty, ResultStatus.NotFound);
+            // Failure, not Success: ToActionResult maps a successful NotFound to 200.
+            return new Failure<Guid>(default!, ResultStatus.NotFound, []);
         }
 
         var rootUrls = await _dataContext.GroupSeasons

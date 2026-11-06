@@ -126,13 +126,16 @@ public static partial class GroupSeasonHierarchy
     /// <paramref name="incomingGroupSeasonId"/> to the variant
     /// <paramref name="currentGroupSeasonId"/> already uses; returns the
     /// incoming id unchanged when there is no current group, the variants
-    /// already agree, or the matching variant has not been sourced.
+    /// already agree, or the matching variant has not been sourced. The last
+    /// case splits the team from its conference peers, so it is logged as a
+    /// warning: a mixed-variant season shows up in Seq during a backfill.
     /// </summary>
     public static async Task<Guid> MatchVariantAsync(
         TeamSportDataContext dataContext,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid incomingGroupSeasonId,
-        Guid? currentGroupSeasonId)
+        Guid? currentGroupSeasonId,
+        ILogger? logger = null)
     {
         if (currentGroupSeasonId is null || currentGroupSeasonId == incomingGroupSeasonId)
             return incomingGroupSeasonId;
@@ -168,7 +171,15 @@ public static partial class GroupSeasonHierarchy
             .Select(x => (Guid?)x.GroupSeasonId)
             .FirstOrDefaultAsync();
 
-        return targetId ?? incomingGroupSeasonId;
+        if (targetId is null)
+        {
+            logger?.LogWarning(
+                "GroupSeason variant not sourced; using the incoming variant, which splits this team from peers on types/{CurrentType}. IncomingUrl={IncomingUrl}, MissingUrl={MissingUrl}",
+                currentType, incomingUrl, targetUrl);
+            return incomingGroupSeasonId;
+        }
+
+        return targetId.Value;
     }
 
     private static Task<string?> GetSourceUrlAsync(TeamSportDataContext dataContext, Guid groupSeasonId) =>

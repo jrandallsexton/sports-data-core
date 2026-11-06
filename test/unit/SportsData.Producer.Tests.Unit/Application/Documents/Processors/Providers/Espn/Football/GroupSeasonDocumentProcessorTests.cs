@@ -234,6 +234,30 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
     }
 
     [Fact]
+    public async Task MemberListRequest_CarriesTheGroupsUrlYear_NotTheCommandsYear()
+    {
+        var (sut, dto) = await ArrangeSec2024Async();
+        var published = CaptureDocumentRequests();
+
+        // A 2023 parent reached the seasons/2024 group (ESPN reuses older
+        // structures as child refs). The member list is the 2024 roster.
+        var command = Command(dto, includeLinkedDocumentTypes: null);
+        command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.DocumentType, DocumentType.GroupSeason)
+            .With(x => x.SeasonYear, 2023)
+            .With(x => x.Document, command.Document)
+            .OmitAutoProperties()
+            .Create();
+
+        await sut.ProcessAsync(command);
+
+        published.Should().ContainSingle(r => r.DocumentType == DocumentType.TeamSeason)
+            .Which.SeasonYear.Should().Be(2024);
+    }
+
+    [Fact]
     public async Task WhenNewGroupHasChildren_PublishesChildrenAndNotItsMemberList()
     {
         var (sut, dto) = await ArrangeSec2024Async();

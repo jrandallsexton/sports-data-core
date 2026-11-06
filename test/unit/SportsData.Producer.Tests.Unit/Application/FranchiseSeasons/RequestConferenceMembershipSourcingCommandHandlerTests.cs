@@ -93,6 +93,27 @@ public class RequestConferenceMembershipSourcingCommandHandlerTests
         published.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(2, 3)]
+    [InlineData(3, 2)]
+    public async Task TiedSeasonTypes_PreferTheVariantWithARoot(int firstSeeded, int secondSeeded)
+    {
+        // Only a types/3 root exists; team-seasons split evenly across 2 and 3.
+        var rootType3 = await SeedGroupAsync(seasonType: 3, espnGroupId: 99, parentId: null);
+        var first = await SeedGroupAsync(seasonType: firstSeeded, espnGroupId: 17, parentId: rootType3.Id);
+        var second = await SeedGroupAsync(seasonType: secondSeeded, espnGroupId: 18, parentId: rootType3.Id);
+        await SeedFranchiseSeasonAsync(first.Id);
+        await SeedFranchiseSeasonAsync(second.Id);
+        var published = CapturePublished();
+
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestConferenceMembershipSourcingCommand(SeasonYear, Sport.FootballNcaa, Guid.NewGuid()));
+
+        result.IsSuccess.Should().BeTrue();
+        published.Should().ContainSingle()
+            .Which.Uri.AbsolutePath.Should().EndWith("/seasons/2005/types/3/groups/99");
+    }
+
     [Fact]
     public async Task SeasonBeforeTheFloor_IsRejected()
     {

@@ -71,7 +71,21 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
         if (!validation.IsValid)
             return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
 
-        var seasonType = await GetSeasonTypeInUseAsync(command.SeasonYear, cancellationToken);
+        var rootUrls = await _dataContext.GroupSeasons
+            .AsNoTracking()
+            .Where(g => g.SeasonYear == command.SeasonYear && g.ParentId == null)
+            .SelectMany(g => g.ExternalIds)
+            .Where(x => x.Provider == SourceDataProvider.Espn)
+            .Select(x => x.SourceUrl)
+            .ToListAsync(cancellationToken);
+
+        var rootTypes = rootUrls
+            .Select(url => SeasonTypePattern().Match(url))
+            .Where(m => m.Success)
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet();
+
+        var seasonType = await GetSeasonTypeInUseAsync(command.SeasonYear, rootTypes, cancellationToken);
         if (seasonType is null)
         {
             _logger.LogWarning(
@@ -80,14 +94,6 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
             // Failure, not Success: ToActionResult maps a successful NotFound to 200.
             return new Failure<Guid>(default!, ResultStatus.NotFound, []);
         }
-
-        var rootUrls = await _dataContext.GroupSeasons
-            .AsNoTracking()
-            .Where(g => g.SeasonYear == command.SeasonYear && g.ParentId == null)
-            .SelectMany(g => g.ExternalIds)
-            .Where(x => x.Provider == SourceDataProvider.Espn)
-            .Select(x => x.SourceUrl)
-            .ToListAsync(cancellationToken);
 
         var seeds = rootUrls
             .Where(url => SeasonTypePattern().Match(url) is { Success: true } m && m.Groups[1].Value == seasonType)
@@ -138,8 +144,13 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
     /// <summary>
     /// The types/{n} variant most of the season's team-seasons point at
     /// (types/3 for 2000-2024 and types/2 for 2025 in prod on 2026-11-06).
+    /// A tie goes to a variant that has a sourced root, then to the lowest
+    /// type, so the result never depends on row order.
     /// </summary>
-    private async Task<string?> GetSeasonTypeInUseAsync(int seasonYear, CancellationToken cancellationToken)
+    private async Task<string?> GetSeasonTypeInUseAsync(
+        int seasonYear,
+        IReadOnlySet<string> rootTypes,
+        CancellationToken cancellationToken)
     {
         var urls = await _dataContext.FranchiseSeasons
             .AsNoTracking()
@@ -153,6 +164,8 @@ public partial class RequestConferenceMembershipSourcingCommandHandler : IReques
             .Where(m => m.Success)
             .GroupBy(m => m.Groups[1].Value)
             .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => rootTypes.Contains(g.Key))
+            .ThenBy(g => int.Parse(g.Key))
             .Select(g => g.Key)
             .FirstOrDefault();
     }

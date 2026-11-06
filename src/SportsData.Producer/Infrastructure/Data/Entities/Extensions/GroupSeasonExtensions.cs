@@ -18,7 +18,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             return new GroupSeason
             {
                 Id = identity.CanonicalId,
-                Abbreviation = dto.Abbreviation ?? "UNK",
+                Abbreviation = GroupSeasonHierarchy.ResolveAbbreviation(dto),
                 CreatedBy = correlationId,
                 CreatedUtc = DateTime.UtcNow,
                 IsConference = dto.IsConference,

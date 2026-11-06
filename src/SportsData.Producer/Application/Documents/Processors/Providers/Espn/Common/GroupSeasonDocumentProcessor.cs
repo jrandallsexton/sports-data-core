@@ -22,6 +22,30 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    /// <summary>
+    /// Filter for the member-list fan-out. Provider walks a leaf group's
+    /// `teams` index and delivers each entry as a TeamSeason document with
+    /// this group as ParentId; TeamSeasonDocumentProcessor takes the parent as
+    /// the authoritative conference. Document-only (empty): membership needs
+    /// no TeamSeason children, and the empty filter is enforced at the
+    /// child-document publish choke point even for new entities, so a list
+    /// never cascades into records, rosters, or schedules. A team-season the
+    /// list creates is correctly grouped but otherwise minimal: only its logo
+    /// image requests go out (they publish directly, not through the choke
+    /// point). Ordinary sourcing hydrates it later and never overwrites the
+    /// group.
+    ///
+    /// Known gap, accepted: Provider's historical republish cooldown
+    /// (DocumentPublishCooldownMinutes, 90 in prod) applies to null/empty
+    /// filters, so a member list processed within the window after ordinary
+    /// sourcing published the same TeamSeason documents is dropped. That only
+    /// happens during fresh historical sourcing (a rebuilt database, a new
+    /// league's history); afterwards, run
+    /// POST api/franchise-seasons/seasonYear/{year}/conferences/source once
+    /// the window has passed.
+    /// </summary>
+    public static readonly IReadOnlyCollection<DocumentType> MembershipLinkedDocumentTypes = [];
+
     public GroupSeasonDocumentProcessor(
         ILogger<GroupSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
@@ -53,7 +77,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         }
         else
         {
-            await HandleExisting();
+            await HandleExisting(dto, groupSeason, command);
         }
     }
 
@@ -144,7 +168,7 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
             groupSeasonEntity.ParentId = parentId;
         }
 
-        await ProcessChildren(dto, groupSeasonEntity, command);
+        await ProcessChildren(dto, groupSeasonEntity, command, isNew: true);
 
         await ProcessLogos(dto, groupSeasonEntity, seasonYear, command);
 
@@ -191,9 +215,11 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
     private async Task ProcessChildren(
         EspnGroupSeasonDto dto,
         GroupSeason groupSeasonEntity,
-        ProcessDocumentCommand command)
+        ProcessDocumentCommand command,
+        bool isNew)
     {
-        if (dto.Children?.Ref is not null)
+        if (dto.Children?.Ref is not null &&
+            (isNew || IsExplicitlyRequested(DocumentType.GroupSeason, command)))
         {
             await PublishChildDocumentRequest(
                 command,
@@ -202,15 +228,112 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
                 DocumentType.GroupSeason);
         }
 
+        // Member list: authoritative conference membership. ESPN's TeamSeason
+        // document links each team to its CURRENT conference even for old
+        // seasons (TCU 2005 -> Big 12), but the group's own `teams` index is
+        // season-accurate (2005 Mountain West contains TCU). Leaf groups only:
+        // a conference with divisions lists its members again at the
+        // conference level, and the division is the more specific answer.
+        // ESPN serves no `children` link on leaf groups.
+        if (dto.Children?.Ref is null &&
+            dto.Teams?.Ref is not null &&
+            (isNew || IsExplicitlyRequested(DocumentType.TeamSeason, command)))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Teams,
+                groupSeasonEntity.Id,
+                DocumentType.TeamSeason,
+                includeLinkedDocumentTypes: MembershipLinkedDocumentTypes,
+                // The group's year comes from its own $ref (see HandleNew); the
+                // command's year can belong to whichever parent reached it, and
+                // TeamSeason keys the FranchiseSeason year off the request.
+                seasonYear: groupSeasonEntity.SeasonYear);
+        }
+
         // NOTE: Future enhancements:
         // - Standings: Can be derived from game results or sourced from ESPN standings endpoint
         // - Links: Additional related resources (if ESPN provides conference-level links)
-        // - Teams: Team roster by conference/division
     }
 
-    private async Task HandleExisting()
+    /// <summary>
+    /// Re-processing an existing group. Ordinary re-hits (a null filter) stay
+    /// no-ops for children, as before: walking the subtree and every member
+    /// list on each re-hit would re-process every team in the conference.
+    /// Only a command that names the type walks it — the group backfill
+    /// (FranchiseSeason conference re-sourcing) sends GroupSeason + TeamSeason.
+    /// </summary>
+    private async Task HandleExisting(
+        EspnGroupSeasonDto dto,
+        GroupSeason groupSeason,
+        ProcessDocumentCommand command)
     {
-        _logger.LogWarning("Update detected. Not Implemented");
-        await Task.CompletedTask;
+        var abbreviation = GroupSeasonHierarchy.ResolveAbbreviation(dto);
+
+        if (!string.Equals(groupSeason.Abbreviation, abbreviation, StringComparison.Ordinal) &&
+            string.Equals(groupSeason.Abbreviation, GroupSeasonHierarchy.UnknownAbbreviation, StringComparison.Ordinal))
+        {
+            _logger.LogInformation(
+                "GroupSeason abbreviation resolved. GroupSeasonId={GroupSeasonId}, Old={OldAbbreviation}, New={NewAbbreviation}",
+                groupSeason.Id, groupSeason.Abbreviation, abbreviation);
+
+            groupSeason.Abbreviation = abbreviation;
+            await _dataContext.SaveChangesAsync();
+
+            await RefreshMapsBelow(groupSeason);
+        }
+
+        await ProcessChildren(dto, groupSeason, command, isNew: false);
+
+        await _dataContext.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// A changed abbreviation changes the path of every group beneath it, so
+    /// recompute GroupSeasonMap for the team-seasons in that subtree.
+    /// </summary>
+    private async Task RefreshMapsBelow(GroupSeason groupSeason)
+    {
+        var seasonGroups = await _dataContext.GroupSeasons
+            .AsNoTracking()
+            .Where(g => g.SeasonYear == groupSeason.SeasonYear)
+            .Select(g => new { g.Id, g.ParentId })
+            .ToListAsync();
+
+        var subtree = new HashSet<Guid> { groupSeason.Id };
+        bool added;
+        do
+        {
+            added = false;
+            foreach (var g in seasonGroups)
+            {
+                if (g.ParentId is not null && subtree.Contains(g.ParentId.Value) && subtree.Add(g.Id))
+                    added = true;
+            }
+        } while (added);
+
+        var franchiseSeasons = await _dataContext.FranchiseSeasons
+            .Where(fs => fs.GroupSeasonId != null && subtree.Contains(fs.GroupSeasonId.Value))
+            .ToListAsync();
+
+        var maps = new Dictionary<Guid, string?>();
+        foreach (var fs in franchiseSeasons)
+        {
+            var groupId = fs.GroupSeasonId!.Value;
+            if (!maps.TryGetValue(groupId, out var map))
+            {
+                map = await GroupSeasonHierarchy.BuildMapAsync(_dataContext, groupId);
+                maps[groupId] = map;
+            }
+
+            fs.GroupSeasonMap = map;
+        }
+
+        _logger.LogInformation(
+            "GroupSeasonMap refreshed below GroupSeasonId={GroupSeasonId}. FranchiseSeasons={Count}",
+            groupSeason.Id, franchiseSeasons.Count);
+    }
+
+    private static bool IsExplicitlyRequested(DocumentType documentType, ProcessDocumentCommand command) =>
+        command.IncludeLinkedDocumentTypes?.Contains(documentType) == true;
 }

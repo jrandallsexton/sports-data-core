@@ -75,13 +75,17 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         var franchiseSeasonIdentity = _externalRefIdentityGenerator.Generate(externalProviderDto.Ref);
         var existingSeason = franchise.Seasons.FirstOrDefault(s => s.Id == franchiseSeasonIdentity.CanonicalId);
 
+        // Delivered by a group's member-list fan-out (ParentId = GroupSeason)?
+        // Then that group is the authoritative conference for this season.
+        var memberOfGroupSeasonId = await ResolveMemberOfGroupSeasonId(command);
+
         if (existingSeason is not null)
         {
-            await ProcessUpdateEntity(existingSeason, externalProviderDto, command);
+            await ProcessUpdateEntity(existingSeason, externalProviderDto, command, memberOfGroupSeasonId);
         }
         else
         {
-            await ProcessNewEntity(franchise, command.SeasonYear.Value, externalProviderDto, command);
+            await ProcessNewEntity(franchise, command.SeasonYear.Value, externalProviderDto, command, memberOfGroupSeasonId);
         }
 
         await _dataContext.SaveChangesAsync();
@@ -91,7 +95,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         Franchise franchise,
         FranchiseSeason canonicalEntity,
         EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
+        ProcessDocumentCommand command,
+        Guid? memberOfGroupSeasonId)
     {
         if (string.IsNullOrEmpty(canonicalEntity.ColorCodeHex))
         {
@@ -111,6 +116,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             () => _dataContext.Venues,
             externalIdsNav: "ExternalIds",
             key: v => v.Id);
+
+        // The member list already named the conference; the document's own
+        // `groups` link is the fallback, and for historical seasons it is
+        // ESPN's CURRENT conference (see ApplyGroupMembership).
+        if (memberOfGroupSeasonId is not null)
+        {
+            return;
+        }
 
         if (dto.Groups?.Ref is null)
         {
@@ -144,7 +157,8 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         Franchise franchise,
         int seasonYear,
         EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
+        ProcessDocumentCommand command,
+        Guid? memberOfGroupSeasonId)
     {
         var canonicalEntity = dto.AsEntity(
             _externalRefIdentityGenerator,
@@ -152,7 +166,9 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             seasonYear,
             command.CorrelationId);
 
-        await ProcessDependencies(franchise, canonicalEntity, dto, command);
+        await ProcessDependencies(franchise, canonicalEntity, dto, command, memberOfGroupSeasonId);
+
+        await ApplyGroupMembership(canonicalEntity, memberOfGroupSeasonId);
 
         await ProcessChildren(canonicalEntity, dto, command, isNew: true);
 
@@ -364,8 +380,87 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     private async Task ProcessUpdateEntity(
         FranchiseSeason existing,
         EspnTeamSeasonDto dto,
-        ProcessDocumentCommand command)
+        ProcessDocumentCommand command,
+        Guid? memberOfGroupSeasonId)
     {
+        // The document's `groups` link never overwrites an existing value;
+        // only a member list corrects it.
+        await ApplyGroupMembership(existing, memberOfGroupSeasonId);
+
         await ProcessChildren(existing, dto, command, isNew: false);
+    }
+
+    private async Task<Guid?> ResolveMemberOfGroupSeasonId(ProcessDocumentCommand command)
+    {
+        if (!Guid.TryParse(command.ParentId, out var parentId))
+            return null;
+
+        var isGroupSeason = await _dataContext.GroupSeasons
+            .AsNoTracking()
+            .AnyAsync(g => g.Id == parentId);
+
+        return isGroupSeason ? parentId : null;
+    }
+
+    /// <summary>
+    /// Conference membership comes from the group's member list
+    /// (GroupSeasonDocumentProcessor fans out its `teams` index with itself as
+    /// ParentId), not from this document's `groups` link: ESPN renders the
+    /// CURRENT conference on historical TeamSeason documents (TCU 2005 links
+    /// the Big 12; the 2005 Mountain West list contains TCU). Also writes
+    /// GroupSeasonMap, formerly built by hand with
+    /// sql/pgsql/groupSeasonHierarchy.sql.
+    /// </summary>
+    private async Task ApplyGroupMembership(FranchiseSeason franchiseSeason, Guid? memberOfGroupSeasonId)
+    {
+        if (memberOfGroupSeasonId is not null)
+        {
+            var incomingId = await GroupSeasonHierarchy.MatchVariantAsync(
+                _dataContext,
+                _externalRefIdentityGenerator,
+                memberOfGroupSeasonId.Value,
+                franchiseSeason.GroupSeasonId,
+                _logger);
+
+            var currentId = franchiseSeason.GroupSeasonId;
+
+            if (currentId is null)
+            {
+                franchiseSeason.GroupSeasonId = incomingId;
+
+                _logger.LogInformation(
+                    "GroupSeason set from member list. FranchiseSeasonId={FranchiseSeasonId}, GroupSeasonId={GroupSeasonId}",
+                    franchiseSeason.Id, incomingId);
+            }
+            else if (currentId != incomingId)
+            {
+                // Most specific wins: a conference's list must not replace the
+                // division its own children already assigned.
+                if (await GroupSeasonHierarchy.IsAncestorAsync(_dataContext, incomingId, currentId.Value))
+                {
+                    _logger.LogDebug(
+                        "Member list is an ancestor of the current group; keeping the more specific one. FranchiseSeasonId={FranchiseSeasonId}, CurrentGroupSeasonId={CurrentGroupSeasonId}, IncomingGroupSeasonId={IncomingGroupSeasonId}",
+                        franchiseSeason.Id, currentId, incomingId);
+                }
+                else
+                {
+                    franchiseSeason.GroupSeasonId = incomingId;
+
+                    _logger.LogInformation(
+                        "GroupSeason corrected from member list. FranchiseSeasonId={FranchiseSeasonId}, OldGroupSeasonId={OldGroupSeasonId}, NewGroupSeasonId={NewGroupSeasonId}",
+                        franchiseSeason.Id, currentId, incomingId);
+                }
+            }
+        }
+
+        if (franchiseSeason.GroupSeasonId is null)
+            return;
+
+        var map = await GroupSeasonHierarchy.BuildMapAsync(_dataContext, franchiseSeason.GroupSeasonId.Value);
+
+        if (map is not null && !string.Equals(franchiseSeason.GroupSeasonMap, map, StringComparison.Ordinal))
+        {
+            franchiseSeason.GroupSeasonMap = map;
+        }
     }
 }

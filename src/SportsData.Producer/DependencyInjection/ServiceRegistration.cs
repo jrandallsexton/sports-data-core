@@ -64,6 +64,7 @@ using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetRanking
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestConferenceMembershipSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Jobs;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
@@ -339,6 +340,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
             services.AddScoped<IRequestFranchiseSeasonSourcingCommandHandler, RequestFranchiseSeasonSourcingCommandHandler>();
             services.AddScoped<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>, RequestFranchiseSeasonSourcingCommandValidator>();
+            services.AddScoped<IRequestConferenceMembershipSourcingCommandHandler, RequestConferenceMembershipSourcingCommandHandler>();
+            services.AddScoped<FluentValidation.IValidator<RequestConferenceMembershipSourcingCommand>, RequestConferenceMembershipSourcingCommandValidator>();
             services.AddScoped<
                 Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.IRequestSingleFranchiseSeasonSourcingCommandHandler,
                 Application.FranchiseSeasons.Commands.RequestSingleFranchiseSeasonSourcing.RequestSingleFranchiseSeasonSourcingCommandHandler>();

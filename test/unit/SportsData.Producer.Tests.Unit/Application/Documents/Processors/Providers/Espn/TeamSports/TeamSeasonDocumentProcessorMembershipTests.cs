@@ -37,12 +37,50 @@ public class TeamSeasonDocumentProcessorMembershipTests :
     private const string LeagueBase = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
 
     private static readonly DateTime CreatedUtc = new(2026, 11, 6, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime FixedNow = new(2026, 11, 7, 12, 0, 0, DateTimeKind.Utc);
 
     private readonly ExternalRefIdentityGenerator _generator = new();
 
     public TeamSeasonDocumentProcessorMembershipTests()
     {
         Mocker.Use<IGenerateExternalRefIdentities>(_generator);
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(FixedNow);
+    }
+
+    [Fact]
+    public async Task WhenMemberListCorrectsTheGroup_ModifiedUtcAndModifiedBy_AreStamped()
+    {
+        var (json, dto) = await LoadTeamSeasonAsync();
+        var fbs = await AddGroupAsync(2025, 1, 80, "fbs", parentId: null);
+        var big12 = await AddGroupAsync(2025, 1, 4, "big12", fbs.Id);
+        var mwest = await AddGroupAsync(2025, 1, 17, "mwest", fbs.Id);
+        var franchiseSeason = await AddFranchiseSeasonAsync(dto, big12.Id, "fbs|big12");
+        var correlationId = Guid.NewGuid();
+
+        var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+
+        await sut.ProcessAsync(MemberListCommand(json, mwest.Id, correlationId));
+
+        var reloaded = await FootballDataContext.FranchiseSeasons.AsNoTracking().SingleAsync(fs => fs.Id == franchiseSeason.Id);
+        reloaded.ModifiedUtc.Should().Be(FixedNow);
+        reloaded.ModifiedBy.Should().Be(correlationId);
+    }
+
+    [Fact]
+    public async Task WhenMemberListChangesNothing_ModifiedUtc_IsNotStamped()
+    {
+        var (json, dto) = await LoadTeamSeasonAsync();
+        var fbs = await AddGroupAsync(2025, 1, 80, "fbs", parentId: null);
+        var mwest = await AddGroupAsync(2025, 1, 17, "mwest", fbs.Id);
+        var franchiseSeason = await AddFranchiseSeasonAsync(dto, mwest.Id, "fbs|mwest");
+
+        var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+
+        await sut.ProcessAsync(MemberListCommand(json, mwest.Id, Guid.NewGuid()));
+
+        var reloaded = await FootballDataContext.FranchiseSeasons.AsNoTracking().SingleAsync(fs => fs.Id == franchiseSeason.Id);
+        reloaded.ModifiedUtc.Should().BeNull("an unchanged re-process is not a modification");
+        reloaded.ModifiedBy.Should().BeNull();
     }
 
     [Fact]
@@ -255,14 +293,16 @@ public class TeamSeasonDocumentProcessorMembershipTests :
     }
 
     // The fan-out's command: document-only, parent = the listing group.
-    private ProcessDocumentCommand MemberListCommand(string json, Guid groupSeasonId) =>
-        Command(json, groupSeasonId.ToString(), includeLinkedDocumentTypes: []);
+    private ProcessDocumentCommand MemberListCommand(string json, Guid groupSeasonId, Guid? correlationId = null) =>
+        Command(json, groupSeasonId.ToString(), includeLinkedDocumentTypes: [], correlationId);
 
     private ProcessDocumentCommand Command(
         string json,
         string? parentId,
-        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes) =>
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes,
+        Guid? correlationId = null) =>
         Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.CorrelationId, correlationId ?? Guid.Empty)
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
             .With(x => x.Sport, Sport.FootballNcaa)
             .With(x => x.SeasonYear, 2025)

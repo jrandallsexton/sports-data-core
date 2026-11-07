@@ -24,13 +24,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public TeamSeasonDocumentProcessor(
         ILogger<TeamSeasonDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
+    {
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -385,7 +391,16 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     {
         // The document's `groups` link never overwrites an existing value;
         // only a member list corrects it.
-        await ApplyGroupMembership(existing, memberOfGroupSeasonId);
+        var membershipChanged = await ApplyGroupMembership(existing, memberOfGroupSeasonId);
+
+        // Membership and the map are the only columns this path writes, so
+        // stamp only when one of them changed; a re-process that changes
+        // nothing is not a modification.
+        if (membershipChanged)
+        {
+            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+            existing.ModifiedBy = command.CorrelationId;
+        }
 
         await ProcessChildren(existing, dto, command, isNew: false);
     }
@@ -409,10 +424,13 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
     /// CURRENT conference on historical TeamSeason documents (TCU 2005 links
     /// the Big 12; the 2005 Mountain West list contains TCU). Also writes
     /// GroupSeasonMap, formerly built by hand with
-    /// sql/pgsql/groupSeasonHierarchy.sql.
+    /// sql/pgsql/groupSeasonHierarchy.sql. Returns true when it changed
+    /// GroupSeasonId or GroupSeasonMap.
     /// </summary>
-    private async Task ApplyGroupMembership(FranchiseSeason franchiseSeason, Guid? memberOfGroupSeasonId)
+    private async Task<bool> ApplyGroupMembership(FranchiseSeason franchiseSeason, Guid? memberOfGroupSeasonId)
     {
+        var changed = false;
+
         if (memberOfGroupSeasonId is not null)
         {
             var incomingId = await GroupSeasonHierarchy.MatchVariantAsync(
@@ -427,6 +445,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             if (currentId is null)
             {
                 franchiseSeason.GroupSeasonId = incomingId;
+                changed = true;
 
                 _logger.LogInformation(
                     "GroupSeason set from member list. FranchiseSeasonId={FranchiseSeasonId}, GroupSeasonId={GroupSeasonId}",
@@ -445,6 +464,7 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 else
                 {
                     franchiseSeason.GroupSeasonId = incomingId;
+                    changed = true;
 
                     _logger.LogInformation(
                         "GroupSeason corrected from member list. FranchiseSeasonId={FranchiseSeasonId}, OldGroupSeasonId={OldGroupSeasonId}, NewGroupSeasonId={NewGroupSeasonId}",
@@ -454,13 +474,16 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         }
 
         if (franchiseSeason.GroupSeasonId is null)
-            return;
+            return changed;
 
         var map = await GroupSeasonHierarchy.BuildMapAsync(_dataContext, franchiseSeason.GroupSeasonId.Value);
 
         if (map is not null && !string.Equals(franchiseSeason.GroupSeasonMap, map, StringComparison.Ordinal))
         {
             franchiseSeason.GroupSeasonMap = map;
+            changed = true;
         }
+
+        return changed;
     }
 }

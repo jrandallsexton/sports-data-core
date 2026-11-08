@@ -167,100 +167,105 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
                     return;
                 }
 
-                // Final score from the scoring plays, taken as MAX per side
-                // rather than "the last one".
+                // Final score: MAX competitor score per side first, MAX over
+                // the scoring plays as the fallback.
                 //
-                // A play's Away/HomeScore is cumulative and never decreases,
-                // so the maximum IS the final score, with no ordering needed.
-                // Ordering was the bug: period DESC then clock ASC has no
-                // tie-break, and the clock does not run between a touchdown
-                // and its extra point, so those two rows tie and the database
-                // returns either. Picking the touchdown loses the PAT.
+                // Competitor score rows are ESPN's own final score. Scoring
+                // plays are only as complete as ESPN's play-by-play, which
+                // for historical seasons is often partial: a game missing
+                // some scoring plays produced a partial score and the wrong
+                // winner (prod 2026-11-08: USC at Washington State 2010
+                // stored 7-7 against a real 50-16; 2008-2012 had 531
+                // contests whose stored score differed from their competitor
+                // score). The audit processor derives its expected score
+                // from MAX competitor score rows, so reading the same source
+                // first keeps both sides agreeing by construction; a play
+                // score the audit cannot reproduce re-queues enrichment
+                // until the contest is flagged.
                 //
-                // That cost more than one point. The audit processor derives
-                // its expected score from MAX competitor score rows, so it saw
-                // 13 where this wrote 12, cleared FinalizedUtc, and re-queued
-                // enrichment, which re-derived 12 — an unbounded loop. Prod
-                // 2026-09-18: 200+ contests a day sat in it, and an
-                // un-finalized contest is excluded from team W/L entirely.
-                // Jaguars at Colts cycled 4 times in 18 hours.
-                //
-                // Using MAX here makes both sides agree by construction.
-                // Two nullable MaxAsync reads rather than a GroupBy projection:
-                // "no scoring plays" has to be distinguishable from a real
-                // result, because it is what selects the D2 fallback below.
-                // (int?)…MaxAsync() returns null on an empty set on every
-                // provider, while a constant-key GroupBy can be flattened to a
-                // bare SELECT MAX(...) that yields one row of NULLs — which
-                // would make the fallback unreachable exactly for the
-                // competitions it exists to serve. Same idiom the fallback and
-                // ContestEnrichmentAuditProcessor already use.
-                var awayScoringPlayMax = await _dataContext.CompetitionPlays
+                // MAX, not "the latest row": NCAAFB updates its "Basic/Manual"
+                // row in place and MLB inserts a separate "feed" row, but in
+                // both cases MAX equals the latest known cumulative score.
+                // (double?)…MaxAsync() returns null on an empty set, which
+                // is what distinguishes "no rows" from a real result.
+                var awayMaxScore = await _dataContext.CompetitionCompetitorScores
                     .AsNoTracking()
-                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .Select(p => (int?)p.AwayScore)
+                    .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
+                    .Select(s => (double?)s.Value)
                     .MaxAsync();
 
-                var homeScoringPlayMax = await _dataContext.CompetitionPlays
+                var homeMaxScore = await _dataContext.CompetitionCompetitorScores
                     .AsNoTracking()
-                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .Select(p => (int?)p.HomeScore)
+                    .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
+                    .Select(s => (double?)s.Value)
                     .MaxAsync();
 
-                var hasScoringPlays = awayScoringPlayMax is not null && homeScoringPlayMax is not null;
+                var hasCompetitorScores = awayMaxScore is not null && homeMaxScore is not null;
 
-                if (hasScoringPlays)
+                // 0-0 competitor rows are bootstrap-only rows that were
+                // never refreshed, not a result: NFL hasn't had a 0-0 final
+                // since 1943 and NCAA overtime guarantees a non-tie. Treat
+                // them as absent so the scoring plays can supply the score.
+                // The audit defers on 0-0 rows against a non-zero stored
+                // score, so a play-derived score here is not re-queued.
+                var competitorScoresAreBootstrap = hasCompetitorScores
+                    && awayMaxScore!.Value == 0
+                    && homeMaxScore!.Value == 0;
+
+                string scoreSource;
+
+                if (hasCompetitorScores && !competitorScoresAreBootstrap)
                 {
-                    contest.AwayScore = awayScoringPlayMax!.Value;
-                    contest.HomeScore = homeScoringPlayMax!.Value;
+                    contest.AwayScore = (int)awayMaxScore!.Value;
+                    contest.HomeScore = (int)homeMaxScore!.Value;
+                    scoreSource = "CompetitorMaxScore";
                 }
                 else
                 {
-                    // D2 fallback when no scoring plays exist. MAX(Value) per
-                    // competitor — see the matching note in
-                    // BaseballContestEnrichmentProcessor. Bootstrap-row schema
-                    // differs across sports (NCAAFB updates "Basic/Manual"
-                    // in place; MLB inserts a separate "feed" row), but in
-                    // both cases MAX equals the latest known cumulative score.
-                    var awayMaxScore = await _dataContext.CompetitionCompetitorScores
+                    // A play's Away/HomeScore is cumulative and never
+                    // decreases, so the maximum is the latest score with no
+                    // ordering needed. Ordering was an earlier bug: period
+                    // DESC then clock ASC has no tie-break, and the clock
+                    // does not run between a touchdown and its extra point,
+                    // so the database returned either row and lost the PAT.
+                    var awayScoringPlayMax = await _dataContext.CompetitionPlays
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                        .Select(s => (double?)s.Value)
+                        .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
+                        .Select(p => (int?)p.AwayScore)
                         .MaxAsync();
 
-                    var homeMaxScore = await _dataContext.CompetitionCompetitorScores
+                    var homeScoringPlayMax = await _dataContext.CompetitionPlays
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                        .Select(s => (double?)s.Value)
+                        .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
+                        .Select(p => (int?)p.HomeScore)
                         .MaxAsync();
 
-                    if (awayMaxScore is null || homeMaxScore is null)
+                    if (awayScoringPlayMax is null || homeScoringPlayMax is null)
                     {
-                        _logger.LogInformation(
-                            "No scoring plays and no competitor score rows for {ContestName}. Deferring to cron sweep.",
-                            contest.Name);
+                        if (competitorScoresAreBootstrap)
+                        {
+                            _logger.LogWarning(
+                                "D2 MAX competitor scores read as 0-0 for {ContestName} (no scoring plays either) — implausible. Deferring enrichment.",
+                                contest.Name);
+                        }
+                        else
+                        {
+                            _logger.LogInformation(
+                                "No competitor score rows and no scoring plays for {ContestName}. Deferring to cron sweep.",
+                                contest.Name);
+                        }
+
                         return;
                     }
 
-                    // D2 path + 0-0 MAX = no scoring plays AND only bootstrap
-                    // rows exist. NFL hasn't had a 0-0 final since 1943 and
-                    // NCAA OT rules guarantee a non-tie; this state is
-                    // always stale data, never a legitimate final.
-                    if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
-                    {
-                        _logger.LogWarning(
-                            "D2 MAX competitor scores read as 0-0 for {ContestName} (no scoring plays either) — implausible. Deferring enrichment.",
-                            contest.Name);
-                        return;
-                    }
-
-                    contest.AwayScore = (int)awayMaxScore.Value;
-                    contest.HomeScore = (int)homeMaxScore.Value;
+                    contest.AwayScore = awayScoringPlayMax.Value;
+                    contest.HomeScore = homeScoringPlayMax.Value;
+                    scoreSource = "ScoringPlay";
                 }
 
                 _logger.LogInformation(
                     "Final score derived. Source={Source}, Away={AwayScore}, Home={HomeScore}",
-                    hasScoringPlays ? "ScoringPlay" : "CompetitorMaxScore",
+                    scoreSource,
                     contest.AwayScore,
                     contest.HomeScore);
 

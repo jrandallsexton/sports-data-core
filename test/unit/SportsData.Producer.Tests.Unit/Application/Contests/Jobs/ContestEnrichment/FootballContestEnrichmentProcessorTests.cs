@@ -316,9 +316,9 @@ public class FootballContestEnrichmentProcessorTests : ProducerTestBase<Football
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(13);
         contest.HomeScore.Should().Be(23);
-        // Pins the ScoringPlay branch specifically: without this, a run that
-        // bailed to the D2 competitor-score fallback (or returned early) could
-        // leave the right-looking scores from some other path.
+        // Pins the ScoringPlay branch specifically (no competitor score rows
+        // are seeded): without this, a run that returned early could leave
+        // the right-looking scores from some other path.
         contest.FinalizedUtc.Should().NotBeNull();
     }
 
@@ -340,7 +340,7 @@ public class FootballContestEnrichmentProcessorTests : ProducerTestBase<Football
 
     #endregion
 
-    #region Process — D2 fallback (competitor scores)
+    #region Process — competitor scores first, scoring plays as fallback
 
     [Fact]
     public async Task Process_WhenNoPlaysButHasCompetitorScores_UsesScoreFallback()
@@ -434,6 +434,65 @@ public class FootballContestEnrichmentProcessorTests : ProducerTestBase<Football
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
         await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>
+    /// Historical play-by-play is often partial. USC at Washington State 2010
+    /// had scoring plays that topped out at 7-7 while ESPN's competitor score
+    /// was 50-16; reading the plays first stored a tie with no winner. The
+    /// competitor score wins whenever it exists.
+    /// </summary>
+    [Fact]
+    public async Task Process_WhenCompetitorScoresAndPartialScoringPlays_UsesCompetitorScores()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.AddRange(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 7, homeScore: 0, period: 1, clock: 600),
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 7, homeScore: 7, period: 2, clock: 300));
+        await SeedCompetitorScores(competitionId, awayScore: 50, homeScore: 16);
+
+        await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(50);
+        contest.HomeScore.Should().Be(16);
+        contest.WinnerFranchiseSeasonId.Should().Be(AwayFranchiseSeasonId);
+        contest.FinalizedUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Process_WhenCompetitorScoresAreBootstrapZeroZero_UsesScoringPlays()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 21, homeScore: 28, period: 4, clock: 100));
+        await SeedCompetitorScores(competitionId, awayScore: 0, homeScore: 0);
+
+        await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(21);
+        contest.HomeScore.Should().Be(28);
+        contest.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        contest.FinalizedUtc.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Process_WhenCompetitorScoresAreBootstrapZeroZeroAndNoScoringPlays_ReturnsEarly()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        await SeedCompetitorScores(competitionId, awayScore: 0, homeScore: 0);
+
+        await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));
 
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
         contest!.FinalizedUtc.Should().BeNull();
@@ -882,6 +941,39 @@ public class FootballContestEnrichmentProcessorTests : ProducerTestBase<Football
         await FootballDataContext.SaveChangesAsync();
 
         return (contestId, competitionId);
+    }
+
+    private async Task SeedCompetitorScores(Guid competitionId, double awayScore, double homeScore)
+    {
+        var competition = await FootballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+        var home = competition.Competitors.First(c => c.HomeAway == "home");
+
+        FootballDataContext.CompetitionCompetitorScores.AddRange(
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = away.Id,
+                Value = awayScore,
+                DisplayValue = awayScore.ToString(),
+                Winner = awayScore > homeScore,
+                SourceId = "1",
+                SourceDescription = "Final"
+            },
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = home.Id,
+                Value = homeScore,
+                DisplayValue = homeScore.ToString(),
+                Winner = homeScore > awayScore,
+                SourceId = "1",
+                SourceDescription = "Final"
+            });
+        await FootballDataContext.SaveChangesAsync();
     }
 
     private static FootballCompetitionPlay CreatePlay(

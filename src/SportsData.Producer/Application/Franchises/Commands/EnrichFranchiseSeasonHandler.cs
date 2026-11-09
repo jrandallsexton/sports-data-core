@@ -134,11 +134,71 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 .Distinct()
                 .ToList();
 
-            var opponentConferenceIds = await _dataContext.FranchiseSeasons
+            // A conference record spans divisions: a team in SEC - West
+            // (IsConference false) counts every SEC game, not only SEC West
+            // ones. Compare on the team's group when it is the conference,
+            // else on its parent when the parent is; a group with neither
+            // flagged (NAIA, a division with no parent row) compares on itself.
+            var conferenceIds = await _dataContext.FranchiseSeasons
                 .AsNoTracking()
-                .Where(fs => opponentIds.Contains(fs.Id))
-                .Select(fs => new { fs.Id, fs.GroupSeasonId })
-                .ToDictionaryAsync(fs => fs.Id, fs => fs.GroupSeasonId);
+                .Where(fs => fs.Id == franchiseSeason.Id || opponentIds.Contains(fs.Id))
+                .Select(fs => new
+                {
+                    fs.Id,
+                    ConferenceId = fs.GroupSeason != null &&
+                                   !fs.GroupSeason.IsConference &&
+                                   fs.GroupSeason.Parent != null &&
+                                   fs.GroupSeason.Parent.IsConference
+                        ? fs.GroupSeason.ParentId
+                        : fs.GroupSeasonId
+                })
+                .ToDictionaryAsync(fs => fs.Id, fs => fs.ConferenceId);
+
+            var conferenceId = conferenceIds[franchiseSeason.Id];
+
+            // ESPN's conferenceCompetition flag is the authority where it is
+            // published (NCAAFB 2014 on): it matches the official conference
+            // record, which leaves out conference championship games. Where
+            // it is false on every game (NCAAFB before 2014, NFL), fall back
+            // to comparing conferences, dropping postseason games and
+            // same-conference games noted as a championship (the NCAAFB title
+            // game is a regular-season game; notes exist from 2003).
+            //
+            // A season uses the flag only when a real share of its games carry
+            // it: NCAAFB 2008 has 2 stray flagged games of ~3,500, and "any
+            // flagged game" would zero every other team's conference record.
+            var seasonCompetitions = _dataContext.Competitions
+                .AsNoTracking()
+                .Where(k => k.Contest.SeasonYear == franchiseSeason.SeasonYear);
+
+            var seasonCompetitionCount = await seasonCompetitions.CountAsync();
+            var seasonFlaggedCount = await seasonCompetitions.CountAsync(k => k.IsConferenceCompetition);
+
+            var seasonHasConferenceFlags = seasonFlaggedCount > 0 &&
+                                           seasonFlaggedCount * 10 >= seasonCompetitionCount;
+
+            var contestIds = contests.Select(c => c.Id).ToList();
+
+            var competitionFacts = await _dataContext.Competitions
+                .AsNoTracking()
+                .Where(k => contestIds.Contains(k.ContestId))
+                .Select(k => new
+                {
+                    k.ContestId,
+                    k.IsConferenceCompetition,
+                    IsChampionship = k.Notes.Any(n => n.Headline.ToLower().Contains("championship"))
+                })
+                .ToDictionaryAsync(k => k.ContestId);
+
+            // SeasonPhase TypeCode 3 = postseason
+            var phaseIds = contests.Select(c => c.SeasonPhaseId).Distinct().ToList();
+
+            var postseasonPhaseIds = (await _dataContext.SeasonPhases
+                    .AsNoTracking()
+                    .Where(sp => phaseIds.Contains(sp.Id) && sp.TypeCode == 3)
+                    .Select(sp => sp.Id)
+                    .ToListAsync())
+                .ToHashSet();
 
             foreach (var contest in contests)
             {
@@ -152,19 +212,25 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 else
                     losses++;
 
-                var conferenceId = franchiseSeason.GroupSeasonId;
-
                 var opponentFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId == command.FranchiseSeasonId
                     ? contest.HomeTeamFranchiseSeasonId
                     : contest.AwayTeamFranchiseSeasonId;
 
-                if (!opponentConferenceIds.TryGetValue(opponentFranchiseSeasonId, out var opponentConferenceId))
+                if (!conferenceIds.TryGetValue(opponentFranchiseSeasonId, out var opponentConferenceId))
                 {
                     _logger.LogError("Opponent FranchiseSeason could not be loaded. {@Command}", command);
                     continue;
                 }
 
-                if (conferenceId == opponentConferenceId)
+                competitionFacts.TryGetValue(contest.Id, out var facts);
+
+                var isConferenceGame = seasonHasConferenceFlags
+                    ? facts?.IsConferenceCompetition == true
+                    : conferenceId == opponentConferenceId &&
+                      !postseasonPhaseIds.Contains(contest.SeasonPhaseId) &&
+                      facts?.IsChampionship != true;
+
+                if (isConferenceGame)
                 {
                     if (isTie)
                         conferenceTies++;

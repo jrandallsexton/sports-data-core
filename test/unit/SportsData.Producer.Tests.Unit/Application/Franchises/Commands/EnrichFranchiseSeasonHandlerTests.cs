@@ -339,6 +339,208 @@ public class EnrichFranchiseSeasonHandlerTests :
     }
 
     [Fact]
+    public async Task Process_ConferenceRecord_CountsGamesAcrossDivisions()
+    {
+        // Teams sit in division groups (SEC - West, IsConference false) under
+        // the conference (Southeastern Conference, IsConference true). A
+        // conference record covers the whole conference: Auburn 2010 played
+        // 8 SEC games but read 5-0, counting only SEC West opponents.
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2010;
+        var fbs = CreateGroupSeason("FBS", isConference: false, parentId: null, seasonYear);
+        var sec = CreateGroupSeason("Southeastern Conference", isConference: true, parentId: fbs.Id, seasonYear);
+        var secWest = CreateGroupSeason("SEC - West", isConference: false, parentId: sec.Id, seasonYear);
+        var secEast = CreateGroupSeason("SEC - East", isConference: false, parentId: sec.Id, seasonYear);
+        var acc = CreateGroupSeason("Atlantic Coast Conference", isConference: true, parentId: fbs.Id, seasonYear);
+        var accAtlantic = CreateGroupSeason("ACC - Atlantic", isConference: false, parentId: acc.Id, seasonYear);
+        await FootballDataContext.GroupSeasons.AddRangeAsync(fbs, sec, secWest, secEast, acc, accAtlantic);
+
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secWest.Id);
+        var sameDivision = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secWest.Id);
+        var otherDivision = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secEast.Id);
+        var otherConference = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, accAtlantic.Id);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, sameDivision, otherDivision, otherConference);
+
+        await FootballDataContext.Contests.AddRangeAsync(
+            CreateContest(team.Id, sameDivision.Id, seasonYear, 28, 10, team.Id),
+            CreateContest(otherDivision.Id, team.Id, seasonYear, 17, 24, team.Id),
+            CreateContest(team.Id, otherDivision.Id, seasonYear, 14, 21, otherDivision.Id),
+            CreateContest(team.Id, otherConference.Id, seasonYear, 35, 7, team.Id));
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.Wins.Should().Be(3);
+        enriched.Losses.Should().Be(1);
+        enriched.ConferenceWins.Should().Be(2, "the SEC West and SEC East wins are both conference games");
+        enriched.ConferenceLosses.Should().Be(1, "the SEC East loss is a conference game");
+        enriched.ConferenceTies.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Process_ConferenceRecord_DivisionsWithoutConferenceParent_CompareOnOwnGroup()
+    {
+        // Some division groups have no conference above them (Northern Sun -
+        // North/South have no parent row). With no conference to roll up to,
+        // each compares on its own group, as before.
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2015;
+        var north = CreateGroupSeason("Northern Sun - North", isConference: false, parentId: null, seasonYear);
+        var south = CreateGroupSeason("Northern Sun - South", isConference: false, parentId: null, seasonYear);
+        await FootballDataContext.GroupSeasons.AddRangeAsync(north, south);
+
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, north.Id);
+        var sameGroup = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, north.Id);
+        var otherGroup = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, south.Id);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, sameGroup, otherGroup);
+
+        await FootballDataContext.Contests.AddRangeAsync(
+            CreateContest(team.Id, sameGroup.Id, seasonYear, 28, 10, team.Id),
+            CreateContest(team.Id, otherGroup.Id, seasonYear, 28, 10, team.Id));
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.Wins.Should().Be(2);
+        enriched.ConferenceWins.Should().Be(1, "only the same-group opponent counts");
+    }
+
+    [Fact]
+    public async Task Process_ConferenceRecord_WhenSeasonHasConferenceFlags_UsesTheFlag()
+    {
+        // ESPN publishes conferenceCompetition from 2014 on and it matches the
+        // official conference record: the title game is a same-conference game
+        // ESPN does not flag, and a flagged game counts even when the two
+        // teams' groups disagree (membership data can be wrong).
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2015;
+        var sec = CreateGroupSeason("Southeastern Conference", isConference: true, parentId: null, seasonYear);
+        var secWest = CreateGroupSeason("SEC - West", isConference: false, parentId: sec.Id, seasonYear);
+        var secEast = CreateGroupSeason("SEC - East", isConference: false, parentId: sec.Id, seasonYear);
+        var other = CreateGroupSeason("Mid-American Conference", isConference: true, parentId: null, seasonYear);
+        await FootballDataContext.GroupSeasons.AddRangeAsync(sec, secWest, secEast, other);
+
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secWest.Id);
+        var conferenceOpponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secEast.Id);
+        var misassignedOpponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, other.Id);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, conferenceOpponent, misassignedOpponent);
+
+        var flaggedWin = CreateContest(team.Id, conferenceOpponent.Id, seasonYear, 28, 10, team.Id);
+        var titleGameWin = CreateContest(team.Id, conferenceOpponent.Id, seasonYear, 29, 15, team.Id);
+        var flaggedLossVsMisassigned = CreateContest(misassignedOpponent.Id, team.Id, seasonYear, 24, 17, misassignedOpponent.Id);
+        await FootballDataContext.Contests.AddRangeAsync(flaggedWin, titleGameWin, flaggedLossVsMisassigned);
+        await FootballDataContext.Competitions.AddRangeAsync(
+            CreateCompetition(flaggedWin.Id, isConferenceCompetition: true),
+            CreateCompetition(titleGameWin.Id, isConferenceCompetition: false, noteHeadline: "SEC Championship Game"),
+            CreateCompetition(flaggedLossVsMisassigned.Id, isConferenceCompetition: true));
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.Wins.Should().Be(2);
+        enriched.Losses.Should().Be(1);
+        enriched.ConferenceWins.Should().Be(1, "the unflagged title game is not a conference game");
+        enriched.ConferenceLosses.Should().Be(1, "the flagged game counts whatever the groups say");
+    }
+
+    [Fact]
+    public async Task Process_ConferenceRecord_WithoutConferenceFlags_ExcludesChampionshipAndPostseasonGames()
+    {
+        // Before 2014 (and in NFL) no game carries the flag, so the record
+        // compares conferences. The conference title game is a regular-season
+        // game between two conference members; its note marks it. Postseason
+        // games between members (an all-SEC title game, AFC playoffs) are not
+        // conference games either.
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2010;
+        var sec = CreateGroupSeason("Southeastern Conference", isConference: true, parentId: null, seasonYear);
+        var secWest = CreateGroupSeason("SEC - West", isConference: false, parentId: sec.Id, seasonYear);
+        var secEast = CreateGroupSeason("SEC - East", isConference: false, parentId: sec.Id, seasonYear);
+        await FootballDataContext.GroupSeasons.AddRangeAsync(sec, secWest, secEast);
+
+        var postseasonPhase = Fixture.Build<SeasonPhase>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.TypeCode, 3)
+            .With(x => x.Name, "Postseason")
+            .With(x => x.Abbreviation, "POST")
+            .With(x => x.Slug, "postseason")
+            .With(x => x.Year, seasonYear)
+            .Create();
+        await FootballDataContext.SeasonPhases.AddAsync(postseasonPhase);
+
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secWest.Id);
+        var opponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, secEast.Id);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, opponent);
+
+        var regularSeasonWin = CreateContest(opponent.Id, team.Id, seasonYear, 27, 35, team.Id);
+        var titleGameWin = CreateContest(opponent.Id, team.Id, seasonYear, 17, 56, team.Id);
+        var postseasonLoss = CreateContest(team.Id, opponent.Id, seasonYear, 0, 21, opponent.Id);
+        postseasonLoss.SeasonPhaseId = postseasonPhase.Id;
+        await FootballDataContext.Contests.AddRangeAsync(regularSeasonWin, titleGameWin, postseasonLoss);
+        await FootballDataContext.Competitions.AddRangeAsync(
+            CreateCompetition(regularSeasonWin.Id, isConferenceCompetition: false),
+            CreateCompetition(titleGameWin.Id, isConferenceCompetition: false, noteHeadline: "SEC CHAMPIONSHIP GAME"),
+            CreateCompetition(postseasonLoss.Id, isConferenceCompetition: false));
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.Wins.Should().Be(2);
+        enriched.Losses.Should().Be(1);
+        enriched.ConferenceWins.Should().Be(1, "only the regular-season game counts; the title game is noted as a championship");
+        enriched.ConferenceLosses.Should().Be(0, "the postseason game is not a conference game");
+    }
+
+    [Fact]
+    public async Task Process_ConferenceRecord_WhenSeasonHasOnlyStrayFlags_ComparesConferences()
+    {
+        // NCAAFB 2008 has 2 flagged games of ~3,500. A season that stray must
+        // not switch to the flag, or every unflagged team reads 0-0.
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2008;
+        var sec = CreateGroupSeason("Southeastern Conference", isConference: true, parentId: null, seasonYear);
+        await FootballDataContext.GroupSeasons.AddAsync(sec);
+
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, sec.Id);
+        var opponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear, sec.Id);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, opponent);
+
+        var conferenceWin = CreateContest(team.Id, opponent.Id, seasonYear, 28, 10, team.Id);
+        await FootballDataContext.Contests.AddAsync(conferenceWin);
+        await FootballDataContext.Competitions.AddAsync(CreateCompetition(conferenceWin.Id, isConferenceCompetition: false));
+
+        // 1 flagged game among 11 in the season
+        for (var i = 0; i < 10; i++)
+        {
+            var unrelated = CreateContest(Guid.NewGuid(), Guid.NewGuid(), seasonYear, 14, 7, null);
+            await FootballDataContext.Contests.AddAsync(unrelated);
+            await FootballDataContext.Competitions.AddAsync(CreateCompetition(unrelated.Id, isConferenceCompetition: i == 0));
+        }
+
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.ConferenceWins.Should().Be(1, "a stray flag does not switch the season to the flag");
+    }
+
+    [Fact]
     public async Task Process_CalculatesScoringMargins_Correctly()
     {
         // Arrange
@@ -527,6 +729,44 @@ public class EnrichFranchiseSeasonHandlerTests :
             .With(x => x.Slug, Guid.NewGuid().ToString())
             .With(x => x.ColorCodeHex, "#000000")
             .With(x => x.Sport, Sport.FootballNcaa)
+            .Create();
+    }
+
+    private GroupSeason CreateGroupSeason(string name, bool isConference, Guid? parentId, int seasonYear)
+    {
+        return Fixture.Build<GroupSeason>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.ParentId, parentId)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Name, name)
+            .With(x => x.Slug, Guid.NewGuid().ToString())
+            .With(x => x.Abbreviation, name)
+            .With(x => x.IsConference, isConference)
+            .Create();
+    }
+
+    private FootballCompetition CreateCompetition(Guid contestId, bool isConferenceCompetition, string noteHeadline = null)
+    {
+        var competitionId = Guid.NewGuid();
+
+        return Fixture.Build<FootballCompetition>()
+            .OmitAutoProperties()
+            .With(x => x.Id, competitionId)
+            .With(x => x.ContestId, contestId)
+            .With(x => x.IsConferenceCompetition, isConferenceCompetition)
+            .With(x => x.Notes, noteHeadline is null
+                ? new List<CompetitionNote>()
+                : new List<CompetitionNote>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Type = "event",
+                        Headline = noteHeadline,
+                        CompetitionId = competitionId
+                    }
+                })
             .Create();
     }
 

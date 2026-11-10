@@ -175,25 +175,20 @@ public class GetAthleteSeasonLeadersQueryHandler : IGetAthleteSeasonLeadersQuery
                 .ToList();
         }
 
-        // ── 4. Competition rank, then cut ────────────────────────────────
-        var ordered = ranked
-            .OrderByDescending(r => r.Value)
-            .ThenBy(r => r.AthleteSeasonId)
-            .ToList();
+        // ── 4. Pool: everyone at or above the value at the cut ───────────
+        // Ties read alphabetically, and that includes which tied athletes
+        // survive the cut, so names are needed for the whole tie group at
+        // the boundary before cutting.
+        var byValue = ranked.OrderByDescending(r => r.Value).ToList();
+        var pool = byValue.Count > query.Limit
+            ? byValue.Where(r => r.Value >= byValue[query.Limit - 1].Value).ToList()
+            : byValue;
 
-        var top = new List<(int Rank, Guid AthleteSeasonId, Guid FranchiseSeasonId, decimal Value, string DisplayValue, int? Games)>();
-        for (var i = 0; i < ordered.Count && top.Count < query.Limit; i++)
-        {
-            var rank = i > 0 && ordered[i].Value == ordered[i - 1].Value ? top[^1].Rank : i + 1;
-            var r = ordered[i];
-            top.Add((rank, r.AthleteSeasonId, r.FranchiseSeasonId, r.Value, r.DisplayValue, r.Games));
-        }
-
-        // ── 5. Hydrate athletes and teams for the cut only ───────────────
-        var topSeasonIds = top.Select(t => t.AthleteSeasonId).ToList();
+        // ── 5. Hydrate athletes for the pool ─────────────────────────────
+        var poolSeasonIds = pool.Select(p => p.AthleteSeasonId).ToList();
         var athletes = await _dataContext.AthleteSeasons
             .AsNoTracking()
-            .Where(a => topSeasonIds.Contains(a.Id))
+            .Where(a => poolSeasonIds.Contains(a.Id))
             .Select(a => new
             {
                 a.Id,
@@ -205,6 +200,33 @@ public class GetAthleteSeasonLeadersQueryHandler : IGetAthleteSeasonLeadersQuery
             })
             .ToDictionaryAsync(a => a.Id, cancellationToken);
 
+        string NameOf(Guid athleteSeasonId)
+        {
+            var a = athletes[athleteSeasonId];
+            return !string.IsNullOrWhiteSpace(a.DisplayName)
+                ? a.DisplayName
+                : $"{a.FirstName} {a.LastName}".Trim();
+        }
+
+        // ── 6. Competition rank, then cut ────────────────────────────────
+        // A roster row can't vanish between queries in practice, but a
+        // missing one drops the athlete rather than failing the board.
+        var ordered = pool
+            .Where(p => athletes.ContainsKey(p.AthleteSeasonId))
+            .OrderByDescending(p => p.Value)
+            .ThenBy(p => NameOf(p.AthleteSeasonId), StringComparer.OrdinalIgnoreCase)
+            .ThenBy(p => p.AthleteSeasonId)
+            .ToList();
+
+        var top = new List<(int Rank, Guid AthleteSeasonId, Guid FranchiseSeasonId, decimal Value, string DisplayValue, int? Games)>();
+        for (var i = 0; i < ordered.Count && top.Count < query.Limit; i++)
+        {
+            var rank = i > 0 && ordered[i].Value == ordered[i - 1].Value ? top[^1].Rank : i + 1;
+            var r = ordered[i];
+            top.Add((rank, r.AthleteSeasonId, r.FranchiseSeasonId, r.Value, r.DisplayValue, r.Games));
+        }
+
+        // ── 7. Hydrate teams for the cut only ────────────────────────────
         var topFsIds = top.Select(t => t.FranchiseSeasonId).Distinct().ToList();
         var teams = await _dataContext.FranchiseSeasons
             .AsNoTracking()
@@ -240,14 +262,13 @@ public class GetAthleteSeasonLeadersQueryHandler : IGetAthleteSeasonLeadersQuery
 
         foreach (var t in top)
         {
-            // A roster or team row can't vanish between queries in practice,
-            // but a missing one drops the row rather than failing the board.
-            if (!athletes.TryGetValue(t.AthleteSeasonId, out var athlete) ||
-                !teams.TryGetValue(t.FranchiseSeasonId, out var team))
+            // Same as athletes above: a missing team row drops the row.
+            if (!teams.TryGetValue(t.FranchiseSeasonId, out var team))
             {
                 continue;
             }
 
+            var athlete = athletes[t.AthleteSeasonId];
             franchiseLogos.TryGetValue(team.FranchiseId, out var fLogos);
             seasonLogos.TryGetValue(team.Id, out var fsLogos);
 
@@ -255,9 +276,7 @@ public class GetAthleteSeasonLeadersQueryHandler : IGetAthleteSeasonLeadersQuery
             {
                 Rank = t.Rank,
                 AthleteId = athlete.AthleteId,
-                AthleteName = !string.IsNullOrWhiteSpace(athlete.DisplayName)
-                    ? athlete.DisplayName
-                    : $"{athlete.FirstName} {athlete.LastName}".Trim(),
+                AthleteName = NameOf(t.AthleteSeasonId),
                 Position = athlete.Position,
                 FranchiseSlug = team.Slug,
                 FranchiseShortName = team.FranchiseShortName ?? team.DisplayNameShort,
@@ -270,19 +289,16 @@ public class GetAthleteSeasonLeadersQueryHandler : IGetAthleteSeasonLeadersQuery
             });
         }
 
-        // Ties read alphabetically within a rank.
-        dto.Leaders = dto.Leaders
-            .OrderBy(l => l.Rank)
-            .ThenBy(l => l.AthleteName, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
         _logger.LogInformation(
             "Athlete season leaders: {Category}.{Stat} {SeasonYear} perGame={PerGame}; {Candidates} candidates, {Qualified} ranked, {Returned} returned.",
-            query.Category, query.Stat, query.SeasonYear, query.PerGame,
+            SanitizeForLog(query.Category), SanitizeForLog(query.Stat), query.SeasonYear, query.PerGame,
             candidates.Count, ranked.Count, dto.Leaders.Count);
 
         return new Success<AthleteSeasonLeadersDto>(dto);
     }
+
+    private static string SanitizeForLog(string? value) =>
+        value is null ? string.Empty : value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
     /// <summary>
     /// Finalized non-preseason contests per franchise season: the denominator

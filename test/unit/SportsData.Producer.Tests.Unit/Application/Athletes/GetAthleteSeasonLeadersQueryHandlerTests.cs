@@ -129,6 +129,26 @@ public class GetAthleteSeasonLeadersQueryHandlerTests : ProducerTestBase<GetAthl
     }
 
     [Fact]
+    public async Task Execute_WhenLimitSplitsATie_KeepsTheAlphabeticallyFirst()
+    {
+        var fs = SeedFranchiseSeason("tulane", "Tulane");
+        SeedStatDoc(SeedAthleteSeason(fs, "Top", "Passer").Id, Newer, games: 9, passYds: 3000);
+        // Ids are random, so ordering by id would keep an arbitrary one of these.
+        foreach (var first in new[] { "Echo", "Delta", "Alpha", "Charlie", "Bravo" })
+        {
+            SeedStatDoc(SeedAthleteSeason(fs, first, "Tied").Id, Newer, games: 9, passYds: 2000);
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<GetAthleteSeasonLeadersQueryHandler>().ExecuteAsync(
+            new GetAthleteSeasonLeadersQuery(SeasonYear, "passing", "passingYards", Limit: 3));
+
+        result.Value.Leaders.Select(l => l.AthleteName).Should().Equal(
+            "Top Passer", "Alpha Tied", "Bravo Tied");
+        result.Value.Leaders.Select(l => l.Rank).Should().Equal(1, 2, 2);
+    }
+
+    [Fact]
     public async Task Execute_WhenLimitOutOfRange_ReturnsValidationFailure()
     {
         var result = await Mocker.CreateInstance<GetAthleteSeasonLeadersQueryHandler>().ExecuteAsync(

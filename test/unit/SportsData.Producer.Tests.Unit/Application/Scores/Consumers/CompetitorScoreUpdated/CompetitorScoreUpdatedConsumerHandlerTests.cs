@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Scores.Consumers.CompetitorScoreUpdated;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -224,6 +225,42 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Verify(x => x.Enqueue<IEnrichContests>(
                 It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenScoreChangesOnFinalizedContest_EnqueuesReenrich()
+    {
+        // A late or corrected score on a finalized contest: the winner was
+        // derived from the old score, so the derived fields must be re-derived.
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId, homeScore: 31, awayScore: 34,
+            finalizedUtc: new DateTime(2026, 6, 24, 23, 0, 0, DateTimeKind.Utc));
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 38);
+
+        await _sut.Process(evt);
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Enqueue<IReenrichContestHandler>(
+                It.IsAny<Expression<Func<IReenrichContestHandler, Task>>>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenScoreUnchangedOnFinalizedContest_DoesNotEnqueueReenrich()
+    {
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId, homeScore: 31,
+            finalizedUtc: new DateTime(2026, 6, 24, 23, 0, 0, DateTimeKind.Utc));
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 31);
+
+        await _sut.Process(evt);
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Enqueue<IReenrichContestHandler>(
+                It.IsAny<Expression<Func<IReenrichContestHandler, Task>>>()),
                 Times.Never);
     }
 

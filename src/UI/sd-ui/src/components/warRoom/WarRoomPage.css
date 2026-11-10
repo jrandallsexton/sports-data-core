@@ -30,50 +30,6 @@
   gap: 2rem;
 }
 
-.widget-placeholder {
-  background-color: var(--bg-input);
-  border: 2px dashed var(--accent);
-  border-radius: 12px;
-  padding: 3rem;
-  text-align: center;
-  max-width: 500px;
-  width: 100%;
-}
-
-.widget-placeholder h3 {
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-  color: var(--accent);
-}
-
-.widget-placeholder p {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  color: var(--text-secondary);
-}
-
-.widget-placeholder ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.widget-placeholder li {
-  font-size: 1rem;
-  padding: 0.5rem 0;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.widget-placeholder li:last-child {
-  border-bottom: none;
-}
-
-.widget-placeholder li:before {
-  content: "🚀";
-  margin-right: 0.5rem;
-}
-
 @media (max-width: 768px) {
   .war-room-page {
     padding: 1rem;
@@ -81,9 +37,5 @@
 
   .war-room-header h1 {
     font-size: 2rem;
-  }
-
-  .widget-placeholder {
-    padding: 2rem;
   }
 }

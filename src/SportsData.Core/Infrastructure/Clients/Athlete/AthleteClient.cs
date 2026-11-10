@@ -23,6 +23,9 @@ public interface IProvideAthletes : IProvideHealthChecks
 
     /// <summary>Batch box-score statlines (category.statName → value) per (athleteSeason, contest) — one call per lineup for scoring.</summary>
     Task<Result<List<AthleteStatlineDto>>> GetAthleteStatlines(List<Guid> contestIds, List<Guid> athleteSeasonIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Season leaderboard for one athlete stat (ESPN category + stat names), totals or per game.</summary>
+    Task<Result<AthleteSeasonLeadersDto>> GetAthleteSeasonLeaders(int seasonYear, string category, string stat, bool perGame, int limit, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -64,6 +67,21 @@ public class AthleteClient : ClientBase, IProvideAthletes
             $"athletes/matchup-summaries?position={Uri.EscapeDataString(position)}&seasonYear={seasonYear}&week={week}&phaseTypeCode={seasonPhaseTypeCode}",
             new AthleteMatchupSummariesDto(),
             entityName: "AthleteMatchupSummaries",
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<Result<AthleteSeasonLeadersDto>> GetAthleteSeasonLeaders(
+        int seasonYear,
+        string category,
+        string stat,
+        bool perGame,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync(
+            $"athletes/leaders?seasonYear={seasonYear}&category={Uri.EscapeDataString(category)}&stat={Uri.EscapeDataString(stat)}&perGame={(perGame ? "true" : "false")}&limit={limit}",
+            new AthleteSeasonLeadersDto(),
+            entityName: "AthleteSeasonLeaders",
             cancellationToken: cancellationToken);
     }
 

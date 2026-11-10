@@ -541,6 +541,33 @@ public class EnrichFranchiseSeasonHandlerTests :
     }
 
     [Fact]
+    public async Task Process_WhenContestHasTwoCompetitions_StillEnriches()
+    {
+        // Contest:Competition is 1:1 in practice but not enforced; a second
+        // row must not abort the enrichment.
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2015;
+        var team = CreateFranchiseSeason(CreateFranchise().Id, seasonYear);
+        var opponent = CreateFranchiseSeason(CreateFranchise().Id, seasonYear);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(team, opponent);
+
+        var win = CreateContest(team.Id, opponent.Id, seasonYear, 28, 10, team.Id);
+        await FootballDataContext.Contests.AddAsync(win);
+        await FootballDataContext.Competitions.AddRangeAsync(
+            CreateCompetition(win.Id, isConferenceCompetition: true),
+            CreateCompetition(win.Id, isConferenceCompetition: true));
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(team.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons.FirstAsync(fs => fs.Id == team.Id);
+
+        enriched.Wins.Should().Be(1);
+        enriched.ConferenceWins.Should().Be(1);
+    }
+
+    [Fact]
     public async Task Process_CalculatesScoringMargins_Correctly()
     {
         // Arrange

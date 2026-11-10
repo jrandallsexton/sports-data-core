@@ -544,7 +544,8 @@ public class EnrichFranchiseSeasonHandlerTests :
     public async Task Process_WhenContestHasTwoCompetitions_StillEnriches()
     {
         // Contest:Competition is 1:1 in practice but not enforced; a second
-        // row must not abort the enrichment.
+        // row must not abort the enrichment, and conflicting rows merge
+        // (any flag counts) rather than depending on row order.
         var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
 
         var seasonYear = 2015;
@@ -555,7 +556,7 @@ public class EnrichFranchiseSeasonHandlerTests :
         var win = CreateContest(team.Id, opponent.Id, seasonYear, 28, 10, team.Id);
         await FootballDataContext.Contests.AddAsync(win);
         await FootballDataContext.Competitions.AddRangeAsync(
-            CreateCompetition(win.Id, isConferenceCompetition: true),
+            CreateCompetition(win.Id, isConferenceCompetition: false),
             CreateCompetition(win.Id, isConferenceCompetition: true));
         await FootballDataContext.SaveChangesAsync();
 

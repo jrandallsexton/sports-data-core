@@ -180,7 +180,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
             var contestIds = contests.Select(c => c.Id).ToList();
 
             // Contest:Competition is 1:1 in practice, but nothing enforces it;
-            // a duplicate must not throw and abort the whole enrichment.
+            // a duplicate must not throw and abort the whole enrichment. Duplicates
+            // merge (any flag / any championship note) so the result is deterministic.
             var competitionFacts = (await _dataContext.Competitions
                     .AsNoTracking()
                     .Where(k => contestIds.Contains(k.ContestId))
@@ -191,8 +192,14 @@ namespace SportsData.Producer.Application.Franchises.Commands
                         IsChampionship = k.Notes.Any(n => n.Headline.ToLower().Contains("championship"))
                     })
                     .ToListAsync())
-                .DistinctBy(k => k.ContestId)
-                .ToDictionary(k => k.ContestId);
+                .GroupBy(k => k.ContestId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        IsConferenceCompetition = g.Any(k => k.IsConferenceCompetition),
+                        IsChampionship = g.Any(k => k.IsChampionship)
+                    });
 
             // SeasonPhase TypeCode 3 = postseason
             var phaseIds = contests.Select(c => c.SeasonPhaseId).Distinct().ToList();

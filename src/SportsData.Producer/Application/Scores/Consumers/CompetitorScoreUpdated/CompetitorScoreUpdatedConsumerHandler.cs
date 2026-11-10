@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests.Commands.ReenrichContest;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -28,6 +29,10 @@ public interface ICompetitorScoreUpdatedConsumerHandler
 /// hadn't yet completed (e.g., enrichment ran early and saw 0-0, then
 /// deferred), this handler re-enqueues <see cref="EnrichContestCommand"/>.
 /// See docs/ for the 2026-06-24 stuck-Final MLB incident.
+/// </para>
+/// <para>
+/// A score change on an already-finalized contest enqueues the contest
+/// re-enrich, so the winner and the other derived fields follow the score.
 /// </para>
 /// </summary>
 public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedConsumerHandler
@@ -164,6 +169,25 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
                     "Re-enqueued EnrichContestCommand — contest status is STATUS_FINAL but FinalizedUtc is null. ContestId={ContestId}, CorrelationId={CorrelationId}",
                     contest.Id, evt.CorrelationId);
             }
+        }
+        else
+        {
+            // Score changed on an already-finalized contest (a late or
+            // corrected score). The winner, spread and over/under were derived
+            // from the old score, and plain enrichment short-circuits on
+            // FinalizedUtc, so run the re-enrich path: it clears the derived
+            // fields, re-derives them from competitor scores and republishes
+            // ContestFinalized so both teams' records are recomputed.
+            var cmd = new ReenrichContestCommand
+            {
+                ContestId = contest.Id,
+                CorrelationId = evt.CorrelationId
+            };
+            _backgroundJobProvider.Enqueue<IReenrichContestHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
+
+            _logger.LogInformation(
+                "Enqueued ReenrichContestCommand — score changed on a finalized contest. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                contest.Id, evt.CorrelationId);
         }
 
         // Completion marker only. The event carries one team's score; the

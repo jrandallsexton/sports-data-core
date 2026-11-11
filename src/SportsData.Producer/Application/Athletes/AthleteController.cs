@@ -7,6 +7,7 @@ using SportsData.Core.Processing;
 using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStatisticsSourcing;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteMatchupSummaries;
+using SportsData.Producer.Application.Athletes.Queries.GetAthleteSeasonLeaders;
 
 namespace SportsData.Producer.Application.Athletes;
 
@@ -64,6 +65,27 @@ public class AthleteController : ControllerBase
     {
         var result = await handler.ExecuteAsync(
             new GetAthleteMatchupSummariesQuery(position, seasonYear, week, phaseTypeCode ?? 2),
+            cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Season leaderboard for one athlete stat from ESPN season totals
+    /// (FBS only for NCAAFB). Category and stat are ESPN names.
+    /// Example: GET /api/athletes/leaders?seasonYear=2026&amp;category=passing&amp;stat=passingYards&amp;perGame=false&amp;limit=10
+    /// </summary>
+    [HttpGet("leaders")]
+    public async Task<ActionResult<AthleteSeasonLeadersDto>> GetAthleteSeasonLeaders(
+        [FromQuery] int seasonYear,
+        [FromQuery] string category,
+        [FromQuery] string stat,
+        [FromQuery] bool perGame,
+        [FromQuery] int? limit,
+        [FromServices] IGetAthleteSeasonLeadersQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new GetAthleteSeasonLeadersQuery(seasonYear, category, stat, perGame, limit ?? 10),
             cancellationToken);
         return result.ToActionResult();
     }

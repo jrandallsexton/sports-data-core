@@ -331,6 +331,10 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Athletes.Queries.GetAthleteStatlines.GetAthleteStatlinesQueryHandler>();
             services.AddScoped<IValidator<Application.Athletes.Queries.GetAthleteStatlines.GetAthleteStatlinesQuery>,
                 Application.Athletes.Queries.GetAthleteStatlines.GetAthleteStatlinesQueryValidator>();
+            services.AddScoped<Application.Athletes.Queries.GetAthleteSeasonLeaders.IGetAthleteSeasonLeadersQueryHandler,
+                Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQueryHandler>();
+            services.AddScoped<IValidator<Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQuery>,
+                Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQueryValidator>();
 
             // Athlete Commands
             services.AddScoped<IRequestAthleteSeasonStatisticsSourcingCommandHandler, RequestAthleteSeasonStatisticsSourcingCommandHandler>();

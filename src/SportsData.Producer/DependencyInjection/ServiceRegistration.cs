@@ -516,6 +516,7 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<VenueGeoCodeJob>();
             services.AddScoped<IGeocodingService, GeoCodingService>();
+            services.AddSingleton<IGeoTimeZoneResolver, GeoTimeZoneResolver>();
 
             return services;
         }

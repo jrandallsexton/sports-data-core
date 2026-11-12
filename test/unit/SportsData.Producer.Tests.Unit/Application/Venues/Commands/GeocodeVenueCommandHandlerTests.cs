@@ -52,6 +52,32 @@ public class GeocodeVenueCommandHandlerTests :
     }
 
     [Fact]
+    public async Task WhenGeocodeSucceeds_ShouldResolveTimeZoneFromNewCoordinates()
+    {
+        // Arrange
+        Mocker.GetMock<IGeocodingService>()
+            .Setup(x => x.TryGeocodeAsync(It.IsAny<string>()))
+            .ReturnsAsync((40.8128, -96.7026));
+        var resolver = Mocker.GetMock<IGeoTimeZoneResolver>();
+        resolver
+            .Setup(x => x.Resolve(40.8128m, -96.7026m))
+            .Returns("America/Chicago");
+
+        var sut = Mocker.CreateInstance<GeocodeVenueCommandHandler>();
+
+        var venueId = Guid.NewGuid();
+        await FootballDataContext.Venues.AddAsync(CreateVenue(venueId, "Memorial Stadium", "Lincoln", "NE", "68588"));
+        await FootballDataContext.SaveChangesAsync();
+
+        // Act
+        await sut.ExecuteAsync(new GeocodeVenueCommand(venueId), CancellationToken.None);
+
+        // Assert
+        var updatedVenue = await FootballDataContext.Venues.FirstAsync(v => v.Id == venueId);
+        updatedVenue.TimeZone.Should().Be("America/Chicago");
+    }
+
+    [Fact]
     public async Task WhenVenueDoesNotExist_ShouldReturnSuccessWithoutUpdate()
     {
         // Arrange

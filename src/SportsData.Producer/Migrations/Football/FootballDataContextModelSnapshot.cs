@@ -18,7 +18,7 @@ namespace SportsData.Producer.Migrations.Football
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.2")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -8198,6 +8198,10 @@ namespace SportsData.Producer.Migrations.Football
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("TimeZone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
 

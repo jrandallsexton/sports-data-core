@@ -41,6 +41,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public decimal Longitude { get; set; }
 
+        /// <summary>
+        /// IANA time zone id (e.g. "America/Chicago"), resolved offline from
+        /// Latitude/Longitude. Null until the venue is geocoded. Kickoff local
+        /// time (night games, local month) depends on it.
+        /// </summary>
+        public string? TimeZone { get; set; }
+
         public ICollection<VenueExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -61,6 +68,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(p => p.PostalCode).HasMaxLength(20);
                 builder.Property(p => p.State).HasMaxLength(20);
                 builder.Property(p => p.City).HasMaxLength(25);
+                builder.Property(p => p.TimeZone).HasMaxLength(64);
             }
         }
     }

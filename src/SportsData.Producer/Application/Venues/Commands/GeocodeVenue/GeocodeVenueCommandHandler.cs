@@ -19,15 +19,18 @@ public class GeocodeVenueCommandHandler : IGeocodeVenueCommandHandler
     private readonly ILogger<GeocodeVenueCommandHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IGeocodingService _geocodingService;
+    private readonly IGeoTimeZoneResolver _timeZoneResolver;
 
     public GeocodeVenueCommandHandler(
         ILogger<GeocodeVenueCommandHandler> logger,
         TeamSportDataContext dataContext,
-        IGeocodingService geocodingService)
+        IGeocodingService geocodingService,
+        IGeoTimeZoneResolver timeZoneResolver)
     {
         _logger = logger;
         _dataContext = dataContext;
         _geocodingService = geocodingService;
+        _timeZoneResolver = timeZoneResolver;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -62,6 +65,7 @@ public class GeocodeVenueCommandHandler : IGeocodeVenueCommandHandler
 
             venue.Latitude = (decimal)result.lat.Value;
             venue.Longitude = (decimal)result.lng.Value;
+            venue.TimeZone = _timeZoneResolver.Resolve(venue.Latitude, venue.Longitude);
             _dataContext.Venues.Update(venue);
             await _dataContext.SaveChangesAsync(cancellationToken);
         }

@@ -37,6 +37,9 @@ namespace SportsData.Producer.Infrastructure.Data.Football
         // football side of the CompetitionStatus split.
         public DbSet<FootballCompetitionStatus> FootballCompetitionStatuses { get; set; }
 
+        // War Room team-game projection (one row per team per finalized game).
+        public DbSet<FranchiseContestFact> FranchiseContestFacts { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -53,6 +56,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FranchiseContestFact.EntityConfiguration());
 
             // Last: sees every ExternalId entity registered above (base + football).
             ApplyExternalIdSourceUrlHashIndexes(modelBuilder);

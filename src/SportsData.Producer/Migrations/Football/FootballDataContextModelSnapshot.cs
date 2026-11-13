@@ -8305,6 +8305,205 @@ namespace SportsData.Producer.Migrations.Football
                     b.ToTable("VenueImage", (string)null);
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FranchiseContestFact", b =>
+                {
+                    b.Property<Guid>("ContestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("FranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AtsResult")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Completions")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Conference")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Division")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("FirstDowns")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FourthDownAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("FourthDownConversions")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FranchiseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Giveaways")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsConferenceGame")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("KickoffLocal")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("KickoffTimeKnown")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("KickoffUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("KickoffWindow")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LocalDayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("LocalMonth")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LossesBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Margin")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OpponentConference")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("OpponentDivision")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("OpponentFranchiseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OpponentFranchiseSeasonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("OpponentLossesBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("OpponentRankGoingIn")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpponentTiesBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpponentWinsBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("OverUnder")
+                        .HasPrecision(5, 1)
+                        .HasColumnType("numeric(5,1)");
+
+                    b.Property<int?>("PassAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PassingYards")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Penalties")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PenaltyYards")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PointsAgainst")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PointsFor")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PossessionSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ProjectedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ProjectionVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RankGoingIn")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RedZoneAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RedZoneScores")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Result")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RushAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RushingYards")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SacksAllowed")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SacksMade")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SeasonPhaseTypeCode")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SeasonYear")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Site")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("Spread")
+                        .HasPrecision(5, 1)
+                        .HasColumnType("numeric(5,1)");
+
+                    b.Property<int?>("Takeaways")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ThirdDownAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ThirdDownConversions")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TiesBefore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TotalPlays")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TotalResult")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TotalYards")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("VenueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Week")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WinsBefore")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ContestId", "FranchiseSeasonId");
+
+                    b.HasIndex("SeasonYear");
+
+                    b.HasIndex("FranchiseId", "SeasonYear");
+
+                    b.HasIndex("OpponentFranchiseId", "SeasonYear");
+
+                    b.ToTable("FranchiseContestFact", (string)null);
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballAthlete", b =>
                 {
                     b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.AthleteBase");

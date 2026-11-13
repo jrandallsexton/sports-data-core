@@ -312,6 +312,9 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
                 // Drives diagnostic reads FootballCompetitionPlay.DriveId (FootballDataContext).
                 services.AddScoped<IGetCompetitionsWithoutDrivesQueryHandler, GetCompetitionsWithoutDrivesQueryHandler>();
+                // War Room team-game projection (FranchiseContestFact lives on FootballDataContext).
+                services.AddScoped<Application.FranchiseContestFacts.Commands.ProjectContestFacts.IProjectContestFactsCommandHandler,
+                    Application.FranchiseContestFacts.Commands.ProjectContestFacts.ProjectContestFactsCommandHandler>();
             }
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();

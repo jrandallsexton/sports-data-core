@@ -149,6 +149,28 @@ public class ProjectContestFactsCommandHandlerTests : ProducerTestBase<ProjectCo
     }
 
     [Fact]
+    public async Task Execute_WhenCompetitionNotIngested_RemovesRows_RatherThanGuessingSiteAndConference()
+    {
+        var home = SeedTeam("NCAAF|NCAA|fbs|sec");
+        var away = SeedTeam("NCAAF|NCAA|fbs|sec");
+        var contest = SeedContest(home, away, Kickoff, 28, 24, winner: home);
+        // A stale row from an earlier projection must not survive either.
+        FootballDataContext.FranchiseContestFacts.Add(new FranchiseContestFact
+        {
+            ContestId = contest.Id,
+            FranchiseSeasonId = home.Id,
+            KickoffUtc = Kickoff,
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Mocker.CreateInstance<ProjectContestFactsCommandHandler>()
+            .ExecuteAsync(new ProjectContestFactsCommand(contest.Id));
+
+        result.Value.Should().Be(0);
+        (await FootballDataContext.FranchiseContestFacts.CountAsync(f => f.ContestId == contest.Id)).Should().Be(0);
+    }
+
+    [Fact]
     public async Task Execute_WhenContestMissing_ReturnsNotFound()
     {
         var result = await Mocker.CreateInstance<ProjectContestFactsCommandHandler>()

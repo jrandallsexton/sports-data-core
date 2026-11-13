@@ -24,8 +24,9 @@ public interface IProjectContestFactsCommandHandler
 /// (not finalized, cancelled, out of scope) has its rows removed, so a
 /// re-run always converges on what the source data says.
 ///
-/// Scope: finalized, non-cancelled games; for NCAAFB only games with at
-/// least one FBS team (owner decision 2026-11-12).
+/// Scope: finalized, non-cancelled, non-preseason games with a Competition
+/// row; for NCAAFB only games with at least one FBS team (owner decision
+/// 2026-11-12).
 /// </summary>
 public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHandler
 {
@@ -139,27 +140,36 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        var odds = competition is null
-            ? []
-            : await _dataContext.CompetitionOdds
-                .AsNoTracking()
-                .Where(o => o.CompetitionId == competition.Id)
-                .ToListAsync(cancellationToken);
+        // Site, conference game and kickoff validity all come from the
+        // Competition. Without one (not ingested yet) the row would state
+        // Home/Away and a conference answer it cannot know, so the contest
+        // is not projectable yet; a later run picks it up.
+        if (competition is null)
+        {
+            var removed = await RemoveFactsAsync(contest.Id, cancellationToken);
+            _logger.LogInformation(
+                "Contest has no competition; not projectable yet. Removed {Removed} fact rows. ContestId={ContestId}",
+                removed, contest.Id);
+            return new Success<int>(0);
+        }
+
+        var odds = await _dataContext.CompetitionOdds
+            .AsNoTracking()
+            .Where(o => o.CompetitionId == competition.Id)
+            .ToListAsync(cancellationToken);
         var primaryOdds = OddsProviderPreference.SelectPrimary(odds);
 
-        var ranks = competition is null
-            ? new Dictionary<Guid, int?>()
-            : await _dataContext.CompetitionCompetitors
-                .AsNoTracking()
-                .OfType<FootballCompetitionCompetitor>()
-                .Where(cc => cc.CompetitionId == competition.Id)
-                .GroupBy(cc => cc.FranchiseSeasonId)
-                .Select(g => new { FranchiseSeasonId = g.Key, Rank = g.Max(cc => cc.CuratedRankCurrent) })
-                .ToDictionaryAsync(x => x.FranchiseSeasonId, x => x.Rank, cancellationToken);
+        var ranks = await _dataContext.CompetitionCompetitors
+            .AsNoTracking()
+            .OfType<FootballCompetitionCompetitor>()
+            .Where(cc => cc.CompetitionId == competition.Id)
+            .GroupBy(cc => cc.FranchiseSeasonId)
+            .Select(g => new { FranchiseSeasonId = g.Key, Rank = g.Max(cc => cc.CuratedRankCurrent) })
+            .ToDictionaryAsync(x => x.FranchiseSeasonId, x => x.Rank, cancellationToken);
 
         var seasonUsesConferenceFlag = await SeasonUsesConferenceFlagAsync(contest.SeasonYear, cancellationToken);
 
-        var venueId = contest.VenueId ?? competition?.VenueId;
+        var venueId = contest.VenueId ?? competition.VenueId;
         var venueTimeZone = venueId is null
             ? null
             : await _dataContext.Venues
@@ -173,9 +183,7 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
             contest.StartDateUtc,
             cancellationToken);
 
-        var boxes = competition is null
-            ? new Dictionary<Guid, TeamBoxInput>()
-            : await GetBoxesAsync(competition.Id, cancellationToken);
+        var boxes = await GetBoxesAsync(competition.Id, cancellationToken);
 
         TeamFactInput Team(Guid franchiseSeasonId)
         {
@@ -202,13 +210,13 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
             Week = contest.Week,
             SeasonPhaseTypeCode = contest.PhaseTypeCode,
             KickoffUtc = contest.StartDateUtc,
-            KickoffTimeKnown = competition?.TimeValid ?? false,
+            KickoffTimeKnown = competition.TimeValid,
             VenueId = venueId,
             VenueTimeZone = venueTimeZone,
-            IsNeutralSite = competition?.IsNeutralSite ?? false,
-            EspnConferenceFlag = competition?.IsConferenceCompetition ?? false,
+            IsNeutralSite = competition.IsNeutralSite,
+            EspnConferenceFlag = competition.IsConferenceCompetition,
             SeasonUsesConferenceFlag = seasonUsesConferenceFlag,
-            IsChampionship = competition?.IsChampionship ?? false,
+            IsChampionship = competition.IsChampionship,
             HomeScore = contest.HomeScore,
             AwayScore = contest.AwayScore,
             WinnerFranchiseSeasonId = contest.WinnerFranchiseSeasonId,

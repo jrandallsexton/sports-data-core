@@ -48,7 +48,8 @@ public class OpsController : ControllerBase
             "athletes",
             "franchise-seasons",
             "competitions",
-            "contests"
+            "contests",
+            "franchise-contest-facts"
         ];
 
         private static readonly string[] ProviderPrefixes =

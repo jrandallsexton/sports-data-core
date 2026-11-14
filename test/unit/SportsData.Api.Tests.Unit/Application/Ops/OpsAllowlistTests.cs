@@ -18,6 +18,7 @@ public class OpsAllowlistTests
     [InlineData("producer", "competitions/123/metrics")]
     [InlineData("producer", "contests/refresh")]
     [InlineData("producer", "contests")]
+    [InlineData("producer", "franchise-contest-facts/contests/00000000-0000-0000-0000-000000000000")]
     [InlineData("PRODUCER", "Franchise-Seasons/x")]
     [InlineData("provider", "documents/replay")]
     [InlineData("provider", "resourceIndex/create")]
@@ -38,6 +39,7 @@ public class OpsAllowlistTests
     [InlineData("producer", "", "empty path")]
     [InlineData("producer", "franchise-seasons-admin-delete", "shared textual prefix is not the family — segment boundary required")]
     [InlineData("producer", "contestsX/anything", "no segment boundary after prefix")]
+    [InlineData("provider", "franchise-contest-facts/x", "producer-only family on provider")]
     public void EverythingElse_IsDenied(string service, string path, string because)
     {
         OpsController.Allowlist.IsAllowed(service, path).Should().BeFalse(because);

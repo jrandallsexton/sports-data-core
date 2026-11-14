@@ -5,7 +5,9 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Producer.Application.Events;
+using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
 using SportsData.Producer.Application.Franchises.Commands;
 
 using System.Linq.Expressions;
@@ -70,6 +72,23 @@ public class ContestFinalizedHandlerTests : ProducerTestBase<ContestFinalizedHan
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(x => x.Schedule<IEnrichFranchiseSeasons>(
             It.IsAny<Expression<Func<IEnrichFranchiseSeasons, Task>>>(), It.IsAny<TimeSpan>()),
             Times.Never);
+    }
+
+    [Theory]
+    [InlineData(Sport.FootballNcaa, 1)]
+    [InlineData(Sport.FootballNfl, 1)]
+    [InlineData(Sport.BaseballMlb, 0)]
+    public async Task Consume_OnFootballPods_EnqueuesFactProjection(Sport podSport, int expected)
+    {
+        // Gated on the POD's mode: the projection handler is registered only
+        // on football pods.
+        Mocker.GetMock<IAppMode>().Setup(x => x.CurrentSport).Returns(podSport);
+
+        await ConsumeAsync(Message(_awayFranchiseSeasonId, _homeFranchiseSeasonId, sport: podSport));
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(x => x.Enqueue<IProjectContestFactsCommandHandler>(
+            It.IsAny<Expression<Func<IProjectContestFactsCommandHandler, Task>>>()),
+            Times.Exactly(expected));
     }
 
     [Fact]

@@ -9,7 +9,9 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Contests;
+using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
+using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -676,6 +678,11 @@ public class FootballContestEnrichmentProcessorTests : ProducerTestBase<Football
         // No republish — downstream picks scoring already ran for this Contest.
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // ... so the team-game facts are re-projected directly instead.
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(x => x.Enqueue<IProjectContestFactsCommandHandler>(
+            It.IsAny<System.Linq.Expressions.Expression<Func<IProjectContestFactsCommandHandler, Task>>>()),
+            Times.Once);
     }
 
     [Fact]

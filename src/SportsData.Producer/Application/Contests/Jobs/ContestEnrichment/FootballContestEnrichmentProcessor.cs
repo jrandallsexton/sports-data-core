@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Processing;
+using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -19,17 +21,20 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
         private readonly FootballDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public FootballContestEnrichmentProcessor(
             ILogger<FootballContestEnrichmentProcessor> logger,
             FootballDataContext dataContext,
             IEventBus bus,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _bus = bus;
             _dateTimeProvider = dateTimeProvider;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task Process(EnrichContestCommand command)
@@ -142,6 +147,13 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
                     }
 
                     await _dataContext.SaveChangesAsync();
+
+                    // ContestFinalized is (rightly) not republished here, so
+                    // the team-game fact rows would keep the old line and ATS
+                    // result; re-project them directly (idempotent).
+                    var factCmd = new ProjectContestFactsCommand(contest.Id);
+                    _backgroundJobProvider.Enqueue<IProjectContestFactsCommandHandler>(
+                        h => h.ExecuteAsync(factCmd, CancellationToken.None));
 
                     _logger.LogInformation(
                         "Odds-late finalization completed. OddsProvidersFinalized={OddsProvidersFinalized}",

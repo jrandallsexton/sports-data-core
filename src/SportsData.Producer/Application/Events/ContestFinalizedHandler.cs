@@ -1,7 +1,10 @@
 using MassTransit;
 
+using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Processing;
+using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
 using SportsData.Producer.Application.Franchises.Commands;
 
 namespace SportsData.Producer.Application.Events
@@ -44,6 +47,11 @@ namespace SportsData.Producer.Application.Events
     /// production is unaffected either way (separate brokers, exchange-level
     /// shovels).
     ///
+    /// Football pods also re-project the game's FranchiseContestFact rows
+    /// (War Room team-game projection): finalization, re-enrichment (which
+    /// re-finalizes) and score corrections (which re-enrich) all arrive here.
+    /// The handler is registered only on football pods, hence the mode gate.
+    ///
     /// Per the "ingest consumers must be thin Hangfire-spawn shims"
     /// convention, this consumer does no inline DB work. Re-deliveries and
     /// re-enrichments of the same contest re-run an idempotent recompute.
@@ -52,13 +60,16 @@ namespace SportsData.Producer.Application.Events
     {
         private readonly ILogger<ContestFinalizedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IAppMode _appMode;
 
         public ContestFinalizedHandler(
             ILogger<ContestFinalizedHandler> logger,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IAppMode appMode)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
+            _appMode = appMode;
         }
 
         public Task Consume(ConsumeContext<ContestFinalized> context)
@@ -68,6 +79,15 @@ namespace SportsData.Producer.Application.Events
             _logger.LogInformation(
                 "ContestFinalized consume: received. ContestId={ContestId}, Sport={Sport}, SeasonYear={SeasonYear}, AwayFranchiseSeasonId={AwayFranchiseSeasonId}, HomeFranchiseSeasonId={HomeFranchiseSeasonId}, CorrelationId={CorrelationId}, MessageId={MessageId}",
                 msg.ContestId, msg.Sport, msg.SeasonYear, msg.AwayFranchiseSeasonId, msg.HomeFranchiseSeasonId, msg.CorrelationId, context.MessageId);
+
+            // Independent of the record leg below (the projection counts its
+            // own record going in), so it runs even without a SeasonYear.
+            if (_appMode.CurrentSport is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                var factCmd = new ProjectContestFactsCommand(msg.ContestId);
+                _backgroundJobProvider.Enqueue<IProjectContestFactsCommandHandler>(
+                    h => h.ExecuteAsync(factCmd, CancellationToken.None));
+            }
 
             if (msg.SeasonYear is not { } seasonYear)
             {

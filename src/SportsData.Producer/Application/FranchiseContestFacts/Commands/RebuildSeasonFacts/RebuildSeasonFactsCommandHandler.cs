@@ -71,9 +71,13 @@ public class RebuildSeasonFactsCommandHandler : IRebuildSeasonFactsCommandHandle
 
         var contestIds = finalized.Union(projected).ToList();
 
+        // Season-wide, so computed once here rather than in every job.
+        var seasonUsesConferenceFlag = await SeasonConferenceFlag.SeasonUsesFlagAsync(
+            _dataContext, command.SeasonYear, cancellationToken);
+
         foreach (var contestId in contestIds)
         {
-            var cmd = new ProjectContestFactsCommand(contestId);
+            var cmd = new ProjectContestFactsCommand(contestId, seasonUsesConferenceFlag);
             _backgroundJobProvider.Enqueue<IProjectContestFactsCommandHandler>(
                 h => h.ExecuteAsync(cmd, CancellationToken.None));
         }

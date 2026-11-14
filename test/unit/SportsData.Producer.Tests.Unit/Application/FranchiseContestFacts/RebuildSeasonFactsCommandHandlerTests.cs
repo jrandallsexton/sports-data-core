@@ -48,18 +48,21 @@ public class RebuildSeasonFactsCommandHandlerTests : ProducerTestBase<RebuildSea
         });
         await FootballDataContext.SaveChangesAsync();
 
-        var enqueued = new List<Guid>();
+        var enqueued = new List<ProjectContestFactsCommand>();
         Mocker.GetMock<IProvideBackgroundJobs>()
             .Setup(x => x.Enqueue(It.IsAny<Expression<Func<IProjectContestFactsCommandHandler, Task>>>()))
             .Callback<Expression<Func<IProjectContestFactsCommandHandler, Task>>>(expr =>
-                enqueued.Add(ContestIdOf(expr)))
+                enqueued.Add(CommandOf(expr)))
             .Returns("job");
 
         var result = await Mocker.CreateInstance<RebuildSeasonFactsCommandHandler>()
             .ExecuteAsync(new RebuildSeasonFactsCommand(SeasonYear));
 
         result.Value.Should().Be(2);
-        enqueued.Should().BeEquivalentTo([finalized.Id, unfinalizedWithRows.Id]);
+        enqueued.Select(c => c.ContestId).Should().BeEquivalentTo([finalized.Id, unfinalizedWithRows.Id]);
+        // Computed once for the season (no flagged competitions here) and
+        // handed to every job, so no job recounts the season.
+        enqueued.Should().OnlyContain(c => c.SeasonUsesConferenceFlag == false);
     }
 
     [Theory]
@@ -73,12 +76,11 @@ public class RebuildSeasonFactsCommandHandlerTests : ProducerTestBase<RebuildSea
         result.Status.Should().Be(ResultStatus.Validation);
     }
 
-    /// <summary>Reads the command's ContestId out of the enqueued call.</summary>
-    private static Guid ContestIdOf(Expression<Func<IProjectContestFactsCommandHandler, Task>> expr)
+    /// <summary>Reads the command out of the enqueued call.</summary>
+    private static ProjectContestFactsCommand CommandOf(Expression<Func<IProjectContestFactsCommandHandler, Task>> expr)
     {
         var call = (MethodCallExpression)expr.Body;
-        var command = (ProjectContestFactsCommand)Expression.Lambda(call.Arguments[0]).Compile().DynamicInvoke()!;
-        return command.ContestId;
+        return (ProjectContestFactsCommand)Expression.Lambda(call.Arguments[0]).Compile().DynamicInvoke()!;
     }
 
     private FootballContest SeedContest(int seasonYear, bool finalized)

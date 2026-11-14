@@ -167,7 +167,8 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
             .Select(g => new { FranchiseSeasonId = g.Key, Rank = g.Max(cc => cc.CuratedRankCurrent) })
             .ToDictionaryAsync(x => x.FranchiseSeasonId, x => x.Rank, cancellationToken);
 
-        var seasonUsesConferenceFlag = await SeasonUsesConferenceFlagAsync(contest.SeasonYear, cancellationToken);
+        var seasonUsesConferenceFlag = command.SeasonUsesConferenceFlag
+            ?? await SeasonConferenceFlag.SeasonUsesFlagAsync(_dataContext, contest.SeasonYear, cancellationToken);
 
         var venueId = contest.VenueId ?? competition.VenueId;
         var venueTimeZone = venueId is null
@@ -240,22 +241,6 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
 
     private static bool IsFbs(string? groupSeasonMap) =>
         groupSeasonMap is not null && groupSeasonMap.Contains("fbs");
-
-    /// <summary>
-    /// The conference record's switch: a season uses ESPN's flag only when a
-    /// real share (10%) of its games carry it.
-    /// </summary>
-    private async Task<bool> SeasonUsesConferenceFlagAsync(int seasonYear, CancellationToken cancellationToken)
-    {
-        var seasonCompetitions = _dataContext.Competitions
-            .AsNoTracking()
-            .Where(k => k.Contest.SeasonYear == seasonYear);
-
-        var total = await seasonCompetitions.CountAsync(cancellationToken);
-        var flagged = await seasonCompetitions.CountAsync(k => k.IsConferenceCompetition, cancellationToken);
-
-        return flagged > 0 && flagged * 10 >= total;
-    }
 
     /// <summary>
     /// W-L-T before kickoff, counted like the season record: finalized games

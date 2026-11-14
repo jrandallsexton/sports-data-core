@@ -88,6 +88,45 @@ public class ProjectContestFactsCommandHandlerTests : ProducerTestBase<ProjectCo
     }
 
     [Fact]
+    public async Task Execute_UsesASuppliedSeasonFlag_InsteadOfCountingTheSeason()
+    {
+        // The seeded season has no flagged competitions, so a count would say
+        // "season does not use the flag" and fall back to shared conference
+        // (none here). The rebuild's precomputed true must win.
+        var home = SeedTeam("NCAAF|NCAA|fbs|sec");
+        var away = SeedTeam("NCAAF|NCAA|fbs|acc");
+        var contest = SeedContest(home, away, Kickoff, 28, 24, winner: home);
+        var competition = Fixture.Build<FootballCompetition>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.ContestId, contest.Id)
+            .With(x => x.TimeValid, true)
+            .With(x => x.IsConferenceCompetition, true)
+            .With(x => x.Notes, new List<CompetitionNote>())
+            .Create();
+        FootballDataContext.Competitions.Add(competition);
+        // Pad the season with unflagged games so a recount would fall under 10%.
+        for (var i = 0; i < 20; i++)
+        {
+            var filler = SeedContest(SeedTeam("NCAAF|NCAA|fbs|sec"), SeedTeam("NCAAF|NCAA|fbs|sec"), Kickoff.AddDays(-30), 7, 3);
+            SeedCompetition(filler.Id, timeValid: true);
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<ProjectContestFactsCommandHandler>();
+
+        await sut.ExecuteAsync(new ProjectContestFactsCommand(contest.Id));
+        (await FootballDataContext.FranchiseContestFacts.AsNoTracking()
+                .Where(f => f.ContestId == contest.Id).ToListAsync())
+            .Should().OnlyContain(f => !f.IsConferenceGame, "a recount says the season does not use the flag");
+
+        await sut.ExecuteAsync(new ProjectContestFactsCommand(contest.Id, SeasonUsesConferenceFlag: true));
+        (await FootballDataContext.FranchiseContestFacts.AsNoTracking()
+                .Where(f => f.ContestId == contest.Id).ToListAsync())
+            .Should().OnlyContain(f => f.IsConferenceGame, "the supplied flag is used as given");
+    }
+
+    [Fact]
     public async Task Execute_OnNflPod_StoresNoRank()
     {
         // ESPN gives every NFL competitor 99; that is not a poll position.

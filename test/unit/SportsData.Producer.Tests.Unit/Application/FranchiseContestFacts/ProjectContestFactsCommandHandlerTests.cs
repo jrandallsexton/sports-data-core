@@ -88,6 +88,28 @@ public class ProjectContestFactsCommandHandlerTests : ProducerTestBase<ProjectCo
     }
 
     [Fact]
+    public async Task Execute_OnNflPod_StoresNoRank()
+    {
+        // ESPN gives every NFL competitor 99; that is not a poll position.
+        Mocker.GetMock<IAppMode>().Setup(x => x.CurrentSport).Returns(Sport.FootballNfl);
+        var home = SeedTeam("NFL|NFC|NORTH");
+        var away = SeedTeam("NFL|AFC|EAST");
+        var contest = SeedContest(home, away, Kickoff, 6, 23, winner: away);
+        var competitionId = SeedCompetition(contest.Id, timeValid: true);
+        SeedCompetitor(competitionId, home, "home", rank: 99);
+        SeedCompetitor(competitionId, away, "away", rank: 99);
+        await FootballDataContext.SaveChangesAsync();
+
+        await Mocker.CreateInstance<ProjectContestFactsCommandHandler>()
+            .ExecuteAsync(new ProjectContestFactsCommand(contest.Id));
+
+        var facts = await FootballDataContext.FranchiseContestFacts.AsNoTracking()
+            .Where(f => f.ContestId == contest.Id).ToListAsync();
+        facts.Should().HaveCount(2, "the FBS scope applies to NCAAFB only");
+        facts.Should().OnlyContain(f => f.RankGoingIn == null && f.OpponentRankGoingIn == null);
+    }
+
+    [Fact]
     public async Task Execute_IsIdempotent_AndUpdatesInPlace()
     {
         var home = SeedTeam("NCAAF|NCAA|fbs|sec");

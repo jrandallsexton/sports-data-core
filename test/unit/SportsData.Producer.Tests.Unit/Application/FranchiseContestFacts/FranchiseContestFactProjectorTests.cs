@@ -227,6 +227,24 @@ public class FranchiseContestFactProjectorTests
         away.TotalYards.Should().BeNull("no box score means unknown, not zero");
     }
 
+    [Fact]
+    public void Project_NflGroupSeasonMap_IsConferenceThenDivision()
+    {
+        var game = Game() with
+        {
+            Home = Team(HomeId, "NFL|NFC|NORTH"),
+            Away = Team(AwayId, "NFL|AFC|EAST"),
+        };
+
+        var home = FranchiseContestFactProjector.Project(game, Now)[0];
+
+        home.Conference.Should().Be("NFC");
+        home.Division.Should().Be("NFC NORTH", "the division name alone is ambiguous across conferences");
+        home.OpponentConference.Should().Be("AFC");
+        home.OpponentDivision.Should().Be("AFC EAST");
+        home.ProjectionVersion.Should().Be(2);
+    }
+
     private static ContestFactInput Game(Guid? homeConference = null, Guid? awayConference = null) => new()
     {
         ContestId = Guid.NewGuid(),

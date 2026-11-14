@@ -315,6 +315,8 @@ namespace SportsData.Producer.DependencyInjection
                 // War Room team-game projection (FranchiseContestFact lives on FootballDataContext).
                 services.AddScoped<Application.FranchiseContestFacts.Commands.ProjectContestFacts.IProjectContestFactsCommandHandler,
                     Application.FranchiseContestFacts.Commands.ProjectContestFacts.ProjectContestFactsCommandHandler>();
+                services.AddScoped<Application.FranchiseContestFacts.Commands.RebuildSeasonFacts.IRebuildSeasonFactsCommandHandler,
+                    Application.FranchiseContestFacts.Commands.RebuildSeasonFacts.RebuildSeasonFactsCommandHandler>();
             }
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();

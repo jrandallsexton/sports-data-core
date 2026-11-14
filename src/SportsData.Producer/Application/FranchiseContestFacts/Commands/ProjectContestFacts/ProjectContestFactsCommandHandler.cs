@@ -195,7 +195,11 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
                 FranchiseId = team.FranchiseId,
                 GroupSeasonMap = team.GroupSeasonMap,
                 ConferenceGroupId = team.ConferenceGroupId,
-                CuratedRank = ranks.GetValueOrDefault(franchiseSeasonId),
+                // NCAAFB only: ESPN gives every NFL competitor 99, which is
+                // not a poll position.
+                CuratedRank = _appMode.CurrentSport == Sport.FootballNcaa
+                    ? ranks.GetValueOrDefault(franchiseSeasonId)
+                    : null,
                 WinsBefore = record.Wins,
                 LossesBefore = record.Losses,
                 TiesBefore = record.Ties,

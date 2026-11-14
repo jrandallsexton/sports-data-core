@@ -293,7 +293,8 @@ public static class FranchiseContestFactProjector
     }
 
     /// <summary>
-    /// "NCAAF|NCAA|fbs|sec" → ("fbs", "sec"); "NCAAF|yy" → (null, null).
+    /// "NCAAF|NCAA|fbs|sec" → ("fbs", "sec"); "NCAAF|yy" → (null, null);
+    /// "NFL|NFC|NORTH" → ("NFC NORTH", "NFC").
     /// </summary>
     private static (string? Division, string? Conference) ParseGroupSeasonMap(string? map)
     {
@@ -301,6 +302,18 @@ public static class FranchiseContestFactProjector
             return (null, null);
 
         var parts = map.Split('|', StringSplitOptions.TrimEntries);
+
+        // NFL: "NFL|NFC|NORTH" is conference then division; the division
+        // alone ("NORTH") is ambiguous across conferences, so it carries both.
+        if (parts[0] == "NFL")
+        {
+            var nflConference = parts.Length >= 2 && parts[1].Length > 0 ? parts[1] : null;
+            var nflDivision = nflConference is not null && parts.Length >= 3 && parts[2].Length > 0
+                ? $"{nflConference} {parts[2]}"
+                : null;
+            return (nflDivision, nflConference);
+        }
+
         var division = parts.Length >= 3 && parts[2].Length > 0 ? parts[2] : null;
         var conference = parts.Length >= 4 && parts[3].Length > 0 ? parts[3] : null;
         return (division, conference);

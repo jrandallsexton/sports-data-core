@@ -22,8 +22,11 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
         /// <summary>
         /// Bumped when a derivation rule changes, so a rebuild can be verified
         /// (rows still on an old version were not re-projected).
+        ///   1: initial.
+        ///   2: NFL conference/division parse ("NFC", "NFC NORTH"); rank only
+        ///      for NCAAFB (ESPN's 99 on every NFL team is not a poll).
         /// </summary>
-        public const int CurrentProjectionVersion = 1;
+        public const int CurrentProjectionVersion = 2;
 
         // ── Identity ──────────────────────────────────────────────────────
         public Guid ContestId { get; set; }
@@ -60,18 +63,21 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
         public Guid? VenueId { get; set; }
 
         // ── Grouping ──────────────────────────────────────────────────────
-        /// <summary>Conference slug from GroupSeasonMap (e.g. "sec").</summary>
+        /// <summary>Conference from GroupSeasonMap (NCAAFB "sec"; NFL "NFC").</summary>
         public string? Conference { get; set; }
         public string? OpponentConference { get; set; }
 
         /// <summary>Same rule as the conference record (EnrichFranchiseSeasonHandler).</summary>
         public bool IsConferenceGame { get; set; }
 
-        /// <summary>Classification from GroupSeasonMap (e.g. "fbs", "fcs", "d2").</summary>
+        /// <summary>
+        /// From GroupSeasonMap: NCAAFB classification ("fbs", "fcs", "d2");
+        /// NFL division ("NFC NORTH").
+        /// </summary>
         public string? Division { get; set; }
         public string? OpponentDivision { get; set; }
 
-        // ── Rank going in (ESPN curatedRank; 99 = unranked, null = unknown) ─
+        // ── Rank going in (NCAAFB only: ESPN curatedRank; 99 = unranked, null = unknown or NFL) ─
         public int? RankGoingIn { get; set; }
         public int? OpponentRankGoingIn { get; set; }
 

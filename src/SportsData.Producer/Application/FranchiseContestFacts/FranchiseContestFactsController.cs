@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
+using SportsData.Producer.Application.FranchiseContestFacts.Commands.RebuildSeasonFacts;
 
 namespace SportsData.Producer.Application.FranchiseContestFacts
 {
@@ -34,6 +35,24 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
 
             var handler = HttpContext.RequestServices.GetRequiredService<IProjectContestFactsCommandHandler>();
             var result = await handler.ExecuteAsync(new ProjectContestFactsCommand(contestId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Enqueue a re-projection of every contest in the season (backfill,
+        /// or after a ProjectionVersion bump). Returns the number enqueued.
+        /// </summary>
+        [HttpPost("seasons/{seasonYear:int}")]
+        public async Task<ActionResult<int>> RebuildSeason(
+            [FromRoute] int seasonYear,
+            [FromServices] IAppMode appMode,
+            CancellationToken cancellationToken)
+        {
+            if (appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+                return BadRequest($"FranchiseContestFacts is football-only. CurrentSport={appMode.CurrentSport}");
+
+            var handler = HttpContext.RequestServices.GetRequiredService<IRebuildSeasonFactsCommandHandler>();
+            var result = await handler.ExecuteAsync(new RebuildSeasonFactsCommand(seasonYear), cancellationToken);
             return result.ToActionResult();
         }
     }

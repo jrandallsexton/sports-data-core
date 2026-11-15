@@ -309,6 +309,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetFranchiseSeasonMetricsQueryHandler, GetFranchiseSeasonMetricsQueryHandler>();
             services.AddScoped<Application.UI.Analytics.Queries.GetAthleteSeasonLeaders.IGetAthleteSeasonLeadersQueryHandler,
                 Application.UI.Analytics.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQueryHandler>();
+            services.AddScoped<Application.UI.Analytics.Queries.GetFranchiseSplits.IGetFranchiseSplitsQueryHandler,
+                Application.UI.Analytics.Queries.GetFranchiseSplits.GetFranchiseSplitsQueryHandler>();
 
             // Articles Queries
             services.AddScoped<IGetArticlesQueryHandler, GetArticlesQueryHandler>();

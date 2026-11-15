@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseContestFacts.Commands.ProjectContestFacts;
 using SportsData.Producer.Application.FranchiseContestFacts.Commands.RebuildSeasonFacts;
+using SportsData.Producer.Application.FranchiseContestFacts.Queries.GetFranchiseSplits;
+using SportsData.Producer.Enums;
 
 namespace SportsData.Producer.Application.FranchiseContestFacts
 {
@@ -53,6 +56,36 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
 
             var handler = HttpContext.RequestServices.GetRequiredService<IRebuildSeasonFactsCommandHandler>();
             var result = await handler.ExecuteAsync(new RebuildSeasonFactsCommand(seasonYear), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// War Room Splits: a team's record over a season range, narrowed by
+        /// optional filters (each omitted filter means "any"). Enum filters
+        /// take names: site=Away, opponentRank=Top10, line=Underdog,
+        /// kickoffWindow=Night.
+        /// Example: GET /api/franchise-contest-facts/franchises/lsu-tigers/splits?seasonFrom=2015&amp;seasonTo=2025&amp;site=Away&amp;opponentRank=Ranked
+        /// </summary>
+        [HttpGet("franchises/{slug}/splits")]
+        public async Task<ActionResult<FranchiseSplitsDto>> GetFranchiseSplits(
+            [FromRoute] string slug,
+            [FromQuery] int seasonFrom,
+            [FromQuery] int seasonTo,
+            [FromQuery] GameSite? site,
+            [FromQuery] OpponentRankFilter? opponentRank,
+            [FromQuery] LineFilter? line,
+            [FromQuery] KickoffWindow? kickoffWindow,
+            [FromQuery] bool? conferenceGame,
+            [FromServices] IAppMode appMode,
+            CancellationToken cancellationToken)
+        {
+            if (appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+                return BadRequest($"FranchiseContestFacts is football-only. CurrentSport={appMode.CurrentSport}");
+
+            var handler = HttpContext.RequestServices.GetRequiredService<IGetFranchiseSplitsQueryHandler>();
+            var result = await handler.ExecuteAsync(
+                new GetFranchiseSplitsQuery(slug, seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame),
+                cancellationToken);
             return result.ToActionResult();
         }
     }

@@ -5,16 +5,9 @@
   padding: 1.5rem;
 }
 
-.franchise-metrics-grid h2 {
-  margin: 0;
-  color: var(--accent);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
 .metrics-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 1.5rem;
 }
@@ -246,10 +239,6 @@
   .franchise-metrics-grid {
     margin: 1rem 0;
     padding: 1rem;
-  }
-
-  .franchise-metrics-grid h2 {
-    font-size: 1.3rem;
   }
 
   .metrics-table {

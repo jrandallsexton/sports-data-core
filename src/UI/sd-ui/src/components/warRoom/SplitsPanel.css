@@ -1,0 +1,203 @@
+.splits-panel {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.splits-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.splits-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.splits-select {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.splits-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.splits-team-select {
+  min-width: 16rem;
+}
+
+.splits-range-dash {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.splits-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.splits-chip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.splits-chip-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-right: 0.15rem;
+}
+
+.splits-chip {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.splits-chip.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+.splits-clear {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.splits-state {
+  color: var(--text-secondary);
+  padding: 1rem 0;
+}
+
+.splits-range-note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Desktop-first: one row of six stats; three per row on narrow screens. */
+.splits-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.splits-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.splits-stat-value {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.splits-stat-label {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.splits-games {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.splits-games th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.splits-games td {
+  color: var(--text-primary);
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.splits-games .num {
+  text-align: right;
+}
+
+.splits-games a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.splits-games a:hover {
+  color: var(--accent);
+}
+
+.splits-site,
+.splits-neutral {
+  color: var(--text-muted);
+}
+
+.splits-rank {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.splits-result.win {
+  color: var(--success);
+}
+
+.splits-result.loss {
+  color: var(--error);
+}
+
+@media (max-width: 1000px) {
+  .splits-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .splits-team-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .splits-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

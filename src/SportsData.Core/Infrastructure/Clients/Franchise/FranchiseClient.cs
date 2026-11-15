@@ -37,6 +37,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken cancellationToken = default);
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
     Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
+    /// <summary>War Room Splits: a team's record over a filtered set of its games (football only). NotFound for an unknown slug.</summary>
+    Task<Result<FranchiseSplitsDto>> GetFranchiseSplits(string slug, FranchiseSplitsRequest request, CancellationToken cancellationToken = default);
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
     /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types. Returns the batch correlation id (the Seq handle).</summary>
     Task<Result<Guid>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
@@ -304,6 +306,29 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             cancellationToken);
 
         return new Success<List<TeamCardScheduleItemDto>>(games);
+    }
+
+    public async Task<Result<FranchiseSplitsDto>> GetFranchiseSplits(
+        string slug,
+        FranchiseSplitsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>
+        {
+            $"seasonFrom={request.SeasonFrom}",
+            $"seasonTo={request.SeasonTo}",
+        };
+        if (!string.IsNullOrWhiteSpace(request.Site)) query.Add($"site={Uri.EscapeDataString(request.Site)}");
+        if (!string.IsNullOrWhiteSpace(request.OpponentRank)) query.Add($"opponentRank={Uri.EscapeDataString(request.OpponentRank)}");
+        if (!string.IsNullOrWhiteSpace(request.Line)) query.Add($"line={Uri.EscapeDataString(request.Line)}");
+        if (!string.IsNullOrWhiteSpace(request.KickoffWindow)) query.Add($"kickoffWindow={Uri.EscapeDataString(request.KickoffWindow)}");
+        if (request.ConferenceGame.HasValue) query.Add($"conferenceGame={(request.ConferenceGame.Value ? "true" : "false")}");
+
+        return await GetAsync(
+            $"franchise-contest-facts/franchises/{Uri.EscapeDataString(slug)}/splits?{string.Join("&", query)}",
+            new FranchiseSplitsDto(),
+            entityName: "FranchiseSplits",
+            cancellationToken: cancellationToken);
     }
 
     public async Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default)

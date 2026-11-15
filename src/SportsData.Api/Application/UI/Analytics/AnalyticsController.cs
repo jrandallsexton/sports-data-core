@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Analytics.Queries.GetAthleteSeasonLeaders;
 using SportsData.Api.Application.UI.Analytics.Queries.GetFranchiseSeasonMetrics;
+using SportsData.Api.Application.UI.Analytics.Queries.GetFranchiseSplits;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Franchise.Queries;
 
 namespace SportsData.Api.Application.UI.Analytics;
 
@@ -53,6 +55,47 @@ public class AnalyticsController : ApiControllerBase
             Stat = stat,
             PerGame = perGame,
             Limit = limit,
+        };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// War Room Splits: a team's record over a season range, narrowed by
+    /// optional filters (site, opponentRank, line, kickoffWindow,
+    /// conferenceGame; omitted = any). Football only.
+    /// </summary>
+    [HttpGet("splits/{slug}")]
+    public async Task<ActionResult<FranchiseSplitsDto>> GetFranchiseSplits(
+        [FromRoute] string slug,
+        [FromQuery] int seasonFrom,
+        [FromQuery] int seasonTo,
+        [FromQuery] string? site = null,
+        [FromQuery] string? opponentRank = null,
+        [FromQuery] string? line = null,
+        [FromQuery] string? kickoffWindow = null,
+        [FromQuery] bool? conferenceGame = null,
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IGetFranchiseSplitsQueryHandler handler = default!,
+        CancellationToken cancellationToken = default)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var query = new GetFranchiseSplitsQuery
+        {
+            Sport = mode,
+            Slug = slug,
+            Filters = new FranchiseSplitsRequest
+            {
+                SeasonFrom = seasonFrom,
+                SeasonTo = seasonTo,
+                Site = site,
+                OpponentRank = opponentRank,
+                Line = line,
+                KickoffWindow = kickoffWindow,
+                ConferenceGame = conferenceGame,
+            },
         };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 

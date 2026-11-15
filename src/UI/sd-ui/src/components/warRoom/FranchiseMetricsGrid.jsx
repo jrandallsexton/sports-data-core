@@ -164,7 +164,6 @@ function FranchiseMetricsGrid() {
   return (
     <div className="franchise-metrics-grid">
       <div className="metrics-header">
-        <h2>Franchise Season Metrics ({seasonYear})</h2>
         <div className="header-controls">
           <select
             value={seasonYear}

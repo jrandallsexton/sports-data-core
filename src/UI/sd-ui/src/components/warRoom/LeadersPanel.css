@@ -5,14 +5,9 @@
 .leaders-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
-}
-
-.leaders-panel-header h2 {
-  margin: 0;
-  color: var(--text-primary);
 }
 
 .leaders-season-select {

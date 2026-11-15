@@ -317,6 +317,8 @@ namespace SportsData.Producer.DependencyInjection
                     Application.FranchiseContestFacts.Commands.ProjectContestFacts.ProjectContestFactsCommandHandler>();
                 services.AddScoped<Application.FranchiseContestFacts.Commands.RebuildSeasonFacts.IRebuildSeasonFactsCommandHandler,
                     Application.FranchiseContestFacts.Commands.RebuildSeasonFacts.RebuildSeasonFactsCommandHandler>();
+                services.AddScoped<Application.FranchiseContestFacts.Queries.GetFranchiseSplits.IGetFranchiseSplitsQueryHandler,
+                    Application.FranchiseContestFacts.Queries.GetFranchiseSplits.GetFranchiseSplitsQueryHandler>();
             }
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
@@ -340,6 +342,8 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQueryHandler>();
             services.AddScoped<IValidator<Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQuery>,
                 Application.Athletes.Queries.GetAthleteSeasonLeaders.GetAthleteSeasonLeadersQueryValidator>();
+            services.AddScoped<IValidator<Application.FranchiseContestFacts.Queries.GetFranchiseSplits.GetFranchiseSplitsQuery>,
+                Application.FranchiseContestFacts.Queries.GetFranchiseSplits.GetFranchiseSplitsQueryValidator>();
 
             // Athlete Commands
             services.AddScoped<IRequestAthleteSeasonStatisticsSourcingCommandHandler, RequestAthleteSeasonStatisticsSourcingCommandHandler>();

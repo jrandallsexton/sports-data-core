@@ -33,7 +33,6 @@ function LeadersPanel() {
   return (
     <div className="leaders-panel">
       <div className="leaders-panel-header">
-        <h2>Season Leaders ({seasonYear})</h2>
         <select
           value={seasonYear}
           onChange={(e) => setSeasonYear(Number(e.target.value))}

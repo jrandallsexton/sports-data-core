@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import apiWrapper from "../../api/apiWrapper";
-import SplitsPanel, { formatLine } from "./SplitsPanel";
+import SplitsPanel, { formatLine, formatResult } from "./SplitsPanel";
 
 vi.mock("../../api/apiWrapper", () => ({
   default: {
@@ -153,6 +153,13 @@ describe("SplitsPanel", () => {
     await pickLsu();
 
     expect(await screen.findByText("Failed to load splits")).toBeInTheDocument();
+  });
+
+  it("formats results, omitting a score that is not fully known", () => {
+    expect(formatResult({ result: "Win", pointsFor: 31, pointsAgainst: 24 })).toBe("W 31-24");
+    expect(formatResult({ result: "Loss", pointsFor: null, pointsAgainst: 20 })).toBe("L");
+    expect(formatResult({ result: "Tie", pointsFor: null, pointsAgainst: null })).toBe("T");
+    expect(formatResult({ result: null, pointsFor: 7, pointsAgainst: 3 })).toBe("—");
   });
 
   it("formats lines", () => {

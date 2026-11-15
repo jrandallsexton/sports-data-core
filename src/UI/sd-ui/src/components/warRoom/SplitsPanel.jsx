@@ -99,6 +99,15 @@ const formatMargin = (value) => {
 
 const record = (w, l, t = 0) => (t > 0 ? `${w}-${l}-${t}` : `${w}-${l}`);
 
+// The score shows only when both sides are known; a result without a full
+// score keeps its letter rather than rendering "W null-null".
+export const formatResult = (game) => {
+  if (!game.result) return '—';
+  const letter = RESULT_LETTERS[game.result] || game.result;
+  if (game.pointsFor == null || game.pointsAgainst == null) return letter;
+  return `${letter} ${game.pointsFor}-${game.pointsAgainst}`;
+};
+
 const weekLabel = (game) => {
   if (game.seasonPhaseTypeCode === POSTSEASON_PHASE) return 'Post';
   return game.week != null ? `Wk ${game.week}` : '—';
@@ -345,9 +354,7 @@ function SplitsPanel() {
                       {g.site === 'Neutral' && <span className="splits-neutral"> (N)</span>}
                     </td>
                     <td className={`splits-result ${g.result ? g.result.toLowerCase() : ''}`}>
-                      {g.result
-                        ? `${RESULT_LETTERS[g.result] || ''} ${g.pointsFor}-${g.pointsAgainst}`
-                        : '—'}
+                      {formatResult(g)}
                     </td>
                     <td className="num">{formatLine(g.spread)}</td>
                     <td>{g.atsResult ? ATS_LABELS[g.atsResult] || g.atsResult : '—'}</td>

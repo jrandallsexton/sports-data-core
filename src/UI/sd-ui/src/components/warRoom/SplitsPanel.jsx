@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import apiWrapper from '../../api/apiWrapper';
-import { teamLink } from '../../utils/sportLinks';
+import { contestLink, teamLink } from '../../utils/sportLinks';
 import './SplitsPanel.css';
 
 // House convention: a season is labeled by its starting year, and the
@@ -13,7 +13,6 @@ const getCurrentSeasonYear = () => {
 // Fact rows are projected from 2001; each filter's own data floor is applied
 // by the Producer, which reports the effective start back.
 const EARLIEST_SEASON = 2001;
-const DEFAULT_SPAN = 10;
 const POSTSEASON_PHASE = 3;
 
 const CURRENT_SEASON = getCurrentSeasonYear();
@@ -122,7 +121,7 @@ const weekLabel = (game) => {
 function SplitsPanel() {
   const [teams, setTeams] = useState([]);
   const [slug, setSlug] = useState('');
-  const [seasonFrom, setSeasonFrom] = useState(Math.max(EARLIEST_SEASON, CURRENT_SEASON - DEFAULT_SPAN + 1));
+  const [seasonFrom, setSeasonFrom] = useState(EARLIEST_SEASON);
   const [seasonTo, setSeasonTo] = useState(CURRENT_SEASON);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [splits, setSplits] = useState(null);
@@ -354,7 +353,7 @@ function SplitsPanel() {
                       {g.site === 'Neutral' && <span className="splits-neutral"> (N)</span>}
                     </td>
                     <td className={`splits-result ${g.result ? g.result.toLowerCase() : ''}`}>
-                      {formatResult(g)}
+                      <a href={contestLink(g.contestId)}>{formatResult(g)}</a>
                     </td>
                     <td className="num">{formatLine(g.spread)}</td>
                     <td>{g.atsResult ? ATS_LABELS[g.atsResult] || g.atsResult : '—'}</td>

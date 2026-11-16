@@ -185,6 +185,15 @@
   color: var(--error);
 }
 
+/* The result links to the contest but keeps its win/loss color. */
+.splits-games .splits-result a {
+  color: inherit;
+}
+
+.splits-games .splits-result a:hover {
+  color: var(--accent);
+}
+
 @media (max-width: 1000px) {
   .splits-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));

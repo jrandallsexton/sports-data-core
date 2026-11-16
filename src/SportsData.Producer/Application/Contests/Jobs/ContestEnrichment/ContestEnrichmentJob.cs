@@ -25,8 +25,9 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
     /// This job is the sweep that picks up recent games that didn't go through
     /// the event-driven path: the event was lost in transit, a pod restarted
     /// during the publish window, etc. Candidates: started within the last
-    /// <see cref="LookbackDays"/> days, not yet finalized, not terminally
-    /// cancelled. The sport-specific enrichment processor short-circuits
+    /// <see cref="LookbackDays"/> days, not terminally cancelled, and either not
+    /// yet finalized or carrying an odds row that is not finalized (an odds
+    /// document replaced after the game was finalized). The sport-specific enrichment processor short-circuits
     /// cleanly on non-STATUS_FINAL, so non-ready candidates are cheap no-ops.
     ///
     /// Historical backfills are NOT this job's responsibility; finalize them
@@ -79,17 +80,25 @@ namespace SportsData.Producer.Application.Contests.Jobs.ContestEnrichment
                 "ContestEnrichmentJob starting. NowUtc={NowUtc}, WindowStartUtc={WindowStartUtc}",
                 nowUtc, windowStartUtc);
 
+            // A finalized contest is still a candidate while any of its odds rows
+            // is unfinalized: the odds processor hard-replaces a row whenever ESPN
+            // changes the document, and ESPN often does so minutes after the
+            // final whistle, so the replacement lands without results. The
+            // enrichment processor's odds-late path finalizes such rows.
             var contests = await _dataContext.Contests
                 .AsNoTracking()
-                .Where(c => c.FinalizedUtc == null
-                         && c.CancelledUtc == null
+                .Where(c => c.CancelledUtc == null
                          && c.StartDateUtc >= windowStartUtc
-                         && c.StartDateUtc < nowUtc)
+                         && c.StartDateUtc < nowUtc
+                         && (c.FinalizedUtc == null
+                             || _dataContext.Competitions.Any(comp =>
+                                 comp.ContestId == c.Id
+                                 && comp.Odds.Any(o => o.FinalizedUtc == null))))
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();
 
             _logger.LogInformation(
-                "ContestEnrichmentJob: {ContestCount} non-finalized, non-cancelled contest(s) started in the last {LookbackDays} days.",
+                "ContestEnrichmentJob: {ContestCount} non-cancelled contest(s) started in the last {LookbackDays} days that are unfinalized or have unfinalized odds.",
                 contests.Count, LookbackDays);
 
             if (contests.Count == 0)

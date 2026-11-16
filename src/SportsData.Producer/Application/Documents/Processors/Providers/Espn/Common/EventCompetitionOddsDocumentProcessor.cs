@@ -10,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -232,6 +233,23 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",
             competition.Id, dto.Provider.Id, incoming.Id);
+
+        // The row just written carries no results. When the contest is already
+        // finalized nothing else will finalize it: ESPN often changes the odds
+        // document minutes after the final whistle, and enrichment has already
+        // run. Enqueue enrichment so its odds-late path stamps the results and
+        // re-projects the team-game facts (it does not republish ContestFinalized,
+        // so picks are not re-scored). ContestEnrichmentJob's sweep is the backstop
+        // for a contest finalized after the load above.
+        if (competition.Contest.FinalizedUtc is not null)
+        {
+            var enrichCmd = new EnrichContestCommand(competition.Contest.Id, command.CorrelationId);
+            _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(enrichCmd));
+
+            _logger.LogInformation(
+                "Odds persisted after contest finalization; enqueued odds-late enrichment. ContestId={ContestId}, Provider={Prov}",
+                competition.Contest.Id, dto.Provider.Id);
+        }
 
         // The preview-history cache is keyed by the spread, so a line move creates a key
         // nothing has filled yet. Rebuild it now, off the request path, rather than

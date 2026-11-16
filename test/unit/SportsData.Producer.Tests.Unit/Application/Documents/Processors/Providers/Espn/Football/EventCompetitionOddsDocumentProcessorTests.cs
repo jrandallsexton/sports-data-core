@@ -16,6 +16,7 @@ using SportsData.Core.Processing;
 
 using System.Linq.Expressions;
 using System.Text.Json.Nodes;
+using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -36,7 +37,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         : ProducerTestBase<EventCompetitionOddsDocumentProcessor<FootballDataContext>>
     {
         // OPTIMIZATION: Helper method to create test contest and competition
-        private async Task<(ContestBase contest, CompetitionBase competition)> CreateTestContestAndCompetitionAsync(Guid competitionId)
+        private async Task<(ContestBase contest, CompetitionBase competition)> CreateTestContestAndCompetitionAsync(Guid competitionId, DateTime? contestFinalizedUtc = null)
         {
             var contest = new FootballContest
             {
@@ -48,6 +49,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 StartDateUtc = DateTime.UtcNow,
                 HomeTeamFranchiseSeasonId = Guid.NewGuid(),
                 AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+                FinalizedUtc = contestFinalizedUtc,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };
@@ -753,6 +755,102 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             updated.Should().NotBeNull("the second document replaces the first");
             updated!.DisplayedOdds.Should().NotBeNull();
             updated.DisplayedOdds!.ProviderId.Should().Be("58");
+        }
+
+        // ── Odds written after the contest was finalized ─────────────────────
+        // ESPN often changes the odds document minutes after the final whistle;
+        // the hard replace writes a row without results, so the processor must
+        // hand the contest back to enrichment's odds-late path.
+
+        private List<Guid> CaptureEnrichEnqueues()
+        {
+            var enqueued = new List<Guid>();
+            Mocker.GetMock<IProvideBackgroundJobs>()
+                .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+                .Callback<Expression<Func<IEnrichContests, Task>>>(expr =>
+                {
+                    var call = (MethodCallExpression)expr.Body;
+                    var cmd = Expression.Lambda<Func<EnrichContestCommand>>(call.Arguments[0]).Compile()();
+                    enqueued.Add(cmd.ContestId);
+                });
+            return enqueued;
+        }
+
+        [Fact]
+        public async Task OddsReplacedAfterTheContestWasFinalized_EnqueueEnrichmentForTheContest()
+        {
+            var compId = Guid.NewGuid();
+            var (contest, _) = await CreateTestContestAndCompetitionAsync(compId, contestFinalizedUtc: DateTime.UtcNow.AddMinutes(-5));
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
+            var enqueued = CaptureEnrichEnqueues();
+
+            Mocker.GetMock<IGenerateExternalRefIdentities>()
+                .Setup(x => x.Generate(It.IsAny<Uri>()))
+                .Returns(new ExternalRefIdentity(Guid.NewGuid(), "hash", "http://x/clean"));
+            var hash = Mocker.GetMock<IJsonHashCalculator>();
+
+            ProcessDocumentCommand Command() => Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, json)
+                .With(x => x.UrlHash, "url-hash-postgame")
+                .OmitAutoProperties()
+                .Create();
+
+            hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v1");
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(Command());
+            hash.Setup(x => x.NormalizeAndHash(It.IsAny<string>())).Returns("content-hash-v2");
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(Command());
+
+            enqueued.Should().Equal(contest.Id, contest.Id);
+            (await FootballDataContext.CompetitionOdds.SingleAsync()).FinalizedUtc.Should().BeNull(
+                "the replacement carries no results until enrichment runs");
+        }
+
+        [Fact]
+        public async Task OddsForAContestNotYetFinalized_DoNotEnqueueEnrichment()
+        {
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId);
+            var enqueued = CaptureEnrichEnqueues();
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
+
+            await ProcessNewOddsAsync(compId, json);
+
+            enqueued.Should().BeEmpty("the normal finalization path stamps odds for games still in progress");
+        }
+
+        [Fact]
+        public async Task UnchangedOddsForAFinalizedContest_DoNotEnqueueEnrichment()
+        {
+            var compId = Guid.NewGuid();
+            await CreateTestContestAndCompetitionAsync(compId, contestFinalizedUtc: DateTime.UtcNow.AddMinutes(-5));
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
+
+            await ProcessNewOddsAsync(compId, json);
+            var enqueued = CaptureEnrichEnqueues();
+
+            // Same identity and content hash: the processor bails before writing.
+            var cmd = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.ParentId, compId.ToString())
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+                .With(x => x.Document, json)
+                .With(x => x.UrlHash, "url-hash-unchanged")
+                .OmitAutoProperties()
+                .Create();
+            var savedId = (await FootballDataContext.CompetitionOdds.SingleAsync()).Id;
+            Mocker.GetMock<IGenerateExternalRefIdentities>()
+                .Setup(x => x.Generate(It.IsAny<Uri>()))
+                .Returns(new ExternalRefIdentity(savedId, "hash", "http://x/clean"));
+            await Mocker.CreateInstance<EventCompetitionOddsDocumentProcessor<FootballDataContext>>().ProcessAsync(cmd);
+
+            enqueued.Should().BeEmpty();
         }
     }
 }

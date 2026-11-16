@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Contests.Jobs.ContestEnrichment;
+using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -200,6 +201,93 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_IncludesFinalizedContest_WhenAnOddsRowIsUnfinalized()
+    {
+        // ESPN replaced the odds document after the final whistle; the hard
+        // replace wrote a row without results. Enrichment's odds-late path
+        // finalizes it, so the sweep must hand the contest back.
+        var lateOddsId = await SeedContestAsync(startDaysFromNow: -3, finalizedUtc: FixedNow.AddDays(-3));
+        await SeedOddsAsync(lateOddsId, ("58", FixedNow.AddDays(-3)), ("100", null));
+
+        var settledId = await SeedContestAsync(startDaysFromNow: -2, finalizedUtc: FixedNow.AddDays(-2));
+        await SeedOddsAsync(settledId, ("58", FixedNow.AddDays(-2)), ("100", FixedNow.AddDays(-2)));
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+            .Callback<Expression<Func<IEnrichContests, Task>>>(expr =>
+                enqueued.Add(EnrichContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().ContainSingle().Which.Should().Be(lateOddsId);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsFinalizedContestWithUnfinalizedOdds_WhenOutsideTheWindow()
+    {
+        // The window still bounds the odds-late sweep: historical gaps are
+        // repaired per contest via re-enrich, not by this job.
+        var oldId = await SeedContestAsync(
+            startDaysFromNow: -(ContestEnrichmentJob<FootballDataContext>.LookbackDays + 1),
+            finalizedUtc: FixedNow.AddDays(-20));
+        await SeedOddsAsync(oldId, ("58", null));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsCancelledContest_EvenWithUnfinalizedOdds()
+    {
+        var cancelledId = await SeedContestAsync(startDaysFromNow: -3, cancelledUtc: FixedNow.AddDays(-3));
+        await SeedOddsAsync(cancelledId, ("58", null));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Never);
+    }
+
+    private async Task SeedOddsAsync(Guid contestId, params (string ProviderId, DateTime? FinalizedUtc)[] odds)
+    {
+        var competition = new FootballCompetition
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        foreach (var (providerId, finalizedUtc) in odds)
+        {
+            await FootballDataContext.CompetitionOdds.AddAsync(new CompetitionOdds
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                ProviderRef = new Uri($"http://sports.core.api.espn.com/v2/providers/{providerId}"),
+                ProviderId = providerId,
+                ProviderName = $"Provider {providerId}",
+                FinalizedUtc = finalizedUtc
+            });
+        }
+
+        await FootballDataContext.SaveChangesAsync();
     }
 
     private async Task<Guid> SeedContestAsync(

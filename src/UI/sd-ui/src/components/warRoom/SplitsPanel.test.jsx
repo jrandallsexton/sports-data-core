@@ -74,6 +74,10 @@ const splits = (overrides = {}) => ({
   ...overrides,
 });
 
+// Wait on the opponent LINK: the team picker also lists "Alabama Crimson
+// Tide" as an <option>, so a plain text query resolves before the games load.
+const findGamesTable = () => screen.findByRole("link", { name: "Alabama Crimson Tide" });
+
 async function pickLsu() {
   render(<SplitsPanel />);
   const select = await screen.findByLabelText("Team");
@@ -120,7 +124,7 @@ describe("SplitsPanel", () => {
 
     await pickLsu();
 
-    expect(await screen.findByText("Alabama Crimson Tide")).toBeInTheDocument();
+    expect(await findGamesTable()).toBeInTheDocument();
     expect(screen.getByText("Record (.500)")).toBeInTheDocument();
     expect(screen.getByText("+2.5")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "W 31-24" })).toHaveAttribute(
@@ -137,7 +141,7 @@ describe("SplitsPanel", () => {
   it("sends a chip as a filter and clears it on a second click", async () => {
     apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
     await pickLsu();
-    await screen.findByText("Alabama Crimson Tide");
+    await findGamesTable();
 
     fireEvent.click(screen.getByRole("button", { name: "Underdog" }));
     await waitFor(() =>

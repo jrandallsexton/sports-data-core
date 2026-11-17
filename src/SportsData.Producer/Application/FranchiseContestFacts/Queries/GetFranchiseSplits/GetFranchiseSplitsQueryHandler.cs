@@ -47,8 +47,11 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
     /// <summary>Spreads.</summary>
     private const int LineFloor = 2012;
 
-    /// <summary>ESPN's conference-game flag.</summary>
-    private const int ConferenceGameFloor = 2014;
+    /// <summary>
+    /// Conference game. ESPN's flag from 2014; before that the projector derives
+    /// it from season-accurate conference membership (#857), which holds from 2001.
+    /// </summary>
+    private const int ConferenceGameFloor = 2001;
 
     private const int Unranked = 99;
     private const int RankedMax = 25;

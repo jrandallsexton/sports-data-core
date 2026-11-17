@@ -144,16 +144,29 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
     [Fact]
     public async Task Execute_FloorAboveRange_ReturnsEmpty()
     {
-        SeedFact(2010, AlabamaId, new DateTime(2010, 11, 6), conferenceGame: true);
+        SeedFact(2010, AlabamaId, new DateTime(2010, 11, 6), spread: -3m);
         await FootballDataContext.SaveChangesAsync();
 
-        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2005, 2010, ConferenceGame: true));
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2005, 2010, Line: LineFilter.Favorite));
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.SeasonFrom.Should().Be(2014);
+        result.Value.SeasonFrom.Should().Be(2012);
         result.Value.Games.Should().BeEmpty();
         result.Value.Summary.Games.Should().Be(0);
         result.Value.Summary.AvgMargin.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Execute_ConferenceFilter_ReachesBack_To2001()
+    {
+        SeedFact(2006, AlabamaId, new DateTime(2006, 11, 4), conferenceGame: true);
+        SeedFact(2006, OleMissId, new DateTime(2007, 1, 1), conferenceGame: false);
+        await FootballDataContext.SaveChangesAsync();
+
+        var nonConference = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, ConferenceGame: false));
+
+        nonConference.Value.SeasonFrom.Should().Be(2001);
+        nonConference.Value.Games.Select(g => g.KickoffUtc).Should().Equal(new DateTime(2007, 1, 1));
     }
 
     [Fact]

@@ -74,6 +74,10 @@ const splits = (overrides = {}) => ({
   ...overrides,
 });
 
+// Wait on the opponent LINK: the team picker also lists "Alabama Crimson
+// Tide" as an <option>, so a plain text query resolves before the games load.
+const findGamesTable = () => screen.findByRole("link", { name: "Alabama Crimson Tide" });
+
 async function pickLsu() {
   render(<SplitsPanel />);
   const select = await screen.findByLabelText("Team");
@@ -101,15 +105,32 @@ describe("SplitsPanel", () => {
     expect(apiWrapper.Analytics.getFranchiseSplits).not.toHaveBeenCalled();
   });
 
+  it("defaults the season range to the earliest season", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
+
+    await pickLsu();
+
+    expect(screen.getByLabelText("From season")).toHaveValue("2001");
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits).toHaveBeenCalledWith(
+        "lsu-tigers",
+        expect.objectContaining({ seasonFrom: 2001 })
+      )
+    );
+  });
+
   it("renders the summary and games for the picked team", async () => {
     apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
 
     await pickLsu();
 
-    expect(await screen.findByText("Alabama Crimson Tide")).toBeInTheDocument();
+    expect(await findGamesTable()).toBeInTheDocument();
     expect(screen.getByText("Record (.500)")).toBeInTheDocument();
     expect(screen.getByText("+2.5")).toBeInTheDocument();
-    expect(screen.getByText("W 31-24")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "W 31-24" })).toHaveAttribute(
+      "href",
+      "/app/sport/football/ncaa/contest/c1"
+    );
     expect(screen.getByText("#8")).toBeInTheDocument();
     expect(screen.getByText("Cover")).toBeInTheDocument();
     // Postseason row shows Post; unranked opponent shows no rank.
@@ -120,7 +141,7 @@ describe("SplitsPanel", () => {
   it("sends a chip as a filter and clears it on a second click", async () => {
     apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
     await pickLsu();
-    await screen.findByText("Alabama Crimson Tide");
+    await findGamesTable();
 
     fireEvent.click(screen.getByRole("button", { name: "Underdog" }));
     await waitFor(() =>

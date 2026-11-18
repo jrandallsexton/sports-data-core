@@ -41,6 +41,34 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
             DocumentType.AthleteSeasonStatistics
         ];
 
+        /// <summary>
+        /// The children one team's weekly TeamSeason re-read spawns for
+        /// <paramref name="sport"/>: <see cref="RefreshedChildTypes"/>, plus
+        /// the schedule (<see cref="DocumentType.Event"/>) for football.
+        /// <para>
+        /// Schedule (2026-11-18): a season's contests are discovered only
+        /// through each team's ESPN event list, which was read when the
+        /// TeamSeason was first created (April) and afterwards only as a side
+        /// effect of the weekly poll crawl. A game ESPN added after April
+        /// between two teams that never appear in a poll was therefore never
+        /// created: 47 Sun Belt / C-USA games in 2026 (Marshall had 4 of 12),
+        /// missing from pick'em and Splits. Re-reading every team's event
+        /// list closes that gap. A known event costs one Event and one
+        /// Competition fetch and spawns nothing further (the filter rides
+        /// every hop); an unknown one is created with its full graph, because
+        /// the Event, Competition and Competitor processors spawn every child
+        /// of a NEW entity regardless of the filter.
+        /// </para>
+        /// <para>
+        /// Football only: an NCAA or NFL team has about 12 events, an MLB
+        /// team 162, and the gap has only been seen in football.
+        /// </para>
+        /// </summary>
+        internal static IReadOnlyList<DocumentType> RefreshedChildTypesFor(Sport sport) =>
+            sport is Sport.FootballNcaa or Sport.FootballNfl
+                ? [.. RefreshedChildTypes, DocumentType.Event]
+                : RefreshedChildTypes;
+
         private readonly ILogger<FranchiseSeasonEnrichmentJob> _logger;
         private readonly TeamSportDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -158,6 +186,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
             {
                 var statsCorrelationId = Guid.NewGuid();
                 var skipped = 0;
+                var childTypes = RefreshedChildTypesFor(_appMode.CurrentSport);
 
                 // Build first, publish as a BATCH: EventBus.Publish in Direct
                 // mode pays a 1-second Task.Delay per call, so a per-team
@@ -187,7 +216,7 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: statsCorrelationId,
                         CausationId: Guid.NewGuid(),
-                        IncludeLinkedDocumentTypes: [.. RefreshedChildTypes]));
+                        IncludeLinkedDocumentTypes: [.. childTypes]));
                 }
 
                 using (_deliveryScope.Use(DeliveryMode.Direct))
@@ -195,9 +224,12 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Jobs
                     await _eventBus.PublishBatch(requests);
                 }
 
+                // Contests the schedule leg discovers are created with
+                // CreatedBy = this CorrelationId, so the run's discoveries
+                // can be counted afterwards from the Contest table.
                 _logger.LogInformation(
-                    "Season statistics refresh requested for {Requested} teams ({Skipped} without an ESPN ref). SeasonYear={SeasonYear}, Sport={Sport}, CorrelationId={CorrelationId}",
-                    requests.Count, skipped, effectiveSeasonYear, _appMode.CurrentSport, statsCorrelationId);
+                    "Season statistics and schedule refresh requested for {Requested} teams ({Skipped} without an ESPN ref). SeasonYear={SeasonYear}, Sport={Sport}, ChildTypes={ChildTypes}, CorrelationId={CorrelationId}",
+                    requests.Count, skipped, effectiveSeasonYear, _appMode.CurrentSport, string.Join(",", childTypes), statsCorrelationId);
             }
             catch (Exception ex)
             {

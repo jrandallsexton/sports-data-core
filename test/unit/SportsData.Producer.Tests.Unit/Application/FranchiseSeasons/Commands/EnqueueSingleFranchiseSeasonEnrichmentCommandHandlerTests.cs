@@ -148,11 +148,12 @@ public class EnqueueSingleFranchiseSeasonEnrichmentCommandHandlerTests
                     d.CorrelationId == _correlationId &&
                     d.Uri.ToString().Contains("/teams/50") &&
                     d.IncludeLinkedDocumentTypes != null &&
-                    d.IncludeLinkedDocumentTypes.Count == 4 &&
+                    d.IncludeLinkedDocumentTypes.Count == 5 &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonStatistics) &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeason) &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonLeaders) &&
-                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeasonStatistics))),
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeasonStatistics) &&
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.Event))),
             It.IsAny<CancellationToken>()), Times.Once);
         Mocker.GetMock<IMessageDeliveryScope>().Verify(x => x.Use(DeliveryMode.Direct), Times.Once);
 

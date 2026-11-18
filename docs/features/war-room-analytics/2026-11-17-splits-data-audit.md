@@ -137,7 +137,11 @@ Fix: 2026 conference re-source
 then a 2026 fact rebuild. This also corrects Louisiana Tech's 2026
 conference record.
 
-## Check 4: 2026 games missing entirely (OPEN, current season)
+## Check 4: 2026 games missing entirely (RESOLVED 2026-11-18)
+
+Resolved: the per-team re-source fixed the FBS gaps, and the first run of
+the #871 weekly schedule re-read found no further FBS games missing. The
+sections below are the original finding and the fix.
 
 Found while checking Louisiana Tech's standings (which were correct: 8-2,
 6-0 Sun Belt; 2026 conference games use ESPN's flag, so stale membership did

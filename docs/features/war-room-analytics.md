@@ -76,7 +76,7 @@ not compete with that, and does not need to:
 
 ## Phase 0 — prerequisites
 
-### 0a. Athlete season statistics refresh (DONE, branch `fix/enrichment-athlete-stats`, uncommitted)
+### 0a. Athlete season statistics refresh (DONE, shipped in #852)
 
 Athlete season stats only refreshed as a side effect of the NCAA poll crawl
 (poll teams only; NFL never). Leaders widgets built on that would be stale or
@@ -429,8 +429,7 @@ Still open:
    Aggregation runs in C# over the filtered rows (at most ~350 rows per team
    for 25 seasons), so the rules above are unit tested, not SQL.
 
-   Built on `feat/war-room-splits` (2026-11-15), uncommitted pending local
-   E2E: Producer query + 8 handler tests, `FranchiseClient.GetFranchiseSplits`,
+   Shipped in #867 (built 2026-11-15 on `feat/war-room-splits`): Producer query + 8 handler tests, `FranchiseClient.GetFranchiseSplits`,
    API relay + route snapshot, `SplitsPanel` + 6 Vitest tests. The War Room
    page is now tabbed (Splits / Season Leaders / Franchise Season Metrics,
    `?tab=` in the URL, panels mount on first visit). Prod shows

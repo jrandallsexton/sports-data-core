@@ -57,11 +57,10 @@ Item 6: re-enrich alone did not fix the split; resolved by
 401767394). Root cause and the deferred design decision are in Finding 7 of
 the coverage audit.
 
-### Now (operator, no code)
+### Now (operator, no code) - DONE 2026-11-02, do not rerun
 
-1. **Rerun 2026** alone. *In progress as of writing.* If it hits pool
-   exhaustion again, action 4 is required.
-2. **Rerun 2008** after 2026 completes.
+1. **Rerun 2026** alone. DONE (14:04 UTC, no pool exhaustion).
+2. **Rerun 2008** after 2026 completes. DONE.
 3. **Verify** with section 3 of `2026-11-01-coverage-audit.sql`: ~25 ranked
    appearances per week for 2026, and no seasons left mostly at 99.
 

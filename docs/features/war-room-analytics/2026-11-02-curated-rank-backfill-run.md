@@ -14,7 +14,8 @@ seasons 2001-2026. Background: [2026-11-01-coverage-audit.md](2026-11-01-coverag
   Competition rows, so the 2010 backfill covered only those 298).
 - 2000 was rejected by `RefreshContestsBySeasonYearCommandValidator`
   (`GreaterThan(2000)`, message "must be greater than 2000"). Intentional in
-  #550, but it conflicts with the War Room 2000-to-present scope.
+  #550, but it conflicts with the War Room 2000-to-present scope. (Since fixed:
+  #856 made the floor inclusive.)
 
 ## Errors attributable to the run
 
@@ -70,7 +71,7 @@ the coverage audit.
    contests per batch with a short delay, so one season cannot exhaust the
    Hangfire storage pool.
 5. **Inclusive season floor**: `GreaterThan(2000)` to `GreaterThanOrEqualTo(2000)`
-   plus a test, then backfill 2000.
+   plus a test, then backfill 2000. DONE in #856.
 
 ### Data fixes
 

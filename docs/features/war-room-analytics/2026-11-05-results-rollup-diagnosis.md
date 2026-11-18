@@ -8,6 +8,9 @@ first: unchanged since 11-01 except 2026 ranked appearances (0 -> 301, the
 
 ## Why the scores were never rolled up
 
+> Status: this section is the 11-05 snapshot. #856 removed the pin and gave
+> the sweep a 14-day `LookbackDays` window (decision 5 below).
+
 `ContestEnrichmentJob` is the sweep meant to finalize backfilled historical
 contests, but its query has been pinned to the current season since #426
 (2026-06-17):
@@ -98,14 +101,15 @@ Operator (prod writes):
 
 Code (small PR):
 
-3. `GreaterThan(2000)` -> `GreaterThanOrEqualTo(2000)` in both
+3. DONE in #856. `GreaterThan(2000)` -> `GreaterThanOrEqualTo(2000)` in both
    `FinalizeContestsBySeasonYearCommandValidator` and
    `RefreshContestsBySeasonYearCommandValidator`, with tests; then finalize 2000.
 
 Decisions:
 
 4. Audit starvation: (a), (b) or (c) above.
-5. The `SeasonYear == 2026` pin in `ContestEnrichmentJob`. Removing it makes
+5. DECIDED in #856 (bounded 14-day window). The `SeasonYear == 2026` pin in
+   `ContestEnrichmentJob`. Removing it makes
    the weekly sweep re-enqueue every unfinalizable historical contest
    (postponed, missing `Competition`) every week. A bounded window (e.g.
    start date within the last N days) keeps the sweep's real job, which is

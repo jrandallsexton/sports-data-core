@@ -1,6 +1,9 @@
 # War Room Analytics
 
-Status: DESIGN (2026-11-01). Nothing below is built except Phase 0.
+Status (2026-11-18): Phases 0 and 1 are built and live. That covers season
+leader cards (#862), `FranchiseContestFact` (#864, #866) and Splits (#867,
+#869, #870). The rest of this doc is the 2026-11-01 design, with later status
+notes inline.
 
 ## Goal
 
@@ -210,7 +213,7 @@ a `WHERE` + `GROUP BY`.
 - **Rank going in** = `CompetitionCompetitor.CuratedRankCurrent` (ESPN's rank
   on the game's competitor; 99 = unranked). The audit showed weekly poll
   tables only exist for 2025+, so poll-date lookups cannot cover history.
-  Prerequisite: the update-path bug that froze 2026 ranks at 99. Open: whether
+  The update-path bug that froze 2026 ranks at 99 is fixed (#853). Open: whether
   curatedRank switches from AP to CFP once CFP rankings publish; until
   verified, name the column `RankGoingIn`, not `ApRank`.
 - **Unranked vs unknown.** 99 = unranked; null (e.g. all of 2000) = unknown,
@@ -309,7 +312,7 @@ Measured 2026-11-01 (`war-room-analytics/2026-11-01-coverage-audit.md`):
 | Results | scores, home/away, record going in | 2000 after score roll-up | 2010/2016/2018 holes |
 | Conference | membership, conference-game flag | 2001 (season-accurate map since #857), 2014 (ESPN flag; derived from membership before) | 2000 membership unverified |
 | Time-of-day | kickoff time + venue zone | 2001 | 2000 date-only |
-| Rankings | rank at game time | 2001-2025 via `CuratedRankCurrent` | 2026 frozen (bug); weekly poll tables 2025+ only |
+| Rankings | rank at game time | 2001-2025 via `CuratedRankCurrent` | 2026 frozen-rank bug fixed in #853; weekly poll tables 2025+ only |
 | Market | spread / ATS results | 2012 | ATS follows result gaps |
 | Team box | team per-game stats | 2004 | 2011, 2016, 2018 thin |
 | Athlete box | athlete per-game stats | 2004 | 2018 28%, 2025 42% |

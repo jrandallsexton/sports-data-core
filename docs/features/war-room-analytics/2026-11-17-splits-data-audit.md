@@ -35,8 +35,23 @@ team's record cannot be rebuilt from facts.
 
 All 21 NCAA mismatches are the duplicate games below: each affected team has
 two fact rows with the same kickoff, so the check counts the duplicate as a
-prior game. The stored records appear correct; no season needs a rebuild for
-stale records.
+prior game.
+
+That number is a lower bound, not a clean result. Check 1 recomputes from the
+same fact rows, which include both copies of each duplicate, so it cannot see
+the inflation the duplicates cause:
+
+- The projector's record-going-in (`GetRecordsBeforeAsync`) counts every
+  finalized, non-preseason contest with `StartDateUtc` before kickoff. A
+  duplicate therefore adds one win or loss to `WinsBefore`/`LossesBefore` on
+  every later game for both teams, and the recompute agrees with it.
+- `EnrichFranchiseSeasonHandler` counts both copies too, so the team-season
+  W-L (and conference W-L, for conference championship games) is overstated.
+
+Outside the 22 affected team-seasons (2008, 2012, 2013), the records are
+correct. For those teams, records are overstated until the duplicates are
+resolved. The fix is the dedup decision in Check 2, then a fact rebuild and a
+team-season re-enrich for 2008, 2012 and 2013.
 
 ## Check 2: duplicate NCAA games (OPEN, needs design)
 
@@ -75,8 +90,8 @@ group by 1, 2, 3 having count(*) > 1;
 ### Open questions
 
 - **Blast radius beyond facts.** The duplicates are `Contest` rows, so they
-  may also double-count in conference W/L (`EnrichFranchiseSeasonHandler`),
-  team-season records, athlete stats and leaders, metrics, and anything else
+  double-count in team-season and conference W/L (`EnrichFranchiseSeasonHandler`
+  counts both; confirmed in code), and may in athlete stats and leaders, metrics, and anything else
   that reads contests by season. Each consumer needs checking.
 - **Which id to keep.** Is `400...` always ESPN's canonical id? Which of the
   pair carries the plays, odds (2012+), box stats and `curatedRank`? Keep the

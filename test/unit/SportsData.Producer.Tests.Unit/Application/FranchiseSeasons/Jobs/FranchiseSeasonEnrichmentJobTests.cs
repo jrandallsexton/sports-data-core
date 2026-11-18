@@ -257,11 +257,14 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
                     d.SeasonYear == 2026 &&
                     d.Uri.ToString().Contains("/teams/50") &&
                     d.IncludeLinkedDocumentTypes != null &&
-                    d.IncludeLinkedDocumentTypes.Count == 4 &&
+                    d.IncludeLinkedDocumentTypes.Count == 5 &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonStatistics) &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeason) &&
                     d.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonLeaders) &&
-                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeasonStatistics))),
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.AthleteSeasonStatistics) &&
+                    // Football also re-reads the schedule (2026-11-18): games
+                    // between two unpolled teams were otherwise never created.
+                    d.IncludeLinkedDocumentTypes.Contains(DocumentType.Event))),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // The publish must run inside an explicit Direct delivery scope:
@@ -290,7 +293,12 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
 
         Mocker.GetMock<IEventBus>().Verify(x => x.PublishBatch(
             It.Is<IEnumerable<DocumentRequested>>(batch =>
-                batch.Count() == 1 && batch.All(d => d.DocumentType == DocumentType.TeamSeason)),
+                batch.Count() == 1 && batch.All(d => d.DocumentType == DocumentType.TeamSeason &&
+                    // No schedule leg for MLB: 162 events per team, and the
+                    // missing-games gap has only been seen in football.
+                    d.IncludeLinkedDocumentTypes != null &&
+                    d.IncludeLinkedDocumentTypes.Count == 4 &&
+                    !d.IncludeLinkedDocumentTypes.Contains(DocumentType.Event))),
             It.IsAny<CancellationToken>()), Times.Once);
         _metricsHandler.Verify(x => x.ExecuteAsync(
             It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),

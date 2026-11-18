@@ -120,7 +120,7 @@ The audit output sets the per-family floor (see "Data tiers").
 
 ## Phase 1 — Leaders widgets (no new data layer)
 
-**Status (2026-11-10): built on `feat/war-room-leaders`, awaiting local E2E.**
+**Status: shipped in #862 (built 2026-11-10 on `feat/war-room-leaders`).**
 As built:
 
 - Producer `GET api/athletes/leaders?seasonYear&category&stat&perGame&limit`
@@ -432,5 +432,5 @@ Still open:
    Shipped in #867 (built 2026-11-15 on `feat/war-room-splits`): Producer query + 8 handler tests, `FranchiseClient.GetFranchiseSplits`,
    API relay + route snapshot, `SplitsPanel` + 6 Vitest tests. The War Room
    page is now tabbed (Splits / Season Leaders / Franchise Season Metrics,
-   `?tab=` in the URL, panels mount on first visit). Prod shows
-   2026 only until the 2001-2025 fact backfill runs.
+   `?tab=` in the URL, panels mount on first visit). The 2001-2025
+   fact backfill ran 2026-11-16 (NCAA and NFL), so prod covers 2001-2026.

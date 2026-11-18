@@ -1,9 +1,9 @@
 # Splits data audit (2026-11-17)
 
 Read-only checks of `FranchiseContestFact` (NCAAFB and NFL, prod) after the
-2001-2025 backfill and the 2016/2017 NCAA re-sources. Two open problems:
-**duplicate NCAA games** (needs a design decision) and **Louisiana Tech's 2026
-conference** (needs a re-source and rebuild).
+2001-2025 backfill and the 2016/2017 NCAA re-sources. One open problem:
+**duplicate NCAA games** (needs a design decision). Louisiana Tech's 2026
+conference and the missing 2026 games are resolved (Checks 3 and 4).
 
 ## Context: what is already done
 

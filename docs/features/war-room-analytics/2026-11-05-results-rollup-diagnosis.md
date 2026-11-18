@@ -1,5 +1,9 @@
 # Results Roll-up Diagnosis (2026-11-05)
 
+> Point-in-time record: this audit describes the system as of its date.
+> Open items and action lists reflect that day, not the current state. See
+> [war-room-analytics.md](../war-room-analytics.md) for current status.
+
 Follow-up to Finding 1 of [2026-11-01-coverage-audit.md](2026-11-01-coverage-audit.md)
 (historical scores never rolled up to `Contest`). Measured against **prod**
 `sdProducer.FootballNcaa`, read-only. Section 1 of the coverage audit re-run

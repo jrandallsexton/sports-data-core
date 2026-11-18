@@ -1,5 +1,9 @@
 # War Room Analytics — Coverage Audit (Phase 0b)
 
+> Point-in-time record: this audit describes the system as of its date.
+> Open items and action lists reflect that day, not the current state. See
+> [war-room-analytics.md](../war-room-analytics.md) for current status.
+
 Date: 2026-11-01. Database: `sdProducer.FootballNcaa` (local, restored from
 prod; data current to 2026-11-01 01:34 local). Queries:
 `2026-11-01-coverage-audit.sql` (sections 1-4) plus the drill-downs quoted

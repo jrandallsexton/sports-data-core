@@ -1,5 +1,9 @@
 # Curated Rank Backfill Run (2026-11-02)
 
+> Point-in-time record: this audit describes the system as of its date.
+> Open items and action lists reflect that day, not the current state. See
+> [war-room-analytics.md](../war-room-analytics.md) for current status.
+
 Seq review of the first season-wide narrowed refresh after #854 deployed, and
 the resulting action list. Request: `bruno/api/contests-refresh-seasonYear-competitors.yml`
 (`IncludeLinkedDocumentTypes=EventCompetition,EventCompetitionCompetitor`), NCAA,
@@ -74,7 +78,8 @@ the coverage audit.
 
 ### Data fixes
 
-6. **Re-enrich the 8 finalized 2025 contests** listed above.
+6. **Re-enrich the 8 finalized 2025 contests** listed above. DONE 2026-11-02
+   (remediation SQL plus re-enrich of 9 contests; see the status above).
 7. **Identify the 2026 game behind the duplicate-key error** (competition
    `3dca4055-…`). If it is a non-finalized home/away swap, the #661 guard has a
    gap: unfinalized games trip the unique index instead of swapping. Investigate

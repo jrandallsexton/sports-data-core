@@ -1,5 +1,9 @@
 # Historical conference membership: root cause and remedy options
 
+> Point-in-time record: this audit describes the system as of its date.
+> Open items and action lists reflect that day, not the current state. See
+> [war-room-analytics.md](../war-room-analytics.md) for current status.
+
 **Status:** Shipped in PR #857 (merged 2026-11-06); backfill done 2026-11-07 (2001-2025), 4 residual team-seasons (see [Rollout log](#rollout-log))
 **Scope:** NCAA football (sdProducer.FootballNcaa), seasons 2000-2025
 **Resolves:** Finding 3 in [2026-11-01-coverage-audit.md](2026-11-01-coverage-audit.md)

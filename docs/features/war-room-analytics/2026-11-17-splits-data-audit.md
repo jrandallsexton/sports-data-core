@@ -1,5 +1,9 @@
 # Splits data audit (2026-11-17)
 
+> Point-in-time record: this audit describes the system as of 2026-11-18.
+> Open items and action lists reflect that day, not the current state. See
+> [war-room-analytics.md](../war-room-analytics.md) for current status.
+
 Read-only checks of `FranchiseContestFact` (NCAAFB and NFL, prod) after the
 2001-2025 backfill and the 2016/2017 NCAA re-sources. One open problem:
 **duplicate NCAA games** (needs a design decision). Louisiana Tech's 2026

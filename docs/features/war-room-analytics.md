@@ -1,9 +1,31 @@
 # War Room Analytics
 
-Status (2026-11-18): Phases 0 and 1 are built and live. That covers season
-leader cards (#862), `FranchiseContestFact` (#864, #866) and Splits (#867,
-#869, #870). The rest of this doc is the 2026-11-01 design, with later status
-notes inline.
+## Status (2026-11-19)
+
+This section is the only current status. The rest of the doc is the
+2026-11-01 design plus dated build notes, and the audits under
+`war-room-analytics/` are point-in-time records; neither is updated after
+the fact.
+
+Live in prod:
+
+- Phase 0: athlete season stats refresh (#852), coverage audit, score
+  roll-up and season floor 2000 (#856), season-accurate conference
+  membership (#857), rank sync on update (#853).
+- Phase 1: season leader cards (#862).
+- Phase 2: `Venue.TimeZone` (#863), `FranchiseContestFact` projection,
+  maintenance and per-season rebuild (#864, #865, #866), Splits widget
+  (#867, #869, #870). Facts cover NCAA and NFL 2001-2026 (backfill 11-16).
+- Weekly enrichment re-reads every football team's schedule (#871).
+
+Open:
+
+- Duplicate NCAA games (11 pairs, 2008/2012/2013) overstate records for
+  the 22 affected team-seasons. Needs a dedup design, then a fact rebuild
+  and re-enrich of those seasons. See the 11-17 audit, Check 2.
+- Historical NFL `GroupSeasonMap` is null before 2026, so NFL Splits waits
+  on Phase 5.
+- Phases 3-5 not started; MCP hosting undecided.
 
 ## Goal
 
@@ -45,7 +67,7 @@ not compete with that, and does not need to:
 3. **The MCP/agent surface is a thin layer over typed tools**, built because
    it demonstrates the architecture, not to win a Q&A market.
 
-## Current state (verified 2026-11-01)
+## State at design time (2026-11-01)
 
 - `src/UI/sd-ui/src/components/warRoom/WarRoomPage.jsx`: one real widget
   (`FranchiseMetricsGrid`, backed by `GET ui/analytics/franchise-season/{year}`
@@ -367,7 +389,7 @@ Still open:
    data on every column checked.
 3. Maintenance: upsert on `ContestFinalized` / re-enrichment; per-season
    rebuild endpoint for backfill.
-   Built on `feat/franchise-contest-facts-maintenance`:
+   Shipped in #866 (built on `feat/franchise-contest-facts-maintenance`):
    - `ContestFinalizedHandler` (football pods) enqueues the projection; this
      covers finalization, re-enrichment (re-finalizes) and score corrections
      (re-enrich, #861). The odds-late path does not republish

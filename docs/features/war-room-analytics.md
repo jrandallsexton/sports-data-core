@@ -26,6 +26,9 @@ Open:
 - Historical NFL `GroupSeasonMap` is null before 2026, so NFL Splits waits
   on Phase 5.
 - Phases 3-5 not started; MCP hosting undecided.
+- Next Splits filters (opponent conference, opponent, season type, month,
+  spread size) and the filter backlog: design in
+  [splits-filters-v2.md](war-room-analytics/splits-filters-v2.md).
 
 ## Goal
 

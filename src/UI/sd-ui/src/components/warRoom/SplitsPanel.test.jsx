@@ -158,6 +158,109 @@ describe("SplitsPanel", () => {
     });
   });
 
+  it("sends the season type, month and spread size chips", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
+    await pickLsu();
+    await findGamesTable();
+
+    fireEvent.click(screen.getByRole("button", { name: "Postseason" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nov" }));
+    fireEvent.click(screen.getByRole("button", { name: "14+" }));
+
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits).toHaveBeenLastCalledWith(
+        "lsu-tigers",
+        expect.objectContaining({ seasonType: "Postseason", month: 11, spreadSize: "Huge" })
+      )
+    );
+    expect(
+      await screen.findByText(/games without a known venue are left out/)
+    ).toBeInTheDocument();
+  });
+
+  it("fills the opponent and conference pickers from the response options", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({
+      data: splits({
+        options: {
+          opponents: [{ slug: "alabama-crimson-tide", name: "Alabama Crimson Tide", games: 25 }],
+          conferences: [{ value: "midam", label: "MAC", games: 3 }],
+        },
+      }),
+    });
+    await pickLsu();
+    await findGamesTable();
+
+    const opponent = screen.getByLabelText("Opponent team");
+    await waitFor(() =>
+      expect(within(opponent).getByText("Alabama Crimson Tide (25)")).toBeInTheDocument()
+    );
+    fireEvent.change(opponent, { target: { value: "alabama-crimson-tide" } });
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits).toHaveBeenLastCalledWith(
+        "lsu-tigers",
+        expect.objectContaining({ opponent: "alabama-crimson-tide" })
+      )
+    );
+
+    const conference = screen.getByLabelText("Opponent conference");
+    expect(within(conference).getByText("vs MAC (3)")).toBeInTheDocument();
+    fireEvent.change(conference, { target: { value: "midam" } });
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits).toHaveBeenLastCalledWith(
+        "lsu-tigers",
+        expect.objectContaining({ opponent: "alabama-crimson-tide", opponentConference: "midam" })
+      )
+    );
+  });
+
+  it("drops the opponent and conference when the team changes", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({
+      data: splits({
+        options: {
+          opponents: [{ slug: "ole-miss-rebels", name: "Ole Miss Rebels", games: 20 }],
+          conferences: [{ value: "sec", label: "SEC", games: 100 }],
+        },
+      }),
+    });
+    await pickLsu();
+    await findGamesTable();
+
+    const opponent = screen.getByLabelText("Opponent team");
+    await waitFor(() =>
+      expect(within(opponent).getByText("Ole Miss Rebels (20)")).toBeInTheDocument()
+    );
+    fireEvent.change(opponent, { target: { value: "ole-miss-rebels" } });
+    fireEvent.change(screen.getByLabelText("Opponent conference"), { target: { value: "sec" } });
+    fireEvent.change(screen.getByLabelText("Team"), { target: { value: "alabama-crimson-tide" } });
+
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits.mock.calls.at(-1)[0]).toBe("alabama-crimson-tide")
+    );
+    const [, params] = apiWrapper.Analytics.getFranchiseSplits.mock.calls.at(-1);
+    expect(params).not.toHaveProperty("opponent");
+    expect(params).not.toHaveProperty("opponentConference");
+  });
+
+  it("counts the active filters and clears them all", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
+    await pickLsu();
+    await findGamesTable();
+
+    expect(screen.queryByRole("button", { name: "Clear all" })).not.toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("group", { name: "Game site" })).getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Underdog" }));
+    expect(screen.getByText("2 filters on")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(screen.queryByText(/filters? on/)).not.toBeInTheDocument();
+    await waitFor(() => {
+      const [, params] = apiWrapper.Analytics.getFranchiseSplits.mock.calls.at(-1);
+      expect(params).not.toHaveProperty("site");
+    });
+    const [, params] = apiWrapper.Analytics.getFranchiseSplits.mock.calls.at(-1);
+    expect(params).not.toHaveProperty("line");
+  });
+
   it("says when a filter raised the season floor", async () => {
     apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({
       data: splits({ requestedSeasonFrom: 2005, seasonFrom: 2012, seasonTo: 2026 }),

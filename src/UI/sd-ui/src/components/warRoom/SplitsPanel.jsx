@@ -21,54 +21,113 @@ for (let y = CURRENT_SEASON; y >= EARLIEST_SEASON; y--) {
   seasonYears.push(y);
 }
 
-// Chip groups: value is the Producer's enum name (or a boolean); null = Any.
-export const SPLIT_FILTERS = [
+// Filters are laid out in blocks by the question they answer: about the
+// game, about the opponent, about the betting line. A chip group's value is
+// the Producer's enum name (or a boolean); null = Any. Select rows are
+// filled from the response's options rather than fixed chips.
+export const FILTER_BLOCKS = [
   {
-    key: 'site',
-    label: 'Site',
-    options: [
-      { label: 'Home', value: 'Home' },
-      { label: 'Away', value: 'Away' },
-      { label: 'Neutral', value: 'Neutral' },
+    title: 'Game',
+    rows: [
+      {
+        key: 'site',
+        label: 'Site',
+        options: [
+          { label: 'Home', value: 'Home' },
+          { label: 'Away', value: 'Away' },
+          { label: 'Neutral', value: 'Neutral' },
+        ],
+      },
+      {
+        key: 'seasonType',
+        label: 'Season',
+        title: 'Conference championship games count as regular season',
+        options: [
+          { label: 'Regular', value: 'Regular' },
+          { label: 'Postseason', value: 'Postseason' },
+        ],
+      },
+      {
+        key: 'month',
+        label: 'Month',
+        options: [
+          { label: 'Aug', value: 8 },
+          { label: 'Sep', value: 9 },
+          { label: 'Oct', value: 10 },
+          { label: 'Nov', value: 11 },
+          { label: 'Dec', value: 12 },
+          { label: 'Jan', value: 1 },
+        ],
+      },
+      {
+        key: 'kickoffWindow',
+        label: 'Kickoff',
+        options: [
+          { label: 'Noon', value: 'Noon' },
+          { label: 'Afternoon', value: 'Afternoon' },
+          { label: 'Night', value: 'Night' },
+        ],
+      },
     ],
   },
   {
-    key: 'opponentRank',
-    label: 'Opponent',
-    options: [
-      { label: 'Ranked', value: 'Ranked' },
-      { label: 'Top 10', value: 'Top10' },
-      { label: 'Unranked', value: 'Unranked' },
+    title: 'Opponent',
+    rows: [
+      { key: 'opponent', label: 'Team', select: 'opponents' },
+      { key: 'opponentConference', label: 'Conference', select: 'conferences' },
+      {
+        key: 'opponentRank',
+        label: 'Rank',
+        options: [
+          { label: 'Top 10', value: 'Top10' },
+          { label: 'Ranked', value: 'Ranked' },
+          { label: 'Unranked', value: 'Unranked' },
+        ],
+      },
+      {
+        key: 'conferenceGame',
+        label: 'Matchup',
+        options: [
+          { label: 'In-conference', value: true },
+          { label: 'Non-conference', value: false },
+        ],
+      },
     ],
   },
   {
-    key: 'line',
-    label: 'Line',
-    options: [
-      { label: 'Favorite', value: 'Favorite' },
-      { label: 'Underdog', value: 'Underdog' },
-    ],
-  },
-  {
-    key: 'kickoffWindow',
-    label: 'Kickoff',
-    options: [
-      { label: 'Noon', value: 'Noon' },
-      { label: 'Afternoon', value: 'Afternoon' },
-      { label: 'Night', value: 'Night' },
-    ],
-  },
-  {
-    key: 'conferenceGame',
-    label: 'Conference',
-    options: [
-      { label: 'Conference', value: true },
-      { label: 'Non-conf', value: false },
+    title: 'Betting',
+    rows: [
+      {
+        key: 'line',
+        label: 'Line',
+        options: [
+          { label: 'Favorite', value: 'Favorite' },
+          { label: 'Underdog', value: 'Underdog' },
+        ],
+      },
+      {
+        key: 'spreadSize',
+        label: 'Spread',
+        title: 'Size of the line, either side; combine with Line for direction',
+        options: [
+          { label: '≤3', value: 'Close' },
+          { label: '3.5–6.5', value: 'Moderate' },
+          { label: '7–13.5', value: 'Large' },
+          { label: '14+', value: 'Huge' },
+        ],
+      },
     ],
   },
 ];
 
-const EMPTY_FILTERS = Object.fromEntries(SPLIT_FILTERS.map((f) => [f.key, null]));
+const FILTER_ROWS = FILTER_BLOCKS.flatMap((b) => b.rows);
+
+const EMPTY_FILTERS = Object.fromEntries(FILTER_ROWS.map((row) => [row.key, null]));
+
+// Placeholder for each select; a select's "Any" choice clears it.
+const SELECT_ANY = { opponents: 'Any opponent', conferences: 'Any conference' };
+
+const EMPTY_OPTIONS = { opponents: [], conferences: [] };
 
 const isRanked = (rank) => rank != null && rank >= 1 && rank <= 25;
 
@@ -125,6 +184,9 @@ function SplitsPanel() {
   const [seasonTo, setSeasonTo] = useState(CURRENT_SEASON);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [splits, setSplits] = useState(null);
+  // Picker lists for opponent / opponent conference. Kept apart from
+  // `splits` so the selects stay filled while a new request is loading.
+  const [options, setOptions] = useState(EMPTY_OPTIONS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -164,7 +226,9 @@ function SplitsPanel() {
     setError(null);
     apiWrapper.Analytics.getFranchiseSplits(slug, params)
       .then((response) => {
-        if (current) setSplits(response.data || null);
+        if (!current) return;
+        setSplits(response.data || null);
+        setOptions(response.data?.options || EMPTY_OPTIONS);
       })
       .catch((err) => {
         if (current) {
@@ -185,6 +249,16 @@ function SplitsPanel() {
   const toggleFilter = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: prev[key] === value ? null : value }));
 
+  const setSelectFilter = (key, value) =>
+    setFilters((prev) => ({ ...prev, [key]: value || null }));
+
+  // Opponents and conferences belong to the team, so a new team drops them.
+  const onTeam = (value) => {
+    setSlug(value);
+    setOptions(EMPTY_OPTIONS);
+    setFilters((prev) => ({ ...prev, opponent: null, opponentConference: null }));
+  };
+
   const onSeasonFrom = (value) => {
     setSeasonFrom(value);
     if (value > seasonTo) setSeasonTo(value);
@@ -200,7 +274,54 @@ function SplitsPanel() {
   const rangeRaised = splits && splits.seasonFrom > splits.requestedSeasonFrom;
   const rangeEmpty = splits && splits.seasonFrom > splits.seasonTo;
   const pct = summary ? formatPct(summary.wins, summary.losses, summary.ties) : null;
-  const hasFilters = useMemo(() => Object.values(filters).some((v) => v != null), [filters]);
+  const activeCount = useMemo(
+    () => Object.values(filters).filter((v) => v != null).length,
+    [filters],
+  );
+
+  const renderSelect = (row) => (
+    <select
+      value={filters[row.key] || ''}
+      onChange={(e) => setSelectFilter(row.key, e.target.value)}
+      className="splits-select splits-filter-select"
+      aria-label={row.key === 'opponent' ? 'Opponent team' : 'Opponent conference'}
+      title={
+        row.key === 'opponentConference'
+          ? "The opponent's conference in the season of each game"
+          : undefined
+      }
+      disabled={!slug}
+    >
+      <option value="">{SELECT_ANY[row.select]}</option>
+      {row.select === 'opponents'
+        ? options.opponents.map((o) => (
+            <option key={o.slug} value={o.slug}>
+              {o.name} ({o.games})
+            </option>
+          ))
+        : options.conferences.map((c) => (
+            <option key={c.value} value={c.value}>
+              vs {c.label} ({c.games})
+            </option>
+          ))}
+    </select>
+  );
+
+  const renderChips = (row) =>
+    row.options.map((opt) => {
+      const active = filters[row.key] === opt.value;
+      return (
+        <button
+          key={String(opt.value)}
+          type="button"
+          className={`splits-chip${active ? ' active' : ''}`}
+          aria-pressed={active}
+          onClick={() => toggleFilter(row.key, opt.value)}
+        >
+          {opt.label}
+        </button>
+      );
+    });
 
   return (
     <section className="splits-panel" aria-label="Team splits">
@@ -208,7 +329,7 @@ function SplitsPanel() {
         <div className="splits-controls">
           <select
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            onChange={(e) => onTeam(e.target.value)}
             className="splits-select splits-team-select"
             aria-label="Team"
           >
@@ -245,33 +366,39 @@ function SplitsPanel() {
             ))}
           </select>
         </div>
+        {activeCount > 0 && (
+          <div className="splits-active">
+            <span>
+              {activeCount} {activeCount === 1 ? 'filter' : 'filters'} on
+            </span>
+            <span aria-hidden="true">·</span>
+            <button type="button" className="splits-clear" onClick={() => setFilters(EMPTY_FILTERS)}>
+              Clear all
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="splits-chips">
-        {SPLIT_FILTERS.map((group) => (
-          <div key={group.key} className="splits-chip-group" role="group" aria-label={group.label}>
-            <span className="splits-chip-label">{group.label}</span>
-            {group.options.map((opt) => {
-              const active = filters[group.key] === opt.value;
-              return (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  className={`splits-chip${active ? ' active' : ''}`}
-                  aria-pressed={active}
-                  onClick={() => toggleFilter(group.key, opt.value)}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
+      <div className="splits-filters">
+        {FILTER_BLOCKS.map((block) => (
+          <fieldset key={block.title} className="splits-filter-block">
+            <legend className="splits-filter-title">{block.title}</legend>
+            {block.rows.map((row) => (
+              <div
+                key={row.key}
+                className="splits-filter-row"
+                role={row.select ? undefined : 'group'}
+                aria-label={row.select ? undefined : `${block.title} ${row.label.toLowerCase()}`}
+                title={row.title}
+              >
+                <span className="splits-filter-label">{row.label}</span>
+                <div className="splits-filter-values">
+                  {row.select ? renderSelect(row) : renderChips(row)}
+                </div>
+              </div>
+            ))}
+          </fieldset>
         ))}
-        {hasFilters && (
-          <button type="button" className="splits-clear" onClick={() => setFilters(EMPTY_FILTERS)}>
-            Clear filters
-          </button>
-        )}
       </div>
 
       {!slug && <div className="splits-state">Pick a team to see its splits.</div>}
@@ -285,6 +412,11 @@ function SplitsPanel() {
               {rangeEmpty
                 ? `These filters need data from ${splits.seasonFrom} on; widen the range to see games.`
                 : `These filters have data from ${splits.seasonFrom}; showing ${splits.seasonFrom}–${splits.seasonTo}.`}
+            </p>
+          )}
+          {filters.month != null && (
+            <p className="splits-range-note">
+              Month uses the local kickoff date; games without a known venue are left out.
             </p>
           )}
 

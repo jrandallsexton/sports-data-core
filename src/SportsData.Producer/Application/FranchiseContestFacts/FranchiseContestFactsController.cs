@@ -63,7 +63,9 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
         /// War Room Splits: a team's record over a season range, narrowed by
         /// optional filters (each omitted filter means "any"). Enum filters
         /// take names: site=Away, opponentRank=Top10, line=Underdog,
-        /// kickoffWindow=Night.
+        /// kickoffWindow=Night, seasonType=Postseason, spreadSize=Large.
+        /// opponent is a franchise slug, opponentConference an abbreviation
+        /// from the response's options, month 1-12.
         /// Example: GET /api/franchise-contest-facts/franchises/lsu-tigers/splits?seasonFrom=2015&amp;seasonTo=2025&amp;site=Away&amp;opponentRank=Ranked
         /// </summary>
         [HttpGet("franchises/{slug}/splits")]
@@ -76,6 +78,11 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
             [FromQuery] LineFilter? line,
             [FromQuery] KickoffWindow? kickoffWindow,
             [FromQuery] bool? conferenceGame,
+            [FromQuery] string? opponentConference,
+            [FromQuery] string? opponent,
+            [FromQuery] SeasonTypeFilter? seasonType,
+            [FromQuery] int? month,
+            [FromQuery] SpreadSizeFilter? spreadSize,
             [FromServices] IAppMode appMode,
             CancellationToken cancellationToken)
         {
@@ -84,7 +91,9 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
 
             var handler = HttpContext.RequestServices.GetRequiredService<IGetFranchiseSplitsQueryHandler>();
             var result = await handler.ExecuteAsync(
-                new GetFranchiseSplitsQuery(slug, seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame),
+                new GetFranchiseSplitsQuery(
+                    slug, seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame,
+                    opponentConference, opponent, seasonType, month, spreadSize),
                 cancellationToken);
             return result.ToActionResult();
         }

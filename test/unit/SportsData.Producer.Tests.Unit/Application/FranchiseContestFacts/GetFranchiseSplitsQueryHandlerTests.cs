@@ -170,6 +170,147 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
     }
 
     [Fact]
+    public async Task Execute_OpponentConference_MatchesConferenceInThatSeason()
+    {
+        // Texas A&M-style move: the same opponent was big12, then sec.
+        SeedFact(2011, AlabamaId, new DateTime(2011, 11, 5), opponentConference: "big12");
+        SeedFact(2013, AlabamaId, new DateTime(2013, 11, 9), opponentConference: "sec");
+        SeedFact(2014, OleMissId, new DateTime(2014, 10, 25), opponentConference: "sec");
+        SeedFact(2015, OleMissId, new DateTime(2015, 9, 5), opponentConference: null);
+        await FootballDataContext.SaveChangesAsync();
+
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, OpponentConference: "sec")))
+            .Value.Games.Select(g => g.SeasonYear).Should().Equal(2014, 2013);
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, OpponentConference: "big12")))
+            .Value.Games.Select(g => g.SeasonYear).Should().Equal(2011);
+    }
+
+    [Fact]
+    public async Task Execute_Opponent_HeadToHeadAcrossSeasons()
+    {
+        SeedFact(2003, AlabamaId, new DateTime(2003, 11, 8));
+        SeedFact(2019, AlabamaId, new DateTime(2019, 11, 9));
+        SeedFact(2019, OleMissId, new DateTime(2019, 11, 16));
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, Opponent: "alabama-crimson-tide"));
+
+        result.Value.Games.Select(g => g.SeasonYear).Should().Equal(2019, 2003);
+        result.Value.Games.Should().OnlyContain(g => g.OpponentSlug == "alabama-crimson-tide");
+    }
+
+    [Fact]
+    public async Task Execute_UnknownOpponent_MatchesNothing()
+    {
+        SeedFact(2019, AlabamaId, new DateTime(2019, 11, 9));
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, Opponent: "no-such-team"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Games.Should().BeEmpty();
+        // The pickers still list what the team actually played.
+        result.Value.Options.Opponents.Should().ContainSingle(o => o.Slug == "alabama-crimson-tide");
+    }
+
+    [Fact]
+    public async Task Execute_SeasonType_RegularAndPostseason_AllStarMatchesNeither()
+    {
+        SeedFact(2019, AlabamaId, new DateTime(2019, 11, 9), phase: 2);
+        SeedFact(2019, OleMissId, new DateTime(2020, 1, 1), phase: 3);
+        SeedFact(2014, OleMissId, new DateTime(2015, 1, 24), phase: 4);
+        await FootballDataContext.SaveChangesAsync();
+
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, SeasonType: SeasonTypeFilter.Regular)))
+            .Value.Games.Select(g => g.SeasonPhaseTypeCode).Should().Equal(2);
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, SeasonType: SeasonTypeFilter.Postseason)))
+            .Value.Games.Select(g => g.SeasonPhaseTypeCode).Should().Equal(3);
+    }
+
+    [Fact]
+    public async Task Execute_Month_UsesLocalMonth_NoVenueMatchesNone()
+    {
+        // 03:00 UTC Dec 1 is a local November night game.
+        SeedFact(2019, AlabamaId, new DateTime(2019, 12, 1, 3, 0, 0), localMonth: 11);
+        SeedFact(2019, OleMissId, new DateTime(2019, 10, 12), localMonth: 10);
+        SeedFact(2018, OleMissId, new DateTime(2018, 11, 3), localMonth: null);
+        await FootballDataContext.SaveChangesAsync();
+
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, Month: 11)))
+            .Value.Games.Select(g => g.SeasonYear).Should().Equal(2019);
+    }
+
+    [Theory]
+    [InlineData(SpreadSizeFilter.Close, new[] { -3.0, 0.0, 3.0 })]
+    [InlineData(SpreadSizeFilter.Moderate, new[] { -6.5, -3.5, 3.5, 6.5 })]
+    [InlineData(SpreadSizeFilter.Large, new[] { -13.5, -7.0, 7.0, 13.5 })]
+    [InlineData(SpreadSizeFilter.Huge, new[] { -14.0, 14.0, 21.0 })]
+    public async Task Execute_SpreadSize_BandsOnAbsoluteLine(SpreadSizeFilter size, double[] expected)
+    {
+        var spreads = new[] { -14m, -13.5m, -7m, -6.5m, -3.5m, -3m, 0m, 3m, 3.5m, 6.5m, 7m, 13.5m, 14m, 21m };
+        var day = 0;
+        foreach (var spread in spreads)
+            SeedFact(2020, AlabamaId, new DateTime(2020, 9, 1).AddDays(day++), spread: spread);
+        SeedFact(2020, OleMissId, new DateTime(2020, 12, 1), spread: null);
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2012, 2025, SpreadSize: size));
+
+        result.Value.Games.Select(g => g.Spread!.Value).OrderBy(x => x)
+            .Should().Equal(expected.Select(x => (decimal)x));
+    }
+
+    [Fact]
+    public async Task Execute_SpreadSize_RaisesFloorTo2012()
+    {
+        SeedFact(2010, AlabamaId, new DateTime(2010, 11, 6), spread: -21m);
+        SeedFact(2015, AlabamaId, new DateTime(2015, 11, 7), spread: -21m);
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, SpreadSize: SpreadSizeFilter.Huge));
+
+        result.Value.SeasonFrom.Should().Be(2012);
+        result.Value.Games.Select(g => g.SeasonYear).Should().Equal(2015);
+    }
+
+    [Fact]
+    public async Task Execute_Options_IgnoreChipFiltersButHonorSeasonRange()
+    {
+        SeedGroupSeason("midam", "MAC", 2025);
+        SeedGroupSeason("sec", "SEC", 2010);
+        SeedGroupSeason("sec", "SEC", 2025);
+        SeedFact(2010, AlabamaId, new DateTime(2010, 11, 6), opponentConference: "sec");
+        SeedFact(2019, AlabamaId, new DateTime(2019, 11, 9), opponentConference: "sec");
+        SeedFact(2019, OleMissId, new DateTime(2019, 9, 7), opponentConference: "midam");
+        SeedFact(2019, OleMissId, new DateTime(2019, 9, 14), opponentConference: "xyz");
+        // Outside the requested range: not an option.
+        SeedFact(2005, OleMissId, new DateTime(2005, 9, 3), opponentConference: "wac");
+        await FootballDataContext.SaveChangesAsync();
+
+        // The Line chip raises the search floor to 2012, but the options do not move.
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2008, 2025, Line: LineFilter.Favorite));
+
+        var options = result.Value.Options;
+        options.Opponents.Select(o => (o.Slug, o.Games)).Should().Equal(
+            ("alabama-crimson-tide", 2),
+            ("ole-miss-rebels", 2));
+        options.Conferences.Select(c => (c.Value, c.Label, c.Games)).Should().Equal(
+            ("midam", "MAC", 1),
+            ("sec", "SEC", 2),
+            ("xyz", "xyz", 1));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(13)]
+    public async Task Execute_MonthOutOfRange_Validation(int month)
+    {
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, Month: month));
+
+        result.Status.Should().Be(ResultStatus.Validation);
+    }
+
+    [Fact]
     public async Task Execute_UnknownSlug_NotFound()
     {
         var result = await Execute(new GetFranchiseSplitsQuery("no-such-team", 2001, 2025));
@@ -205,6 +346,22 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
         });
     }
 
+    private void SeedGroupSeason(string abbreviation, string shortName, int seasonYear)
+    {
+        FootballDataContext.GroupSeasons.Add(new GroupSeason
+        {
+            Id = Guid.NewGuid(),
+            SeasonYear = seasonYear,
+            Name = shortName,
+            Slug = abbreviation,
+            Abbreviation = abbreviation,
+            ShortName = shortName,
+            IsConference = true,
+            CreatedBy = Guid.Empty,
+            CreatedUtc = new DateTime(2026, 11, 19, 0, 0, 0, DateTimeKind.Utc),
+        });
+    }
+
     private void SeedFact(
         int seasonYear,
         Guid opponentId,
@@ -218,7 +375,10 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
         GameSite site = GameSite.Home,
         KickoffWindow? window = KickoffWindow.Afternoon,
         bool conferenceGame = false,
-        Guid? franchiseId = null)
+        Guid? franchiseId = null,
+        string opponentConference = null,
+        int? phase = 2,
+        int? localMonth = null)
     {
         FootballDataContext.FranchiseContestFacts.Add(new FranchiseContestFact
         {
@@ -233,6 +393,9 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
             KickoffWindow = window,
             Site = site,
             IsConferenceGame = conferenceGame,
+            OpponentConference = opponentConference,
+            SeasonPhaseTypeCode = phase,
+            LocalMonth = localMonth,
             OpponentRankGoingIn = opponentRank,
             PointsFor = pf,
             PointsAgainst = pa,

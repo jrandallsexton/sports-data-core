@@ -241,6 +241,38 @@ describe("SplitsPanel", () => {
     expect(params).not.toHaveProperty("opponentConference");
   });
 
+  it("clears a picked opponent the new season range no longer lists", async () => {
+    // Alabama was only played before 2020 in this fixture.
+    apiWrapper.Analytics.getFranchiseSplits.mockImplementation((_, params) =>
+      Promise.resolve({
+        data: splits({
+          options: {
+            opponents:
+              params.seasonFrom < 2020
+                ? [{ slug: "alabama-crimson-tide", name: "Alabama Crimson Tide", games: 5 }]
+                : [],
+            conferences: [],
+          },
+        }),
+      })
+    );
+    await pickLsu();
+    await findGamesTable();
+
+    const opponent = screen.getByLabelText("Opponent team");
+    await waitFor(() =>
+      expect(within(opponent).getByText("Alabama Crimson Tide (5)")).toBeInTheDocument()
+    );
+    fireEvent.change(opponent, { target: { value: "alabama-crimson-tide" } });
+    expect(await screen.findByText("1 filter on")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("From season"), { target: { value: "2024" } });
+
+    await waitFor(() => expect(screen.queryByText(/filters? on/)).not.toBeInTheDocument());
+    const [, params] = apiWrapper.Analytics.getFranchiseSplits.mock.calls.at(-1);
+    expect(params).not.toHaveProperty("opponent");
+  });
+
   it("counts the active filters and clears them all", async () => {
     apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
     await pickLsu();

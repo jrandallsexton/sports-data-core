@@ -227,8 +227,26 @@ function SplitsPanel() {
     apiWrapper.Analytics.getFranchiseSplits(slug, params)
       .then((response) => {
         if (!current) return;
+        const nextOptions = response.data?.options || EMPTY_OPTIONS;
         setSplits(response.data || null);
-        setOptions(response.data?.options || EMPTY_OPTIONS);
+        setOptions(nextOptions);
+        // A narrower season range can drop the picked opponent or conference
+        // from the lists; clear it so the select never shows "Any" while
+        // the request still applies it.
+        const opponentListed = (prev) =>
+          prev.opponent == null || nextOptions.opponents.some((o) => o.slug === prev.opponent);
+        const conferenceListed = (prev) =>
+          prev.opponentConference == null ||
+          nextOptions.conferences.some((c) => c.value === prev.opponentConference);
+        setFilters((prev) =>
+          opponentListed(prev) && conferenceListed(prev)
+            ? prev
+            : {
+                ...prev,
+                opponent: opponentListed(prev) ? prev.opponent : null,
+                opponentConference: conferenceListed(prev) ? prev.opponentConference : null,
+              },
+        );
       })
       .catch((err) => {
         if (current) {

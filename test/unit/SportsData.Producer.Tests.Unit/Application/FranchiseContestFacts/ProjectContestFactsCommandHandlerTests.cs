@@ -232,6 +232,37 @@ public class ProjectContestFactsCommandHandlerTests : ProducerTestBase<ProjectCo
     }
 
     [Fact]
+    public async Task Execute_TakesWeekFromSeasonWeek_WhenContestWeekIsNull()
+    {
+        var home = SeedTeam("NCAAF|NCAA|fbs|sec");
+        var away = SeedTeam("NCAAF|NCAA|fbs|sec");
+        var contest = SeedContest(home, away, Kickoff, 28, 24, winner: home);
+        SeedCompetition(contest.Id, timeValid: true);
+        var seasonWeek = new SeasonWeek
+        {
+            Id = Guid.NewGuid(),
+            SeasonId = Guid.NewGuid(),
+            SeasonPhaseId = Guid.NewGuid(),
+            Number = 10,
+            StartDate = Kickoff.AddDays(-3),
+            EndDate = Kickoff.AddDays(3),
+            CreatedBy = Guid.Empty,
+            CreatedUtc = Kickoff,
+        };
+        FootballDataContext.SeasonWeeks.Add(seasonWeek);
+        contest.SeasonWeekId = seasonWeek.Id;
+        contest.Week = null;
+        await FootballDataContext.SaveChangesAsync();
+
+        await Mocker.CreateInstance<ProjectContestFactsCommandHandler>()
+            .ExecuteAsync(new ProjectContestFactsCommand(contest.Id));
+
+        (await FootballDataContext.FranchiseContestFacts.AsNoTracking()
+                .Where(f => f.ContestId == contest.Id).ToListAsync())
+            .Should().HaveCount(2).And.OnlyContain(f => f.Week == 10);
+    }
+
+    [Fact]
     public async Task Execute_WhenContestMissing_ReturnsNotFound()
     {
         var result = await Mocker.CreateInstance<ProjectContestFactsCommandHandler>()

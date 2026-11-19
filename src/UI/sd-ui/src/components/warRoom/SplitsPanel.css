@@ -9,7 +9,7 @@
 .splits-panel-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 0.75rem;
@@ -46,24 +46,71 @@
   font-size: 0.85rem;
 }
 
-.splits-chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.25rem;
+/* Filters: three blocks side by side (Game / Opponent / Betting). Inside a
+   block, a fixed label column keeps the chips aligned row to row. */
+.splits-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.splits-chip-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.splits-filter-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.6rem 0.75rem 0.75rem;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
 }
 
-.splits-chip-label {
+.splits-filter-title {
+  padding: 0 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.splits-filter-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.splits-filter-label {
   color: var(--text-muted);
   font-size: 0.8rem;
-  margin-right: 0.15rem;
+}
+
+.splits-filter-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.splits-filter-select {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.splits-filter-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.splits-active {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .splits-chip {
@@ -192,6 +239,12 @@
 
 .splits-games .splits-result a:hover {
   color: var(--accent);
+}
+
+@media (max-width: 1100px) {
+  .splits-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 1000px) {

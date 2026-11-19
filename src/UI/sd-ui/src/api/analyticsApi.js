@@ -14,10 +14,42 @@ const AnalyticsApi = {
   // War Room Splits: a team's record over a season range, narrowed by
   // optional filters (omitted = any). Filter values are the Producer's enum
   // names: site Home/Away/Neutral, opponentRank Ranked/Top10/Unranked,
-  // line Favorite/Underdog, kickoffWindow Noon/Afternoon/Night.
-  getFranchiseSplits: (slug, { seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame }) =>
+  // line Favorite/Underdog, kickoffWindow Noon/Afternoon/Night,
+  // seasonType Regular/Postseason, spreadSize Close/Moderate/Large/Huge.
+  // month is 1-12; opponent (franchise slug) and opponentConference come
+  // from the response's options.
+  getFranchiseSplits: (
+    slug,
+    {
+      seasonFrom,
+      seasonTo,
+      site,
+      opponentRank,
+      line,
+      kickoffWindow,
+      conferenceGame,
+      opponentConference,
+      opponent,
+      seasonType,
+      month,
+      spreadSize,
+    },
+  ) =>
     apiClient.get(`/ui/analytics/splits/${encodeURIComponent(slug)}`, {
-      params: { seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame },
+      params: {
+        seasonFrom,
+        seasonTo,
+        site,
+        opponentRank,
+        line,
+        kickoffWindow,
+        conferenceGame,
+        opponentConference,
+        opponent,
+        seasonType,
+        month,
+        spreadSize,
+      },
     }),
 };
 

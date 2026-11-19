@@ -14,6 +14,11 @@ namespace SportsData.Producer.Application.FranchiseContestFacts.Queries.GetFranc
 /// <param name="Line">Favorite or underdog by this team's line.</param>
 /// <param name="KickoffWindow">Local kickoff window.</param>
 /// <param name="ConferenceGame">Conference (true) or non-conference (false) games.</param>
+/// <param name="OpponentConference">The opponent's conference abbreviation in that season (e.g. "sec"), as listed in the response's options.</param>
+/// <param name="Opponent">Head-to-head: the opponent's franchise slug. An unknown slug matches no games.</param>
+/// <param name="SeasonType">Regular season or postseason.</param>
+/// <param name="Month">Local kickoff month, 1-12.</param>
+/// <param name="SpreadSize">Size of the line, either side.</param>
 public record GetFranchiseSplitsQuery(
     string Slug,
     int SeasonFrom,
@@ -22,7 +27,12 @@ public record GetFranchiseSplitsQuery(
     OpponentRankFilter? OpponentRank = null,
     LineFilter? Line = null,
     KickoffWindow? KickoffWindow = null,
-    bool? ConferenceGame = null);
+    bool? ConferenceGame = null,
+    string? OpponentConference = null,
+    string? Opponent = null,
+    SeasonTypeFilter? SeasonType = null,
+    int? Month = null,
+    SpreadSizeFilter? SpreadSize = null);
 
 /// <summary>Opponent's rank going in. A null (unknown) rank matches none of these.</summary>
 public enum OpponentRankFilter
@@ -42,4 +52,37 @@ public enum LineFilter
 {
     Favorite = 1,
     Underdog = 2
+}
+
+/// <summary>
+/// ESPN season phase. Conference championship games are regular season in
+/// ESPN's data; bowls and the playoff are postseason. All-star phases match
+/// neither.
+/// </summary>
+public enum SeasonTypeFilter
+{
+    /// <summary>SeasonPhaseTypeCode 2.</summary>
+    Regular = 1,
+
+    /// <summary>SeasonPhaseTypeCode 3.</summary>
+    Postseason = 2
+}
+
+/// <summary>
+/// Absolute size of this team's line; direction comes from <see cref="LineFilter"/>.
+/// No line matches none of these.
+/// </summary>
+public enum SpreadSizeFilter
+{
+    /// <summary>3 or less, including pick'em.</summary>
+    Close = 1,
+
+    /// <summary>More than 3, less than 7.</summary>
+    Moderate = 2,
+
+    /// <summary>7 to less than 14.</summary>
+    Large = 3,
+
+    /// <summary>14 or more.</summary>
+    Huge = 4
 }

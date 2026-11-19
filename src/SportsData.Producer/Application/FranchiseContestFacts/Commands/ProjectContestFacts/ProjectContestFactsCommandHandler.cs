@@ -60,7 +60,15 @@ public class ProjectContestFactsCommandHandler : IProjectContestFactsCommandHand
             {
                 c.Id,
                 c.SeasonYear,
-                c.Week,
+                // Week from SeasonWeek.Number, not Contest.Week: the schedule
+                // import leaves Contest.Week null (every prod NCAAFB contest,
+                // 2026-11-19) while SeasonWeekId is set on all of them. Same
+                // rule as GetAthleteMatchupSummaries. Numbers restart per
+                // phase; the fact carries the phase alongside.
+                Week = _dataContext.SeasonWeeks
+                    .Where(sw => sw.Id == c.SeasonWeekId)
+                    .Select(sw => (int?)sw.Number)
+                    .FirstOrDefault() ?? c.Week,
                 c.SeasonPhaseId,
                 PhaseTypeCode = _dataContext.SeasonPhases
                     .Where(sp => sp.Id == c.SeasonPhaseId)

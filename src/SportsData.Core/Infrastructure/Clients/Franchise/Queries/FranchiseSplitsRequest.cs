@@ -16,4 +16,19 @@ public class FranchiseSplitsRequest
     public string? Line { get; init; }
     public string? KickoffWindow { get; init; }
     public bool? ConferenceGame { get; init; }
+
+    /// <summary>Opponent's conference abbreviation in that season (a value from the response's options).</summary>
+    public string? OpponentConference { get; init; }
+
+    /// <summary>Head-to-head: the opponent's franchise slug.</summary>
+    public string? Opponent { get; init; }
+
+    /// <summary>Regular or Postseason.</summary>
+    public string? SeasonType { get; init; }
+
+    /// <summary>Local kickoff month, 1-12.</summary>
+    public int? Month { get; init; }
+
+    /// <summary>Close, Moderate, Large or Huge.</summary>
+    public string? SpreadSize { get; init; }
 }

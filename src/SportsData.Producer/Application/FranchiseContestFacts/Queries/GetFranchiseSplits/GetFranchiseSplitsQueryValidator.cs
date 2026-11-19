@@ -27,5 +27,20 @@ public class GetFranchiseSplitsQueryValidator : AbstractValidator<GetFranchiseSp
         RuleFor(x => x.OpponentRank).IsInEnum().When(x => x.OpponentRank.HasValue);
         RuleFor(x => x.Line).IsInEnum().When(x => x.Line.HasValue);
         RuleFor(x => x.KickoffWindow).IsInEnum().When(x => x.KickoffWindow.HasValue);
+        RuleFor(x => x.SeasonType).IsInEnum().When(x => x.SeasonType.HasValue);
+        RuleFor(x => x.SpreadSize).IsInEnum().When(x => x.SpreadSize.HasValue);
+
+        RuleFor(x => x.Month)
+            .InclusiveBetween(1, 12)
+            .When(x => x.Month.HasValue)
+            .WithMessage("Month must be 1-12");
+
+        RuleFor(x => x.Opponent)
+            .MaximumLength(100)
+            .WithMessage("Opponent must be at most 100 characters");
+
+        RuleFor(x => x.OpponentConference)
+            .MaximumLength(100)
+            .WithMessage("OpponentConference must be at most 100 characters");
     }
 }

@@ -29,6 +29,39 @@ namespace SportsData.Core.Dtos.Canonical
 
         /// <summary>Matching games, newest first.</summary>
         public List<FranchiseSplitsGameDto> Games { get; set; } = [];
+
+        /// <summary>
+        /// Values for the opponent and opponent-conference pickers, over the
+        /// requested season range and ignoring the other filters.
+        /// </summary>
+        public FranchiseSplitsOptionsDto Options { get; set; } = new();
+    }
+
+    public class FranchiseSplitsOptionsDto
+    {
+        /// <summary>Every opponent faced in the range, sorted by name.</summary>
+        public List<FranchiseSplitsOpponentOptionDto> Opponents { get; set; } = [];
+
+        /// <summary>Every opponent conference in the range (as of each game's season), sorted by label.</summary>
+        public List<FranchiseSplitsConferenceOptionDto> Conferences { get; set; } = [];
+    }
+
+    public class FranchiseSplitsOpponentOptionDto
+    {
+        /// <summary>Franchise slug; the value for the opponent filter.</summary>
+        public string Slug { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public int Games { get; set; }
+    }
+
+    public class FranchiseSplitsConferenceOptionDto
+    {
+        /// <summary>Conference abbreviation as projected (e.g. "midam"); the value for the opponent-conference filter.</summary>
+        public string Value { get; set; } = string.Empty;
+
+        /// <summary>Display name (e.g. "MAC").</summary>
+        public string Label { get; set; } = string.Empty;
+        public int Games { get; set; }
     }
 
     public class FranchiseSplitsSummaryDto

@@ -25,8 +25,10 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
         ///   1: initial.
         ///   2: NFL conference/division parse ("NFC", "NFC NORTH"); rank only
         ///      for NCAAFB (ESPN's 99 on every NFL team is not a poll).
+        ///   3: Week from SeasonWeek.Number (Contest.Week is never populated,
+        ///      so every v2 row had a null week).
         /// </summary>
-        public const int CurrentProjectionVersion = 2;
+        public const int CurrentProjectionVersion = 3;
 
         // ── Identity ──────────────────────────────────────────────────────
         public Guid ContestId { get; set; }

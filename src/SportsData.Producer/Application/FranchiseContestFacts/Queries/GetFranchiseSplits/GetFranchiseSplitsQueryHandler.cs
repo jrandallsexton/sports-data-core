@@ -53,6 +53,15 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
     /// </summary>
     private const int ConferenceGameFloor = 2001;
 
+    /// <summary>Spread size reads the same spreads as the line filter.</summary>
+    private const int SpreadSizeFloor = LineFloor;
+
+    // Opponent, opponent conference, season type and month need no floor of
+    // their own: they read columns trustworthy from the results floor (2001).
+
+    private const int RegularSeasonPhaseTypeCode = 2;
+    private const int PostseasonPhaseTypeCode = 3;
+
     private const int Unranked = 99;
     private const int RankedMax = 25;
     private const int Top10Max = 10;
@@ -104,17 +113,31 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
             RequestedSeasonFrom = query.SeasonFrom,
             SeasonFrom = seasonFrom,
             SeasonTo = query.SeasonTo,
+            Options = await GetOptionsAsync(franchise.Id, query, cancellationToken),
         };
 
         if (seasonFrom > query.SeasonTo)
             return new Success<FranchiseSplitsDto>(dto);
+
+        // An unknown opponent slug matches no games rather than failing: a
+        // stale or mistyped value in a shared link should not break the page.
+        Guid? opponentId = null;
+        if (!string.IsNullOrWhiteSpace(query.Opponent))
+        {
+            opponentId = await _dataContext.Franchises
+                .AsNoTracking()
+                .Where(f => f.Slug == query.Opponent)
+                .Select(f => (Guid?)f.Id)
+                .FirstOrDefaultAsync(cancellationToken) ?? Guid.Empty;
+        }
 
         var rows = await ApplyFilters(
                 _dataContext.FranchiseContestFacts.AsNoTracking()
                     .Where(f => f.FranchiseId == franchise.Id
                                 && f.SeasonYear >= seasonFrom
                                 && f.SeasonYear <= query.SeasonTo),
-                query)
+                query,
+                opponentId)
             .Join(
                 _dataContext.Franchises,
                 f => f.OpponentFranchiseId,
@@ -156,12 +179,14 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
         if (query.KickoffWindow.HasValue) floor = Math.Max(floor, KickoffWindowFloor);
         if (query.Line.HasValue) floor = Math.Max(floor, LineFloor);
         if (query.ConferenceGame.HasValue) floor = Math.Max(floor, ConferenceGameFloor);
+        if (query.SpreadSize.HasValue) floor = Math.Max(floor, SpreadSizeFloor);
         return Math.Max(query.SeasonFrom, floor);
     }
 
     private static IQueryable<FranchiseContestFact> ApplyFilters(
         IQueryable<FranchiseContestFact> facts,
-        GetFranchiseSplitsQuery query)
+        GetFranchiseSplitsQuery query,
+        Guid? opponentId)
     {
         if (query.Site.HasValue)
             facts = facts.Where(f => f.Site == query.Site.Value);
@@ -187,7 +212,109 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
         if (query.ConferenceGame.HasValue)
             facts = facts.Where(f => f.IsConferenceGame == query.ConferenceGame.Value);
 
+        // The opponent's conference in that season, as projected.
+        if (!string.IsNullOrWhiteSpace(query.OpponentConference))
+            facts = facts.Where(f => f.OpponentConference == query.OpponentConference);
+
+        if (opponentId.HasValue)
+            facts = facts.Where(f => f.OpponentFranchiseId == opponentId.Value);
+
+        facts = query.SeasonType switch
+        {
+            SeasonTypeFilter.Regular => facts.Where(f => f.SeasonPhaseTypeCode == RegularSeasonPhaseTypeCode),
+            SeasonTypeFilter.Postseason => facts.Where(f => f.SeasonPhaseTypeCode == PostseasonPhaseTypeCode),
+            _ => facts
+        };
+
+        // A game without a venue has no local month and matches no month.
+        if (query.Month.HasValue)
+            facts = facts.Where(f => f.LocalMonth == query.Month.Value);
+
+        // Bands on the absolute line; no line matches none.
+        facts = query.SpreadSize switch
+        {
+            SpreadSizeFilter.Close => facts.Where(f => f.Spread >= -3m && f.Spread <= 3m),
+            SpreadSizeFilter.Moderate => facts.Where(f => (f.Spread > 3m && f.Spread < 7m) || (f.Spread < -3m && f.Spread > -7m)),
+            SpreadSizeFilter.Large => facts.Where(f => (f.Spread >= 7m && f.Spread < 14m) || (f.Spread <= -7m && f.Spread > -14m)),
+            SpreadSizeFilter.Huge => facts.Where(f => f.Spread >= 14m || f.Spread <= -14m),
+            _ => facts
+        };
+
         return facts;
+    }
+
+    /// <summary>
+    /// Picker lists for the opponent and opponent-conference filters: every
+    /// opponent and conference in the requested season range, ignoring the
+    /// chip filters (and their floors) so a picker never empties itself when
+    /// a chip changes.
+    /// </summary>
+    private async Task<FranchiseSplitsOptionsDto> GetOptionsAsync(
+        Guid franchiseId,
+        GetFranchiseSplitsQuery query,
+        CancellationToken cancellationToken)
+    {
+        var seasonFrom = Math.Max(query.SeasonFrom, ResultsFloor);
+        var facts = _dataContext.FranchiseContestFacts.AsNoTracking()
+            .Where(f => f.FranchiseId == franchiseId
+                        && f.SeasonYear >= seasonFrom
+                        && f.SeasonYear <= query.SeasonTo);
+
+        var opponentCounts = await facts
+            .GroupBy(f => f.OpponentFranchiseId)
+            .Select(g => new { OpponentFranchiseId = g.Key, Games = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var opponentIds = opponentCounts.Select(o => o.OpponentFranchiseId).ToList();
+        var opponentNames = await _dataContext.Franchises
+            .AsNoTracking()
+            .Where(f => opponentIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.Slug, f.DisplayName })
+            .ToDictionaryAsync(f => f.Id, cancellationToken);
+
+        var conferenceCounts = await facts
+            .Where(f => f.OpponentConference != null && f.OpponentConference != "")
+            .GroupBy(f => f.OpponentConference!)
+            .Select(g => new { Abbreviation = g.Key, Games = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        // Label: the conference's short name in the most recent season that
+        // used the abbreviation (e.g. "midam" is "MAC"); the abbreviation
+        // itself when no group carries it.
+        var abbreviations = conferenceCounts.Select(c => c.Abbreviation).ToList();
+        var groups = await _dataContext.GroupSeasons
+            .AsNoTracking()
+            .Where(g => abbreviations.Contains(g.Abbreviation) && g.ShortName != null)
+            .Select(g => new { g.Abbreviation, g.SeasonYear, g.ShortName })
+            .ToListAsync(cancellationToken);
+        var labels = groups
+            .GroupBy(g => g.Abbreviation)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(x => x.SeasonYear).First().ShortName!);
+
+        return new FranchiseSplitsOptionsDto
+        {
+            Opponents = opponentCounts
+                .Where(o => opponentNames.ContainsKey(o.OpponentFranchiseId))
+                .Select(o => new FranchiseSplitsOpponentOptionDto
+                {
+                    Slug = opponentNames[o.OpponentFranchiseId].Slug,
+                    Name = opponentNames[o.OpponentFranchiseId].DisplayName,
+                    Games = o.Games,
+                })
+                .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            Conferences = conferenceCounts
+                .Select(c => new FranchiseSplitsConferenceOptionDto
+                {
+                    Value = c.Abbreviation,
+                    Label = labels.GetValueOrDefault(c.Abbreviation, c.Abbreviation),
+                    Games = c.Games,
+                })
+                .OrderBy(c => c.Label, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+        };
     }
 
     private static FranchiseSplitsSummaryDto Summarize(IReadOnlyCollection<FactRow> rows)

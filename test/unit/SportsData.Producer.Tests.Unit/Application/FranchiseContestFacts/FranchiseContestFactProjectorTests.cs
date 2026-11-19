@@ -242,7 +242,7 @@ public class FranchiseContestFactProjectorTests
         home.Division.Should().Be("NFC NORTH", "the division name alone is ambiguous across conferences");
         home.OpponentConference.Should().Be("AFC");
         home.OpponentDivision.Should().Be("AFC EAST");
-        home.ProjectionVersion.Should().Be(2);
+        home.ProjectionVersion.Should().Be(FranchiseContestFact.CurrentProjectionVersion);
     }
 
     private static ContestFactInput Game(Guid? homeConference = null, Guid? awayConference = null) => new()

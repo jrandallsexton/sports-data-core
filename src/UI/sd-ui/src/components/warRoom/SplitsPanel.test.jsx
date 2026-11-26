@@ -132,7 +132,8 @@ describe("SplitsPanel", () => {
       "/app/sport/football/ncaa/contest/c1"
     );
     expect(screen.getByText("#8")).toBeInTheDocument();
-    expect(screen.getByText("Cover")).toBeInTheDocument();
+    // The cell, not the Betting > ATS chip of the same label.
+    expect(screen.getByRole("cell", { name: "Cover" })).toBeInTheDocument();
     // Postseason row shows Post; unranked opponent shows no rank.
     expect(screen.getByText("Post")).toBeInTheDocument();
     expect(screen.queryByText("#99")).not.toBeInTheDocument();
@@ -176,6 +177,22 @@ describe("SplitsPanel", () => {
     expect(
       await screen.findByText(/games without a known venue are left out/)
     ).toBeInTheDocument();
+  });
+
+  it("sends the ATS chip as the Producer's enum name", async () => {
+    apiWrapper.Analytics.getFranchiseSplits.mockResolvedValue({ data: splits() });
+    await pickLsu();
+    await findGamesTable();
+
+    // Role-scoped: "Miss" is also an ATS cell in the games table.
+    fireEvent.click(screen.getByRole("button", { name: "Miss" }));
+
+    await waitFor(() =>
+      expect(apiWrapper.Analytics.getFranchiseSplits).toHaveBeenLastCalledWith(
+        "lsu-tigers",
+        expect.objectContaining({ ats: "NotCovered" })
+      )
+    );
   });
 
   it("fills the opponent and conference pickers from the response options", async () => {

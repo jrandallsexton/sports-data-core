@@ -449,7 +449,10 @@ Still open:
    **Routes.** Producer `GET api/franchise-contest-facts/franchises/{slug}/splits`
    on `FranchiseContestFactsController` (football-only mode guard, same as
    the commands); query params `seasonFrom, seasonTo, site, opponentRank,
-   line, kickoffWindow, conferenceGame`. API `GET /ui/analytics/splits/{slug}`
+   line, kickoffWindow, conferenceGame` (v1), plus `opponentConference,
+   opponent, seasonType, month, spreadSize` (v2, #873) and `ats`
+   (Covered / NotCovered / Push, floor 2012 — it derives from the spread).
+   API `GET /ui/analytics/splits/{slug}`
    (+ `sport`, `league`, same params) relaying through `FranchiseClient`.
    Aggregation runs in C# over the filtered rows (at most ~350 rows per team
    for 25 seasons), so the rules above are unit tested, not SQL.

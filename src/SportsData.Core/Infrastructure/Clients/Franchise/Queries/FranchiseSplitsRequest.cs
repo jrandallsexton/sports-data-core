@@ -31,4 +31,7 @@ public class FranchiseSplitsRequest
 
     /// <summary>Close, Moderate, Large or Huge.</summary>
     public string? SpreadSize { get; init; }
+
+    /// <summary>Against-the-spread outcome: Covered, NotCovered or Push.</summary>
+    public string? Ats { get; init; }
 }

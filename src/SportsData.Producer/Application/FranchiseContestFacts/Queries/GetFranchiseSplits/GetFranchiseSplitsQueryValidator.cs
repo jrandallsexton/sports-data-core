@@ -29,6 +29,7 @@ public class GetFranchiseSplitsQueryValidator : AbstractValidator<GetFranchiseSp
         RuleFor(x => x.KickoffWindow).IsInEnum().When(x => x.KickoffWindow.HasValue);
         RuleFor(x => x.SeasonType).IsInEnum().When(x => x.SeasonType.HasValue);
         RuleFor(x => x.SpreadSize).IsInEnum().When(x => x.SpreadSize.HasValue);
+        RuleFor(x => x.Ats).IsInEnum().When(x => x.Ats.HasValue);
 
         RuleFor(x => x.Month)
             .InclusiveBetween(1, 12)

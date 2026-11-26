@@ -63,7 +63,8 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
         /// War Room Splits: a team's record over a season range, narrowed by
         /// optional filters (each omitted filter means "any"). Enum filters
         /// take names: site=Away, opponentRank=Top10, line=Underdog,
-        /// kickoffWindow=Night, seasonType=Postseason, spreadSize=Large.
+        /// kickoffWindow=Night, seasonType=Postseason, spreadSize=Large,
+        /// ats=Covered (Covered / NotCovered / Push).
         /// opponent is a franchise slug, opponentConference an abbreviation
         /// from the response's options, month 1-12.
         /// Example: GET /api/franchise-contest-facts/franchises/lsu-tigers/splits?seasonFrom=2015&amp;seasonTo=2025&amp;site=Away&amp;opponentRank=Ranked
@@ -83,6 +84,7 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
             [FromQuery] SeasonTypeFilter? seasonType,
             [FromQuery] int? month,
             [FromQuery] SpreadSizeFilter? spreadSize,
+            [FromQuery] AtsResult? ats,
             [FromServices] IAppMode appMode,
             CancellationToken cancellationToken)
         {
@@ -93,7 +95,7 @@ namespace SportsData.Producer.Application.FranchiseContestFacts
             var result = await handler.ExecuteAsync(
                 new GetFranchiseSplitsQuery(
                     slug, seasonFrom, seasonTo, site, opponentRank, line, kickoffWindow, conferenceGame,
-                    opponentConference, opponent, seasonType, month, spreadSize),
+                    opponentConference, opponent, seasonType, month, spreadSize, ats),
                 cancellationToken);
             return result.ToActionResult();
         }

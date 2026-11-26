@@ -19,6 +19,7 @@ namespace SportsData.Producer.Application.FranchiseContestFacts.Queries.GetFranc
 /// <param name="SeasonType">Regular season or postseason.</param>
 /// <param name="Month">Local kickoff month, 1-12.</param>
 /// <param name="SpreadSize">Size of the line, either side.</param>
+/// <param name="Ats">Against-the-spread outcome from this team's side. A game without a line has no outcome and matches none of these.</param>
 public record GetFranchiseSplitsQuery(
     string Slug,
     int SeasonFrom,
@@ -32,7 +33,8 @@ public record GetFranchiseSplitsQuery(
     string? Opponent = null,
     SeasonTypeFilter? SeasonType = null,
     int? Month = null,
-    SpreadSizeFilter? SpreadSize = null);
+    SpreadSizeFilter? SpreadSize = null,
+    AtsResult? Ats = null);
 
 /// <summary>Opponent's rank going in. A null (unknown) rank matches none of these.</summary>
 public enum OpponentRankFilter

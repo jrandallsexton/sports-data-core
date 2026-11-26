@@ -116,6 +116,16 @@ export const FILTER_BLOCKS = [
           { label: '14+', value: 'Huge' },
         ],
       },
+      {
+        key: 'ats',
+        label: 'ATS',
+        title: 'Against the spread from this team’s side; games without a line match none',
+        options: [
+          { label: 'Cover', value: 'Covered' },
+          { label: 'Miss', value: 'NotCovered' },
+          { label: 'Push', value: 'Push' },
+        ],
+      },
     ],
   },
 ];

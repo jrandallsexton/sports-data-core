@@ -273,6 +273,36 @@ public class GetFranchiseSplitsQueryHandlerTests : ProducerTestBase<GetFranchise
         result.Value.Games.Select(g => g.SeasonYear).Should().Equal(2015);
     }
 
+    [Theory]
+    [InlineData(AtsResult.Covered, 2020)]
+    [InlineData(AtsResult.NotCovered, 2021)]
+    [InlineData(AtsResult.Push, 2022)]
+    public async Task Execute_Ats_FiltersByOutcome(AtsResult ats, int expectedSeason)
+    {
+        SeedFact(2020, AlabamaId, new DateTime(2020, 11, 7), spread: -7m, atsResult: AtsResult.Covered);
+        SeedFact(2021, AlabamaId, new DateTime(2021, 11, 6), spread: -7m, atsResult: AtsResult.NotCovered);
+        SeedFact(2022, AlabamaId, new DateTime(2022, 11, 5), spread: -7m, atsResult: AtsResult.Push);
+        // No line, so no outcome: matches none of them.
+        SeedFact(2023, OleMissId, new DateTime(2023, 11, 4), spread: null, atsResult: null);
+        await FootballDataContext.SaveChangesAsync();
+
+        (await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2012, 2025, Ats: ats)))
+            .Value.Games.Select(g => g.SeasonYear).Should().Equal(expectedSeason);
+    }
+
+    [Fact]
+    public async Task Execute_Ats_RaisesFloorTo2012()
+    {
+        SeedFact(2010, AlabamaId, new DateTime(2010, 11, 6), spread: -7m, atsResult: AtsResult.Covered);
+        SeedFact(2015, AlabamaId, new DateTime(2015, 11, 7), spread: -7m, atsResult: AtsResult.Covered);
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await Execute(new GetFranchiseSplitsQuery("lsu-tigers", 2001, 2025, Ats: AtsResult.Covered));
+
+        result.Value.SeasonFrom.Should().Be(2012);
+        result.Value.Games.Select(g => g.SeasonYear).Should().Equal(2015);
+    }
+
     [Fact]
     public async Task Execute_Options_IgnoreChipFiltersButHonorSeasonRange()
     {

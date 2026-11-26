@@ -65,7 +65,7 @@ public class AnalyticsController : ApiControllerBase
     /// War Room Splits: a team's record over a season range, narrowed by
     /// optional filters (site, opponentRank, line, kickoffWindow,
     /// conferenceGame, opponentConference, opponent, seasonType, month,
-    /// spreadSize; omitted = any). Football only.
+    /// spreadSize, ats; omitted = any). Football only.
     /// </summary>
     [HttpGet("splits/{slug}")]
     public async Task<ActionResult<FranchiseSplitsDto>> GetFranchiseSplits(
@@ -82,6 +82,7 @@ public class AnalyticsController : ApiControllerBase
         [FromQuery] string? seasonType = null,
         [FromQuery] int? month = null,
         [FromQuery] string? spreadSize = null,
+        [FromQuery] string? ats = null,
         [FromQuery] string sport = "football",
         [FromQuery] string league = "ncaa",
         [FromServices] IGetFranchiseSplitsQueryHandler handler = default!,
@@ -106,6 +107,7 @@ public class AnalyticsController : ApiControllerBase
                 SeasonType = seasonType,
                 Month = month,
                 SpreadSize = spreadSize,
+                Ats = ats,
             },
         };
         var result = await handler.ExecuteAsync(query, cancellationToken);

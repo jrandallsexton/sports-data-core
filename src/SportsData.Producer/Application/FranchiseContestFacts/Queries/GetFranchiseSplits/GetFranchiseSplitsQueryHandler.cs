@@ -56,6 +56,9 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
     /// <summary>Spread size reads the same spreads as the line filter.</summary>
     private const int SpreadSizeFloor = LineFloor;
 
+    /// <summary>The ATS outcome is derived from the spread, so it shares the line floor.</summary>
+    private const int AtsFloor = LineFloor;
+
     // Opponent, opponent conference, season type and month need no floor of
     // their own: they read columns trustworthy from the results floor (2001).
 
@@ -180,6 +183,7 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
         if (query.Line.HasValue) floor = Math.Max(floor, LineFloor);
         if (query.ConferenceGame.HasValue) floor = Math.Max(floor, ConferenceGameFloor);
         if (query.SpreadSize.HasValue) floor = Math.Max(floor, SpreadSizeFloor);
+        if (query.Ats.HasValue) floor = Math.Max(floor, AtsFloor);
         return Math.Max(query.SeasonFrom, floor);
     }
 
@@ -239,6 +243,11 @@ public class GetFranchiseSplitsQueryHandler : IGetFranchiseSplitsQueryHandler
             SpreadSizeFilter.Huge => facts.Where(f => f.Spread >= 14m || f.Spread <= -14m),
             _ => facts
         };
+
+        // Covered / not covered / push, from this team's side. A game with no
+        // line has a null outcome and matches none of them.
+        if (query.Ats.HasValue)
+            facts = facts.Where(f => f.AtsResult == query.Ats.Value);
 
         return facts;
     }

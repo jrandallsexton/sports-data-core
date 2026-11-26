@@ -15,7 +15,8 @@ const AnalyticsApi = {
   // optional filters (omitted = any). Filter values are the Producer's enum
   // names: site Home/Away/Neutral, opponentRank Ranked/Top10/Unranked,
   // line Favorite/Underdog, kickoffWindow Noon/Afternoon/Night,
-  // seasonType Regular/Postseason, spreadSize Close/Moderate/Large/Huge.
+  // seasonType Regular/Postseason, spreadSize Close/Moderate/Large/Huge,
+  // ats Covered/NotCovered/Push.
   // month is 1-12; opponent (franchise slug) and opponentConference come
   // from the response's options.
   getFranchiseSplits: (
@@ -33,6 +34,7 @@ const AnalyticsApi = {
       seasonType,
       month,
       spreadSize,
+      ats,
     },
   ) =>
     apiClient.get(`/ui/analytics/splits/${encodeURIComponent(slug)}`, {
@@ -49,6 +51,7 @@ const AnalyticsApi = {
         seasonType,
         month,
         spreadSize,
+        ats,
       },
     }),
 };

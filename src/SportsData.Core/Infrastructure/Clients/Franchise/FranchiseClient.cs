@@ -328,6 +328,7 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         if (!string.IsNullOrWhiteSpace(request.SeasonType)) query.Add($"seasonType={Uri.EscapeDataString(request.SeasonType)}");
         if (request.Month.HasValue) query.Add($"month={request.Month.Value}");
         if (!string.IsNullOrWhiteSpace(request.SpreadSize)) query.Add($"spreadSize={Uri.EscapeDataString(request.SpreadSize)}");
+        if (!string.IsNullOrWhiteSpace(request.Ats)) query.Add($"ats={Uri.EscapeDataString(request.Ats)}");
 
         return await GetAsync(
             $"franchise-contest-facts/franchises/{Uri.EscapeDataString(slug)}/splits?{string.Join("&", query)}",
